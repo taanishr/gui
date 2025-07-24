@@ -1,0 +1,333 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A59B35EF2E303C5B0075AD31 /* AppKit-Extensions in Frameworks */ = {isa = PBXBuildFile; fileRef = A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */; };
+		A5FC26472E2E0B2200C6E769 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC26462E2E0B2200C6E769 /* Metal.framework */; };
+		A5FC26492E2E0B2500C6E769 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC26482E2E0B2500C6E769 /* MetalKit.framework */; };
+		A5FC264B2E2E0B2B00C6E769 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC264A2E2E0B2B00C6E769 /* QuartzCore.framework */; };
+		A5FC264D2E2E0B2D00C6E769 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC264C2E2E0B2D00C6E769 /* AppKit.framework */; };
+		A5FC264F2E2E0B3000C6E769 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC264E2E2E0B3000C6E769 /* Cocoa.framework */; };
+		A5FC26512E2E0B3500C6E769 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC26502E2E0B3500C6E769 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A5FC26392E2E0B1500C6E769 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "AppKit-Extensions"; path = "../AppKit-Extensions-Library/AppKit-Extensions"; sourceTree = "<group>"; };
+		A5FC263B2E2E0B1500C6E769 /* font-rendeirng */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "font-rendeirng"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5FC26462E2E0B2200C6E769 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		A5FC26482E2E0B2500C6E769 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		A5FC264A2E2E0B2B00C6E769 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		A5FC264C2E2E0B2D00C6E769 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		A5FC264E2E2E0B3000C6E769 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		A5FC26502E2E0B3500C6E769 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A5FC263D2E2E0B1500C6E769 /* font-rendeirng */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "font-rendeirng";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A5FC26382E2E0B1500C6E769 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A59B35EF2E303C5B0075AD31 /* AppKit-Extensions in Frameworks */,
+				A5FC26512E2E0B3500C6E769 /* Foundation.framework in Frameworks */,
+				A5FC264F2E2E0B3000C6E769 /* Cocoa.framework in Frameworks */,
+				A5FC264D2E2E0B2D00C6E769 /* AppKit.framework in Frameworks */,
+				A5FC264B2E2E0B2B00C6E769 /* QuartzCore.framework in Frameworks */,
+				A5FC26492E2E0B2500C6E769 /* MetalKit.framework in Frameworks */,
+				A5FC26472E2E0B2200C6E769 /* Metal.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A5FC26322E2E0B1500C6E769 = {
+			isa = PBXGroup;
+			children = (
+				A5FC263D2E2E0B1500C6E769 /* font-rendeirng */,
+				A5FC26452E2E0B2200C6E769 /* Frameworks */,
+				A5FC263C2E2E0B1500C6E769 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A5FC263C2E2E0B1500C6E769 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A5FC263B2E2E0B1500C6E769 /* font-rendeirng */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A5FC26452E2E0B2200C6E769 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */,
+				A5FC26502E2E0B3500C6E769 /* Foundation.framework */,
+				A5FC264E2E2E0B3000C6E769 /* Cocoa.framework */,
+				A5FC264C2E2E0B2D00C6E769 /* AppKit.framework */,
+				A5FC264A2E2E0B2B00C6E769 /* QuartzCore.framework */,
+				A5FC26482E2E0B2500C6E769 /* MetalKit.framework */,
+				A5FC26462E2E0B2200C6E769 /* Metal.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A5FC263A2E2E0B1500C6E769 /* font-rendeirng */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendeirng" */;
+			buildPhases = (
+				A5FC26372E2E0B1500C6E769 /* Sources */,
+				A5FC26382E2E0B1500C6E769 /* Frameworks */,
+				A5FC26392E2E0B1500C6E769 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A5FC263D2E2E0B1500C6E769 /* font-rendeirng */,
+			);
+			name = "font-rendeirng";
+			packageProductDependencies = (
+			);
+			productName = "font-rendeirng";
+			productReference = A5FC263B2E2E0B1500C6E769 /* font-rendeirng */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A5FC26332E2E0B1500C6E769 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					A5FC263A2E2E0B1500C6E769 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+				};
+			};
+			buildConfigurationList = A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendeirng" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A5FC26322E2E0B1500C6E769;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A5FC263C2E2E0B1500C6E769 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A5FC263A2E2E0B1500C6E769 /* font-rendeirng */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A5FC26372E2E0B1500C6E769 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A5FC26402E2E0B1500C6E769 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++23";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"/Users/treja/metal-cpp",
+					"/Users/treja/metal-cpp-extensions",
+					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A5FC26412E2E0B1500C6E769 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++23";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"/Users/treja/metal-cpp",
+					"/Users/treja/metal-cpp-extensions",
+					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A5FC26432E2E0B1500C6E769 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A5FC26442E2E0B1500C6E769 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendeirng" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5FC26402E2E0B1500C6E769 /* Debug */,
+				A5FC26412E2E0B1500C6E769 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendeirng" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5FC26432E2E0B1500C6E769 /* Debug */,
+				A5FC26442E2E0B1500C6E769 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A5FC26332E2E0B1500C6E769 /* Project object */;
+}
