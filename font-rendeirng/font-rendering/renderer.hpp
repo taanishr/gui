@@ -8,6 +8,7 @@
 #include "metal_imports.hpp"
 #include "bezier.hpp"
 #include "freetype.hpp"
+#include "renderFace.hpp"
 #include <semaphore>
 
 constexpr int maxOutstandingFrameCount = 3;

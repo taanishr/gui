@@ -67,10 +67,15 @@ void Renderer::makeResources() {
 
 void Renderer::updateConstants() {
     std::vector<simd_float2> interpolatedPoints {};
-    for (int i = 0; i <= resolution; ++i) {
-        simd_float2 nextPoint = quadraticInterpolation(controlPoints[0], controlPoints[1],
-                               controlPoints[2], i, resolution);
-        interpolatedPoints.push_back(nextPoint);
+//    for (int i = 0; i <= resolution; ++i) {
+//        simd_float2 nextPoint = quadraticInterpolation(controlPoints[0], controlPoints[1],
+//                               controlPoints[2], i, resolution);
+//        interpolatedPoints.push_back(nextPoint);
+//    }
+    interpolatedPoints = renderPoints('a', this->ft, fontPath);
+    for (int i = 0; i < interpolatedPoints.size() ; ++i) {
+        interpolatedPoints[i][0] /= 10000;
+        interpolatedPoints[i][1] /= 10000;
     }
     
     std::memcpy(this->vertexBuffer->contents(), interpolatedPoints.data(), sizeof(simd_float2)*interpolatedPoints.size());
@@ -88,7 +93,7 @@ void Renderer::draw() {
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
     renderCommandEncoder->setVertexBuffer(this->vertexBuffer, 0, 0);
-    renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, NS::Integer(0), NS::Integer(resolution+1));
+    renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, NS::Integer(0), 211);
     renderCommandEncoder->endEncoding();
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
