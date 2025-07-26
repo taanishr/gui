@@ -7,7 +7,7 @@
 
 #include "renderFace.hpp"
 
-std::vector<simd_float2> renderPoints(char ch, FT_Library ft, std::string_view fontPath) {
+std::vector<simd_float2> renderPoints(char ch, FT_Library ft, std::string_view fontPath, int resolution) {
     FT_Face face;
 
     FT_New_Face(ft, fontPath.data(), 0, &face);

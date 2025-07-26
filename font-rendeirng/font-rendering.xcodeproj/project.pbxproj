@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A58F8C6E2E347EB20060DD32 /* libfreetype.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A58F8C6A2E347E5A0060DD32 /* libfreetype.a */; };
 		A59B35EF2E303C5B0075AD31 /* AppKit-Extensions in Frameworks */ = {isa = PBXBuildFile; fileRef = A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */; };
 		A5FC26472E2E0B2200C6E769 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC26462E2E0B2200C6E769 /* Metal.framework */; };
 		A5FC26492E2E0B2500C6E769 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5FC26482E2E0B2500C6E769 /* MetalKit.framework */; };
@@ -29,8 +30,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A58F8C682E347E5A0060DD32 /* freetype2.pc */ = {isa = PBXFileReference; lastKnownFileType = text; path = freetype2.pc; sourceTree = "<group>"; };
+		A58F8C6A2E347E5A0060DD32 /* libfreetype.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libfreetype.a; sourceTree = "<group>"; };
+		A58F8C6B2E347E5A0060DD32 /* libfreetype.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libfreetype.dylib; sourceTree = "<group>"; };
+		A58F8C6C2E347E5A0060DD32 /* libfreetype.6.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libfreetype.6.dylib; sourceTree = "<group>"; };
 		A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "AppKit-Extensions"; path = "../AppKit-Extensions-Library/AppKit-Extensions"; sourceTree = "<group>"; };
-		A5FC263B2E2E0B1500C6E769 /* font-rendeirng */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "font-rendeirng"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5FC263B2E2E0B1500C6E769 /* font-rendering */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "font-rendering"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5FC26462E2E0B2200C6E769 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		A5FC26482E2E0B2500C6E769 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		A5FC264A2E2E0B2B00C6E769 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
@@ -40,9 +45,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A5FC263D2E2E0B1500C6E769 /* font-rendeirng */ = {
+		A5FC263D2E2E0B1500C6E769 /* font-rendering */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "font-rendeirng";
+			path = "font-rendering";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A58F8C6E2E347EB20060DD32 /* libfreetype.a in Frameworks */,
 				A59B35EF2E303C5B0075AD31 /* AppKit-Extensions in Frameworks */,
 				A5FC26512E2E0B3500C6E769 /* Foundation.framework in Frameworks */,
 				A5FC264F2E2E0B3000C6E769 /* Cocoa.framework in Frameworks */,
@@ -65,10 +71,30 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A58F8C692E347E5A0060DD32 /* pkgconfig */ = {
+			isa = PBXGroup;
+			children = (
+				A58F8C682E347E5A0060DD32 /* freetype2.pc */,
+			);
+			path = pkgconfig;
+			sourceTree = "<group>";
+		};
+		A58F8C6D2E347E5A0060DD32 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				A58F8C692E347E5A0060DD32 /* pkgconfig */,
+				A58F8C6A2E347E5A0060DD32 /* libfreetype.a */,
+				A58F8C6B2E347E5A0060DD32 /* libfreetype.dylib */,
+				A58F8C6C2E347E5A0060DD32 /* libfreetype.6.dylib */,
+			);
+			name = lib;
+			path = ../../../../../opt/homebrew/Cellar/freetype/2.13.3/lib;
+			sourceTree = "<group>";
+		};
 		A5FC26322E2E0B1500C6E769 = {
 			isa = PBXGroup;
 			children = (
-				A5FC263D2E2E0B1500C6E769 /* font-rendeirng */,
+				A5FC263D2E2E0B1500C6E769 /* font-rendering */,
 				A5FC26452E2E0B2200C6E769 /* Frameworks */,
 				A5FC263C2E2E0B1500C6E769 /* Products */,
 			);
@@ -77,7 +103,7 @@
 		A5FC263C2E2E0B1500C6E769 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A5FC263B2E2E0B1500C6E769 /* font-rendeirng */,
+				A5FC263B2E2E0B1500C6E769 /* font-rendering */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -85,6 +111,7 @@
 		A5FC26452E2E0B2200C6E769 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A58F8C6D2E347E5A0060DD32 /* lib */,
 				A59B35EE2E303C5B0075AD31 /* AppKit-Extensions */,
 				A5FC26502E2E0B3500C6E769 /* Foundation.framework */,
 				A5FC264E2E2E0B3000C6E769 /* Cocoa.framework */,
@@ -99,9 +126,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A5FC263A2E2E0B1500C6E769 /* font-rendeirng */ = {
+		A5FC263A2E2E0B1500C6E769 /* font-rendering */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendeirng" */;
+			buildConfigurationList = A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendering" */;
 			buildPhases = (
 				A5FC26372E2E0B1500C6E769 /* Sources */,
 				A5FC26382E2E0B1500C6E769 /* Frameworks */,
@@ -112,13 +139,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A5FC263D2E2E0B1500C6E769 /* font-rendeirng */,
+				A5FC263D2E2E0B1500C6E769 /* font-rendering */,
 			);
-			name = "font-rendeirng";
+			name = "font-rendering";
 			packageProductDependencies = (
 			);
 			productName = "font-rendeirng";
-			productReference = A5FC263B2E2E0B1500C6E769 /* font-rendeirng */;
+			productReference = A5FC263B2E2E0B1500C6E769 /* font-rendering */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -135,7 +162,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendeirng" */;
+			buildConfigurationList = A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendering" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -149,7 +176,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A5FC263A2E2E0B1500C6E769 /* font-rendeirng */,
+				A5FC263A2E2E0B1500C6E769 /* font-rendering */,
 			);
 		};
 /* End PBXProject section */
@@ -221,6 +248,7 @@
 					"/Users/treja/metal-cpp",
 					"/Users/treja/metal-cpp-extensions",
 					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+					/opt/homebrew/opt/freetype/include/freetype2,
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
@@ -281,6 +309,7 @@
 					"/Users/treja/metal-cpp",
 					"/Users/treja/metal-cpp-extensions",
 					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+					/opt/homebrew/opt/freetype/include/freetype2,
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
@@ -294,6 +323,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -302,6 +335,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -309,7 +346,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendeirng" */ = {
+		A5FC26362E2E0B1500C6E769 /* Build configuration list for PBXProject "font-rendering" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A5FC26402E2E0B1500C6E769 /* Debug */,
@@ -318,7 +355,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendeirng" */ = {
+		A5FC26422E2E0B1500C6E769 /* Build configuration list for PBXNativeTarget "font-rendering" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A5FC26432E2E0B1500C6E769 /* Debug */,

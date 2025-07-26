@@ -7,9 +7,9 @@
 
 #include <iostream>
 #include <iomanip>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <cmath>
+#include "freetype.hpp"
+#include "metal_imports.hpp"
+#include "bezier.hpp"
 
-
-std::vector<simd_float2> renderPoints(char ch, FT_Library ft, std::string_view fontPath);
+std::vector<simd_float2> renderPoints(char ch, FT_Library ft, std::string_view fontPath,  int resolution = 25);

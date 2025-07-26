@@ -57,13 +57,11 @@ void Renderer::makePipeline() {
     defaultLibrary->release();
     renderPipelineDescriptor->release();
     vertexDescriptor->release();
-    vertexFunction->release();
-    
-
-    
+    vertexFunction->release();    
 }
 
 void Renderer::makeResources() {
+    FT_Init_FreeType(&(this->ft));
     this->vertexBuffer = this->device->newBuffer(sizeof(simd_float2)*(resolution+1), MTL::StorageModeShared);
 }
 
@@ -108,4 +106,5 @@ Renderer::~Renderer() {
     commandQueue->release();
     vertexBuffer->release();
     renderPipelineState->release();
+    FT_Done_FreeType(ft);
 }
