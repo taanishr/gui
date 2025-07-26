@@ -10,7 +10,7 @@
 #include <semaphore>
 
 constexpr int maxOutstandingFrameCount = 3;
-constexpr float resolution = 8;
+constexpr float resolution = 24;
 
 class Renderer {
 public:
