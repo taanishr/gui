@@ -30,5 +30,6 @@ private:
     MTK::View* view;
     MTL::Buffer* vertexBuffer;
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
+    std::vector<std::pair<long, long>> contourBounds;
     FT_Library ft;
 };

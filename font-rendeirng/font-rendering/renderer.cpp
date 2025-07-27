@@ -62,20 +62,18 @@ void Renderer::makePipeline() {
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    this->vertexBuffer = this->device->newBuffer(sizeof(simd_float2)*(resolution+1), MTL::StorageModeShared);
+    this->vertexBuffer = this->device->newBuffer(sizeof(simd_float2)*(4096), MTL::StorageModeShared);
 }
 
 void Renderer::updateConstants() {
     std::vector<simd_float2> interpolatedPoints {};
-//    for (int i = 0; i <= resolution; ++i) {
-//        simd_float2 nextPoint = quadraticInterpolation(controlPoints[0], controlPoints[1],
-//                               controlPoints[2], i, resolution);
-//        interpolatedPoints.push_back(nextPoint);
-//    }
-    interpolatedPoints = renderPoints('a', this->ft, fontPath);
-    for (int i = 0; i < interpolatedPoints.size() ; ++i) {
-        interpolatedPoints[i][0] /= 10000;
-        interpolatedPoints[i][1] /= 10000;
+    std::vector<std::vector<simd_float2>> contours = drawContours('a', this->ft, fontPath, 25);
+    long contourStart = 0;
+    for (std::vector<simd_float2>& contour : contours) {
+        contourBounds.push_back({contourStart, contourStart+contour.size()});
+        std::cout << '(' << contour[0][0] << ',' << contour[0][1] << ")\n";
+        interpolatedPoints.insert(interpolatedPoints.end(), contour.begin(), contour.end());
+        contourStart = contour.size()+1;
     }
     
     std::memcpy(this->vertexBuffer->contents(), interpolatedPoints.data(), sizeof(simd_float2)*interpolatedPoints.size());
@@ -93,7 +91,9 @@ void Renderer::draw() {
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
     renderCommandEncoder->setVertexBuffer(this->vertexBuffer, 0, 0);
-    renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, NS::Integer(0), 211);
+    for (auto& cb : contourBounds) {
+        renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, cb.first, cb.second-cb.first-1);
+    }
     renderCommandEncoder->endEncoding();
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
