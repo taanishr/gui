@@ -62,15 +62,22 @@ void Renderer::makePipeline() {
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
+    FT_New_Face(ft, fontPath.data(), 0, &(this->face));
+    FT_Set_Pixel_Sizes(face, 1, 1);
     this->vertexBuffer = this->device->newBuffer(sizeof(simd_float2)*(4096), MTL::StorageModeShared);
 }
 
 void Renderer::updateConstants() {
     std::vector<simd_float2> interpolatedPoints {};
-    std::vector<std::vector<simd_float2>> contours = drawContours('e', this->ft, fontPath, resolution);
+    std::vector<std::vector<simd_float2>> contours {};
+    
+    for (int ch = 0; ch < str.size(); ++ch) {
+        auto chContours = drawContours(str.at(ch), this->ft, this->face, fontPath, resolution, ch*0.09, 0);
+        contours.insert(contours.end(), chContours.begin(), chContours.end());
+    }
+    
     long contourStart = 0;
     for (std::vector<simd_float2>& contour : contours) {
-        std::cout << contour.size() << '\n';
         contourBounds.push_back({contourStart, contourStart+contour.size()});
         interpolatedPoints.insert(interpolatedPoints.end(), contour.begin(), contour.end());
         contourStart += contour.size();
@@ -99,6 +106,7 @@ void Renderer::draw() {
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
         this->frameSemaphore.release();
+        this->contourBounds.clear();
     };
     
     commandBuffer->addCompletedHandler(completedHandler);
@@ -113,4 +121,5 @@ Renderer::~Renderer() {
     vertexBuffer->release();
     renderPipelineState->release();
     FT_Done_FreeType(ft);
+    FT_Done_Face(face);
 }
