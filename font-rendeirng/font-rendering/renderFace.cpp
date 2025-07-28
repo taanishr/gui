@@ -7,90 +7,32 @@
 
 #include "renderFace.hpp"
 
-//std::vector<simd_float2> renderPoints(char ch, FT_Library ft, std::string_view fontPath, int resolution) {
-//    FT_Face face;
-//
-//    FT_New_Face(ft, fontPath.data(), 0, &face);
-//
-//    FT_Set_Pixel_Sizes(face, 0, 0.2);
-//
-//    FT_Load_Char(face, ch, FT_LOAD_RENDER);
-//
-//    FT_Outline g = face->glyph->outline;
-//
-//    FT_Vector* points = g.points;
-//    unsigned char* tags = g.tags;
-//
-//    int currentPoint = 0;
-//    int pointsLeft = g.n_points;
-//
-//    bool seenControlGroupStart = false;
-//    std::vector<simd_float2> renderedPoints {};
-//    std::vector<simd_float2> pointsBuffer {};
-//
-//    while (pointsLeft > 0) {
-//        simd_float2 point = simd_float2{(float)points[currentPoint].x, (float)points[currentPoint].y};
-//        
-//        if (FT_CURVE_TAG(tags[currentPoint]) == FT_CURVE_TAG_ON) {
-//            if (seenControlGroupStart) {
-//                if (pointsBuffer.size() == 3) {
-//                    for (int t = 0; t <= resolution; ++t)
-//                        renderedPoints.push_back(quadraticInterpolation(pointsBuffer[0], pointsBuffer[1], pointsBuffer[2], t, resolution));
-//                    pointsBuffer.clear();
-//                    seenControlGroupStart = false;
-//                }else if (pointsBuffer.size() == 4) {
-//                    for (int t = 0; t <= resolution; ++t)
-//                        renderedPoints.push_back(cubicInterpolation(pointsBuffer[0], pointsBuffer[1], pointsBuffer[2], pointsBuffer[3], t, resolution));
-//                    pointsBuffer.clear();
-//                    seenControlGroupStart = false;
-//                }else {
-//                    renderedPoints.insert(renderedPoints.end(), pointsBuffer.begin(), pointsBuffer.end());
-//                    pointsBuffer.clear();
-//                }
-//                pointsBuffer.push_back(point);
-//            }else {
-//                seenControlGroupStart = true;
-//                pointsBuffer.push_back(point);
-//            }
-//        }else {
-//            pointsBuffer.push_back(point);
-//        }
-//
-//        --pointsLeft;
-//        ++currentPoint;
-//    }
-//
-//    FT_Done_Face(face);
-//
-//    return renderedPoints;
-//}
-
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA[0]+pointB[0])/2,(pointA[1]+pointB[1])/2};
 }
 
-std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, int resolution) {
+std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, float resolution) {
     std::vector<simd_float2> curve;
     if (segment == Segment::Conic) {
-        for (int t = 0; t <= resolution; ++t) {
-            curve.push_back(quadraticInterpolation(buffer[0], buffer[1], buffer[2], t, resolution));
+        for (float t = 0.0; t < resolution; ++t) {
+            curve.push_back(quadraticInterpolation(buffer[0], buffer[1], buffer[2], t/resolution));
         }
     }else {
-        for (int t = 0; t <= resolution; ++t) {
-            curve.push_back(cubicInterpolation(buffer[0], buffer[1], buffer[2], buffer[3], t, resolution));
+        for (float t = 0.0; t < resolution; ++t) {
+            curve.push_back(cubicInterpolation(buffer[0], buffer[1], buffer[2], buffer[3], t/resolution));
         }
     }
     return curve;
 }
 
 
-std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start, long end, int resolution) {
+std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start, long end, float resolution) {
     std::vector<simd_float2> renderedPoints {};
     std::vector<simd_float2> renderedPointsBuffer {};
 
     Segment currentSegmentType = Segment::Line;
     
-    for (long p = start; p <= end; ++p) {
+    for (long p = start; p < end; ++p) {
         simd_float2 currentPoint {(float)points[p].x / 100, (float)points[p].y / 100};
 
         switch (tags[p]) {
@@ -129,17 +71,24 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
                 }
         }
     }
+    
+    if (renderedPointsBuffer.size() > 0) {
+        renderedPoints.insert(renderedPoints.end(), renderedPointsBuffer.begin(), renderedPointsBuffer.end());
+        renderedPointsBuffer.clear();
+    }
+    
+    renderedPoints.push_back(renderedPoints[0]);
 
     return renderedPoints;
 }
 
-std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, std::string_view fontPath, int resolution)
+std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, std::string_view fontPath, float resolution)
 {
     FT_Face face;
 
     FT_New_Face(ft, fontPath.data(), 0, &face);
 
-    FT_Set_Pixel_Sizes(face, 0, 1);
+    FT_Set_Pixel_Sizes(face, 1, 1);
 
     FT_Load_Char(face, ch, FT_LOAD_RENDER);
 

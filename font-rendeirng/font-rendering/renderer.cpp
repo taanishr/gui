@@ -67,14 +67,14 @@ void Renderer::makeResources() {
 
 void Renderer::updateConstants() {
     std::vector<simd_float2> interpolatedPoints {};
-    std::vector<std::vector<simd_float2>> contours = drawContours('a', this->ft, fontPath, 25);
+    std::vector<std::vector<simd_float2>> contours = drawContours('d', this->ft, fontPath, 25);
     long contourStart = 0;
     for (std::vector<simd_float2>& contour : contours) {
         contourBounds.push_back({contourStart, contourStart+contour.size()});
-        std::cout << '(' << contour[0][0] << ',' << contour[0][1] << ")\n";
         interpolatedPoints.insert(interpolatedPoints.end(), contour.begin(), contour.end());
-        contourStart = contour.size()+1;
+        contourStart += contour.size();
     }
+    
     
     std::memcpy(this->vertexBuffer->contents(), interpolatedPoints.data(), sizeof(simd_float2)*interpolatedPoints.size());
 }
@@ -92,7 +92,7 @@ void Renderer::draw() {
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
     renderCommandEncoder->setVertexBuffer(this->vertexBuffer, 0, 0);
     for (auto& cb : contourBounds) {
-        renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, cb.first, cb.second-cb.first-1);
+        renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, cb.first, cb.second-cb.first);
     }
     renderCommandEncoder->endEncoding();
     
