@@ -11,6 +11,7 @@
 #include "renderFace.hpp"
 #include <semaphore>
 
+constexpr std::string_view str {"hello world"};
 constexpr int maxOutstandingFrameCount = 3;
 constexpr float resolution = 25.0;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
@@ -32,4 +33,5 @@ private:
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
     std::vector<std::pair<long, long>> contourBounds;
     FT_Library ft;
+    FT_Face face;
 };

@@ -26,14 +26,15 @@ std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> bu
 }
 
 
-std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start, long end, float resolution) {
+std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start,
+                                     long end, float resolution, float offsetX, float offsetY) {
     std::vector<simd_float2> renderedPoints {};
     std::vector<simd_float2> renderedPointsBuffer {};
 
     Segment currentSegmentType = Segment::Line;
     
     for (long p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)points[p].x / 100, (float)points[p].y / 100};
+        simd_float2 currentPoint {(float)points[p].x / 500 + offsetX, (float)points[p].y / 500 + offsetY};
 
         switch (tags[p]) {
             case FT_CURVE_TAG_CONIC:
@@ -86,14 +87,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     return renderedPoints;
 }
 
-std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, std::string_view fontPath, float resolution)
+std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, FT_Face face, std::string_view fontPath, float resolution, float offsetX, float offsetY)
 {
-    FT_Face face;
-
-    FT_New_Face(ft, fontPath.data(), 0, &face);
-
-    FT_Set_Pixel_Sizes(face, 1, 1);
-
     FT_Load_Char(face, ch, FT_LOAD_RENDER);
 
     FT_Outline outline = face->glyph->outline;
@@ -107,13 +102,14 @@ std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, std::
 
     // iterate over contours
     std::vector<std::vector<simd_float2>> renderedContours {};
-
+//
     int contourStart = 0;
     for (int i = 0; i < numContours; ++i) {
-        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], resolution);
+        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], resolution, offsetX, offsetY);
         renderedContours.push_back(contourPoints);
         contourStart = contours[i]+1;
     }
+    
 
     return renderedContours;
 }
