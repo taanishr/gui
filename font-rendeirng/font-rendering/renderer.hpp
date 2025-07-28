@@ -12,7 +12,7 @@
 #include <semaphore>
 
 constexpr int maxOutstandingFrameCount = 3;
-constexpr float resolution = 100.0;
+constexpr float resolution = 25.0;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
 class Renderer {

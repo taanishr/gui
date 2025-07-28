@@ -67,9 +67,10 @@ void Renderer::makeResources() {
 
 void Renderer::updateConstants() {
     std::vector<simd_float2> interpolatedPoints {};
-    std::vector<std::vector<simd_float2>> contours = drawContours('d', this->ft, fontPath, 25);
+    std::vector<std::vector<simd_float2>> contours = drawContours('e', this->ft, fontPath, resolution);
     long contourStart = 0;
     for (std::vector<simd_float2>& contour : contours) {
+        std::cout << contour.size() << '\n';
         contourBounds.push_back({contourStart, contourStart+contour.size()});
         interpolatedPoints.insert(interpolatedPoints.end(), contour.begin(), contour.end());
         contourStart += contour.size();

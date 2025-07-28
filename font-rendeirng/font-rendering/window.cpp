@@ -48,8 +48,8 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     view = MTK::View::alloc()->init(frame, device);
 
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
-/*    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3))*/;
-    view->setClearColor(MTL::ClearColor::Make(1,1,1,1));
+//    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
+    view->setClearColor(MTL::ClearColor::Make(0.7,0.7,0.7,0.33));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
 
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});

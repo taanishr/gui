@@ -32,7 +32,7 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
 
     Segment currentSegmentType = Segment::Line;
     
-    for (long p = start; p < end; ++p) {
+    for (long p = start; p <= end; ++p) {
         simd_float2 currentPoint {(float)points[p].x / 100, (float)points[p].y / 100};
 
         switch (tags[p]) {
@@ -73,11 +73,15 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     }
     
     if (renderedPointsBuffer.size() > 0) {
-        renderedPoints.insert(renderedPoints.end(), renderedPointsBuffer.begin(), renderedPointsBuffer.end());
+        renderedPointsBuffer.push_back(renderedPoints[0]);
+        if (currentSegmentType != Segment::Line) {
+            std::vector<simd_float2> curve = drawBezier(currentSegmentType, renderedPointsBuffer, resolution);
+            renderedPoints.insert(renderedPoints.end(), curve.begin(), curve.end());
+        }else {
+            renderedPoints.insert(renderedPoints.end(), renderedPointsBuffer.begin(), renderedPointsBuffer.end());
+        }
         renderedPointsBuffer.clear();
     }
-    
-    renderedPoints.push_back(renderedPoints[0]);
 
     return renderedPoints;
 }
