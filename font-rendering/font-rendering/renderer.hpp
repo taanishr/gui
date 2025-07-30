@@ -11,7 +11,7 @@
 #include "renderFace.hpp"
 #include <semaphore>
 
-constexpr std::string_view str {"hello world"};
+constexpr std::string_view str {"abcdefjhiklm"};
 constexpr int maxOutstandingFrameCount = 3;
 constexpr float resolution = 25.0;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};

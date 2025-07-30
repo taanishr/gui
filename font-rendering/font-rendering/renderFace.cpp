@@ -11,19 +11,54 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA[0]+pointB[0])/2,(pointA[1]+pointB[1])/2};
 }
 
-std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, float resolution) {
-    std::vector<simd_float2> curve;
-    if (segment == Segment::Conic) {
-        for (float t = 0.0; t < resolution; ++t) {
-            curve.push_back(quadraticInterpolation(buffer[0], buffer[1], buffer[2], t/resolution));
-        }
-    }else {
-        for (float t = 0.0; t < resolution; ++t) {
-            curve.push_back(cubicInterpolation(buffer[0], buffer[1], buffer[2], buffer[3], t/resolution));
-        }
+//std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, float resolution) {
+//    std::vector<simd_float2> curve;
+//    if (segment == Segment::Conic) {
+//        for (float t = 0.0; t < resolution; ++t) {
+//            curve.push_back(quadraticInterpolation(buffer[0], buffer[1], buffer[2], t/resolution));
+//        }
+//    }else {
+//        for (float t = 0.0; t < resolution; ++t) {
+//            curve.push_back(cubicInterpolation(buffer[0], buffer[1], buffer[2], buffer[3], t/resolution));
+//        }
+//    }
+//    return curve;
+//}
+
+bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.001)
+{
+    float distanceSum = 0.0;
+    simd_float2 firstPoint = controlPoints.front();
+    simd_float2 lastPoint = controlPoints.back();
+
+    float thresholdSq = threshold * threshold;
+    float dx = firstPoint[0]-lastPoint[0];
+    float dy = firstPoint[1]-lastPoint[1];
+    float denomSq = dx*dx+dy*dy;
+
+    for (int i = 1; i < controlPoints.size() - 1; ++i) {
+        simd_float2 currPoint = controlPoints[i];
+        float num = (dy*currPoint[0] - dx*currPoint[1] + dx*firstPoint[1] - dy*firstPoint[0]);
+        distanceSum += (num*num)/denomSq;
+        if (distanceSum >= thresholdSq) return false;
     }
-    return curve;
+
+    return true;
 }
+
+void drawBezier(const std::vector<simd_float2>& controlPoints, std::vector<simd_float2>& curve) {
+    curve.push_back(controlPoints[0]);
+    if (isFlat(controlPoints)) {
+        curve.push_back(controlPoints.back());
+        return;
+    }
+
+    auto [leftCurve, rightCurve] = splitBezier(controlPoints);
+
+    drawBezier(leftCurve, curve);
+    drawBezier(rightCurve, curve);
+}
+
 
 
 std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start,
@@ -42,7 +77,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
                     simd_float2 prevPoint = renderedPointsBuffer.back();
                     simd_float2 midpoint = getMidpoint(prevPoint, currentPoint);
                     renderedPointsBuffer.push_back(midpoint);
-                    std::vector<simd_float2> curve = drawBezier(currentSegmentType, renderedPointsBuffer, resolution);
+                    std::vector<simd_float2> curve {};
+                    drawBezier(renderedPointsBuffer, curve);
                     renderedPoints.insert(renderedPoints.end(), curve.begin(), curve.end());
                     renderedPointsBuffer.clear();
 
@@ -58,7 +94,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
             default:
                 if (currentSegmentType != Segment::Line) {
                     renderedPointsBuffer.push_back(currentPoint);
-                    std::vector<simd_float2> curve = drawBezier(currentSegmentType, renderedPointsBuffer, resolution);
+                    std::vector<simd_float2> curve {};
+                    drawBezier(renderedPointsBuffer, curve);
                     renderedPoints.insert(renderedPoints.end(), curve.begin(), curve.end());
                     renderedPointsBuffer.clear();
                     renderedPointsBuffer.push_back(currentPoint);
@@ -76,7 +113,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     if (renderedPointsBuffer.size() > 0) {
         renderedPointsBuffer.push_back(renderedPoints[0]);
         if (currentSegmentType != Segment::Line) {
-            std::vector<simd_float2> curve = drawBezier(currentSegmentType, renderedPointsBuffer, resolution);
+            std::vector<simd_float2> curve {};
+            drawBezier(renderedPointsBuffer, curve);
             renderedPoints.insert(renderedPoints.end(), curve.begin(), curve.end());
         }else {
             renderedPoints.insert(renderedPoints.end(), renderedPointsBuffer.begin(), renderedPointsBuffer.end());
@@ -102,7 +140,7 @@ std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, FT_Fa
 
     // iterate over contours
     std::vector<std::vector<simd_float2>> renderedContours {};
-//
+    
     int contourStart = 0;
     for (int i = 0; i < numContours; ++i) {
         std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], resolution, offsetX, offsetY);

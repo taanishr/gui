@@ -20,7 +20,8 @@ enum class Segment {
 };
 
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB);
-std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, float resolution);
+//std::vector<simd_float2> drawBezier(Segment segment, std::vector<simd_float2> buffer, float resolution);
+void drawBezier(const std::vector<simd_float2>& controlPoints, std::vector<simd_float2>& curve);
 std::vector<simd_float2> drawContour(FT_Vector* points,
                                     unsigned char* tags,
                                     long start,

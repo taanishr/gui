@@ -8,6 +8,7 @@
 #include "window.hpp"
 #include <AppKit_Extensions-Swift.h>
 
+
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     view{view},
     renderer{new Renderer{device, view}}
