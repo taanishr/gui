@@ -73,11 +73,11 @@ void Renderer::makePipeline() {
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
     FT_New_Face(ft, fontPath.data(), 0, &(this->face));
-    FT_Set_Pixel_Sizes(face, 1, 1);
+    FT_Set_Pixel_Sizes(face, 0, 48);
     this->glyphQuadBuffer = this->device->newBuffer(sizeof(simd_float2)*4, MTL::StorageModeShared);
     this->glyphContoursBuffer = this->device->newBuffer(sizeof(simd_float2)*4096, MTL::StorageModeShared);
-    this->constantsBuffer = this->device->newBuffer(sizeof(FragConstants), MTL::StorageModeShared);
-    this->contourBoundsBuffer =  this->device->newBuffer(sizeof(ContourBounds)*2, MTL::StorageModeShared);
+    this->constantsBuffer = this->device->newBuffer(sizeof(Constants), MTL::StorageModeShared);
+    this->contourBoundsBuffer =  this->device->newBuffer(sizeof(ContourBounds)*256, MTL::StorageModeShared);
 }
 
 void Renderer::updateConstants() {
@@ -86,16 +86,22 @@ void Renderer::updateConstants() {
     std::vector<std::vector<simd_float2>> contours {};
     std::vector<ContourBounds> contourBounds {};
     
-    for (int ch = 0; ch < str.size(); ++ch) {
-        auto chContours = drawContours(str.at(ch), this->ft, this->face, fontPath, ch*0.09, 0);
+    float penX = -8192.0;
+    for (auto ch: str) {
+        FT_Load_Char(face, ch, FT_LOAD_RENDER);
+        auto chContours = drawContours(ch, this->face, fontPath, penX);
         contours.insert(contours.end(), chContours.begin(), chContours.end());
+        penX += face->glyph->advance.x;
     }
     
-    FragConstants fc;
     
-    fc.nPoints = 0;
+    Constants c;
     
-    fc.numContours = contours.size();
+    c.scaling = 10000.0;
+    
+    c.nPoints = 0;
+    
+    c.numContours = contours.size();
     
     
     float minX = std::numeric_limits<float>::infinity();
@@ -106,7 +112,7 @@ void Renderer::updateConstants() {
     unsigned long contourStart = 0;
     
     for (auto& contour: contours) {
-        fc.nPoints += contour.size();
+        c.nPoints += contour.size();
         glyphOutlinePoints.insert(glyphOutlinePoints.end(), contour.begin(), contour.end());
         
         for (auto pt: contour) {
@@ -137,10 +143,12 @@ void Renderer::updateConstants() {
     glyphQuadPoints.push_back(bottomLeft);
     glyphQuadPoints.push_back(bottomRight);
 
-    FragConstants* rawConstantsPtr = static_cast<FragConstants*>(constantsBuffer->contents());
+    Constants* rawConstantsPtr = static_cast<Constants*>(constantsBuffer->contents());
     
-    *rawConstantsPtr = fc;
+    *rawConstantsPtr = c;
     
+    
+    std::println("Points size: {}", glyphOutlinePoints.size());
     std::memcpy(this->glyphQuadBuffer->contents(), glyphQuadPoints.data(), sizeof(simd_float2)*glyphQuadPoints.size());
     std::memcpy(this->glyphContoursBuffer->contents(), glyphOutlinePoints.data(), sizeof(simd_float2)*glyphOutlinePoints.size());
     std::memcpy(this->contourBoundsBuffer->contents(), contourBounds.data(), sizeof(contourBounds)*contourBounds.size());
@@ -157,10 +165,13 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
+    
     renderCommandEncoder->setVertexBuffer(this->glyphQuadBuffer, 0, 0);
+    renderCommandEncoder->setVertexBuffer(this->constantsBuffer, 0, 1);
+    
     renderCommandEncoder->setFragmentBuffer(this->glyphContoursBuffer, 0, 1);
-    renderCommandEncoder->setFragmentBuffer(this->constantsBuffer, 0, 2);
-    renderCommandEncoder->setFragmentBuffer(this->contourBoundsBuffer, 0, 3);
+    renderCommandEncoder->setFragmentBuffer(this->contourBoundsBuffer, 0, 2);
+    renderCommandEncoder->setFragmentBuffer(this->constantsBuffer, 0, 3);
     
     renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangleStrip, NS::UInteger(0), NS::UInteger(4));
     

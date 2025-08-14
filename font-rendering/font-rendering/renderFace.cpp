@@ -7,13 +7,11 @@
 
 #include "renderFace.hpp"
 
-constexpr int scaling = 50;
-
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA[0]+pointB[0])/2,(pointA[1]+pointB[1])/2};
 }
 
-bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.2)
+bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 32)
 {
     float distanceSum = 0.0;
     simd_float2 firstPoint = controlPoints.front();
@@ -50,14 +48,14 @@ void drawBezier(const std::vector<simd_float2>& controlPoints, std::vector<simd_
 
 
 std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start,
-                                     long end, float offsetX, float offsetY) {
+                                     long end, float penX) {
     std::vector<simd_float2> renderedPoints {};
     std::vector<simd_float2> renderedPointsBuffer {};
 
     Segment currentSegmentType = Segment::Line;
     
     for (long p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)points[p].x / scaling + offsetX, (float)points[p].y / scaling + offsetY};
+        simd_float2 currentPoint {(float)points[p].x + penX, (float)points[p].y};
 
         switch (tags[p]) {
             case FT_CURVE_TAG_CONIC:
@@ -69,7 +67,6 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
                     drawBezier(renderedPointsBuffer, curve);
                     renderedPoints.insert(renderedPoints.end(), curve.begin(), curve.end());
                     renderedPointsBuffer.clear();
-
                     renderedPointsBuffer.push_back(midpoint);
                 }
                 renderedPointsBuffer.push_back(currentPoint);
@@ -113,10 +110,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     return renderedPoints;
 }
 
-std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, FT_Face face, std::string_view fontPath, float offsetX, float offsetY)
+std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, std::string_view fontPath, float penX)
 {
-    FT_Load_Char(face, ch, FT_LOAD_RENDER);
-
     FT_Outline outline = face->glyph->outline;
 
     long numContours = outline.n_contours;
@@ -131,11 +126,10 @@ std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Library ft, FT_Fa
     
     int contourStart = 0;
     for (int i = 0; i < numContours; ++i) {
-        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], offsetX, offsetY);
+        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], penX);
         renderedContours.push_back(contourPoints);
         contourStart = contours[i]+1;
     }
     
-
     return renderedContours;
 }

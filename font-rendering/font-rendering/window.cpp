@@ -39,7 +39,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     window = NS::Window::alloc()->init(
                 frame,
-                NS::WindowStyleMaskClosable|NS::WindowStyleMaskTitled,
+                NS::WindowStyleMaskClosable|NS::WindowStyleMaskTitled|NS::WindowStyleMaskMiniaturizable|NS::WindowStyleMaskResizable,
                 NS::BackingStoreBuffered,
                 false
              );

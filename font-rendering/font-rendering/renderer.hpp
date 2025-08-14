@@ -12,7 +12,7 @@
 #include <semaphore>
 
 
-constexpr std::string_view str {"a"};
+constexpr std::string_view str {"test"};
 constexpr int maxOutstandingFrameCount = 3;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
@@ -22,9 +22,10 @@ struct ContourBounds {
     unsigned long end;
 };
 
-struct FragConstants {
+struct Constants {
     unsigned long nPoints;
     unsigned long numContours;
+    float scaling;
 };
 
 class Renderer {
