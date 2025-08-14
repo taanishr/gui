@@ -11,10 +11,21 @@
 #include "renderFace.hpp"
 #include <semaphore>
 
-constexpr std::string_view str {"abcdefjhiklm"};
+
+constexpr std::string_view str {"a"};
 constexpr int maxOutstandingFrameCount = 3;
-constexpr float resolution = 25.0;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
+
+
+struct ContourBounds {
+    unsigned long start;
+    unsigned long end;
+};
+
+struct FragConstants {
+    unsigned long nPoints;
+    unsigned long numContours;
+};
 
 class Renderer {
 public:
@@ -29,9 +40,12 @@ private:
     MTL::CommandQueue* commandQueue;
     MTL::RenderPipelineState* renderPipelineState;
     MTK::View* view;
-    MTL::Buffer* vertexBuffer;
+    MTL::Buffer* glyphQuadBuffer;
+    MTL::Buffer* glyphContoursBuffer;
+    MTL::Buffer* constantsBuffer;
+    MTL::Buffer* contourBoundsBuffer;
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
-    std::vector<std::pair<long, long>> contourBounds;
+    std::vector<std::pair<long, long>> quadBounds;
     FT_Library ft;
     FT_Face face;
 };

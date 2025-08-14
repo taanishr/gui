@@ -1,14 +1,20 @@
 //
 //  renderer.cpp
-//  font-rendeirng
+//  font-rendering
 //
 //  Created by Taanish Reja on 7/21/25.
 //
 
 #include "renderer.hpp"
 #include <iostream>
+#include <ranges>
 
 std::vector<simd_float2> controlPoints {simd_float2{0,0},simd_float2{0.25,0.5},simd_float2{0.5,0}};
+
+void printPoint(const simd_float2& pt, bool newLine) {
+    std::string end = newLine ? "\n" : "";
+    std::print("({},{}){}", pt[0], pt[1], end);
+}
 
 float linearInterpolation(float x1, float y1, float x2, float y2) {
     return (y2-y1)/(x2-x1);
@@ -33,10 +39,11 @@ void Renderer::makePipeline() {
     vertexDescriptor->attributes()->object(0)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
     vertexDescriptor->attributes()->object(0)->setOffset(0);
     vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
-    
+
     vertexDescriptor->layouts()->object(0)->setStride(sizeof(float)*2);
     
     renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
+
     
     // set up vertex function
     MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_main", NS::UTF8StringEncoding));
@@ -53,6 +60,9 @@ void Renderer::makePipeline() {
     NS::Error* error = nullptr;
     this->renderPipelineState = this->device->newRenderPipelineState(renderPipelineDescriptor, &error);
     
+    if (error != nullptr)
+        std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
+    
     
     defaultLibrary->release();
     renderPipelineDescriptor->release();
@@ -64,27 +74,76 @@ void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
     FT_New_Face(ft, fontPath.data(), 0, &(this->face));
     FT_Set_Pixel_Sizes(face, 1, 1);
-    this->vertexBuffer = this->device->newBuffer(sizeof(simd_float2)*(4096), MTL::StorageModeShared);
+    this->glyphQuadBuffer = this->device->newBuffer(sizeof(simd_float2)*4, MTL::StorageModeShared);
+    this->glyphContoursBuffer = this->device->newBuffer(sizeof(simd_float2)*4096, MTL::StorageModeShared);
+    this->constantsBuffer = this->device->newBuffer(sizeof(FragConstants), MTL::StorageModeShared);
+    this->contourBoundsBuffer =  this->device->newBuffer(sizeof(ContourBounds)*2, MTL::StorageModeShared);
 }
 
 void Renderer::updateConstants() {
-    std::vector<simd_float2> interpolatedPoints {};
+    std::vector<simd_float2> glyphQuadPoints {};
+    std::vector<simd_float2> glyphOutlinePoints {};
     std::vector<std::vector<simd_float2>> contours {};
+    std::vector<ContourBounds> contourBounds {};
     
     for (int ch = 0; ch < str.size(); ++ch) {
-        auto chContours = drawContours(str.at(ch), this->ft, this->face, fontPath, resolution, ch*0.09, 0);
+        auto chContours = drawContours(str.at(ch), this->ft, this->face, fontPath, ch*0.09, 0);
         contours.insert(contours.end(), chContours.begin(), chContours.end());
     }
     
-    long contourStart = 0;
-    for (std::vector<simd_float2>& contour : contours) {
-        contourBounds.push_back({contourStart, contourStart+contour.size()});
-        interpolatedPoints.insert(interpolatedPoints.end(), contour.begin(), contour.end());
+    FragConstants fc;
+    
+    fc.nPoints = 0;
+    
+    fc.numContours = contours.size();
+    
+    
+    float minX = std::numeric_limits<float>::infinity();
+    float maxX = -std::numeric_limits<float>::infinity();
+    float minY = std::numeric_limits<float>::infinity();
+    float maxY = -std::numeric_limits<float>::infinity();
+    
+    unsigned long contourStart = 0;
+    
+    for (auto& contour: contours) {
+        fc.nPoints += contour.size();
+        glyphOutlinePoints.insert(glyphOutlinePoints.end(), contour.begin(), contour.end());
+        
+        for (auto pt: contour) {
+            if (pt[0] < minX)
+                minX = pt[0];
+            
+            if (pt[0] > maxX)
+                maxX = pt[0];
+            
+            if (pt[1] < minY)
+                minY = pt[1];
+            
+            if (pt[1] > maxY)
+                maxY = pt[1];
+        }
+    
+        contourBounds.push_back({.start = contourStart, .end = contourStart+contour.size()});
         contourStart += contour.size();
     }
     
+    simd_float2 topLeft {minX, minY};
+    simd_float2 topRight {maxX, minY};
+    simd_float2 bottomLeft {minX, maxY};
+    simd_float2 bottomRight {maxX, maxY};
     
-    std::memcpy(this->vertexBuffer->contents(), interpolatedPoints.data(), sizeof(simd_float2)*interpolatedPoints.size());
+    glyphQuadPoints.push_back(topLeft);
+    glyphQuadPoints.push_back(topRight);
+    glyphQuadPoints.push_back(bottomLeft);
+    glyphQuadPoints.push_back(bottomRight);
+
+    FragConstants* rawConstantsPtr = static_cast<FragConstants*>(constantsBuffer->contents());
+    
+    *rawConstantsPtr = fc;
+    
+    std::memcpy(this->glyphQuadBuffer->contents(), glyphQuadPoints.data(), sizeof(simd_float2)*glyphQuadPoints.size());
+    std::memcpy(this->glyphContoursBuffer->contents(), glyphOutlinePoints.data(), sizeof(simd_float2)*glyphOutlinePoints.size());
+    std::memcpy(this->contourBoundsBuffer->contents(), contourBounds.data(), sizeof(contourBounds)*contourBounds.size());
 }
 
 void Renderer::draw() {
@@ -98,15 +157,18 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
-    renderCommandEncoder->setVertexBuffer(this->vertexBuffer, 0, 0);
-    for (auto& cb : contourBounds) {
-        renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeLineStrip, cb.first, cb.second-cb.first);
-    }
+    renderCommandEncoder->setVertexBuffer(this->glyphQuadBuffer, 0, 0);
+    renderCommandEncoder->setFragmentBuffer(this->glyphContoursBuffer, 0, 1);
+    renderCommandEncoder->setFragmentBuffer(this->constantsBuffer, 0, 2);
+    renderCommandEncoder->setFragmentBuffer(this->contourBoundsBuffer, 0, 3);
+    
+    renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangleStrip, NS::UInteger(0), NS::UInteger(4));
+    
     renderCommandEncoder->endEncoding();
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
         this->frameSemaphore.release();
-        this->contourBounds.clear();
+        this->quadBounds.clear();
     };
     
     commandBuffer->addCompletedHandler(completedHandler);
@@ -118,7 +180,10 @@ void Renderer::draw() {
 
 Renderer::~Renderer() {
     commandQueue->release();
-    vertexBuffer->release();
+    glyphQuadBuffer->release();
+    glyphContoursBuffer->release();
+    constantsBuffer->release();
+    contourBoundsBuffer->release();
     renderPipelineState->release();
     FT_Done_FreeType(ft);
     FT_Done_Face(face);
