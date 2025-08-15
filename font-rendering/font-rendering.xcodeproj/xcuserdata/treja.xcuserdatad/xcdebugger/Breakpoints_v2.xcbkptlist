@@ -30,8 +30,8 @@
             filePath = "font-rendering/renderer.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "57"
-            endingLineNumber = "57"
+            startingLineNumber = "65"
+            endingLineNumber = "65"
             landmarkName = "Renderer::makePipeline()"
             landmarkType = "7">
          </BreakpointContent>
@@ -46,8 +46,8 @@
             filePath = "font-rendering/renderer.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "58"
-            endingLineNumber = "58"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
             landmarkName = "Renderer::makePipeline()"
             landmarkType = "7">
          </BreakpointContent>
@@ -55,17 +55,17 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "31A9762D-2C9A-4CBF-B275-E0B61D337C75"
+            uuid = "CDA59C49-04B8-4956-B701-8FE9BA672AB6"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "font-rendering/shaders.metal"
+            filePath = "font-rendering/window.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "54"
-            endingLineNumber = "54"
-            landmarkName = "fragment_main"
-            landmarkType = "9">
+            startingLineNumber = "47"
+            endingLineNumber = "47"
+            landmarkName = "AppDelegate::applicationDidFinishLaunching(notification)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

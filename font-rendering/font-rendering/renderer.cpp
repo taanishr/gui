@@ -50,8 +50,16 @@ void Renderer::makePipeline() {
     renderPipelineDescriptor->setVertexFunction(vertexFunction);
     
     renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(this->view->colorPixelFormat());
+    renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    
     renderPipelineDescriptor->setDepthAttachmentPixelFormat(this->view->depthStencilPixelFormat());
     
+
     // set up fragment function
     MTL::Function* fragmentFunction = defaultLibrary->newFunction(NS::String::string("fragment_main", NS::UTF8StringEncoding));
     renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
@@ -147,8 +155,6 @@ void Renderer::updateConstants() {
     
     *rawConstantsPtr = c;
     
-    
-    std::println("Points size: {}", glyphOutlinePoints.size());
     std::memcpy(this->glyphQuadBuffer->contents(), glyphQuadPoints.data(), sizeof(simd_float2)*glyphQuadPoints.size());
     std::memcpy(this->glyphContoursBuffer->contents(), glyphOutlinePoints.data(), sizeof(simd_float2)*glyphOutlinePoints.size());
     std::memcpy(this->contourBoundsBuffer->contents(), contourBounds.data(), sizeof(contourBounds)*contourBounds.size());

@@ -43,6 +43,69 @@ vertex VertexOut vertex_main(
     return out;
 }
 
+
+
+//fragment float4 fragment_main(
+//    VertexOut in [[stage_in]],
+//    constant float2* vertices [[buffer(1)]],
+//    constant ContourBounds* contourBounds [[buffer(2)]],
+//    constant Constants& constants [[buffer(3)]]
+//)
+//{
+//    float x = in.worldPos.x;
+//    float y = in.worldPos.y;
+//    
+//    
+//    int intersections = 0;
+//    
+//    
+//    for (unsigned long c = 0; c < constants.numContours; ++c) {
+//        ContourBounds cb = contourBounds[c];
+//
+//        unsigned long offset = cb.start;
+//        unsigned long contourSize = cb.end-cb.start;
+//        
+//        for (unsigned long p = 0; p < contourSize; ++p) {
+//            unsigned long edgeStart = offset + p;
+//            unsigned long edgeEnd = offset + (p+1)%contourSize;
+//            
+//            float2 v1 = vertices[edgeStart] / constants.scaling;
+//            float2 v2 = vertices[edgeEnd] / constants.scaling;
+//            
+//            if (v1.y > y != v2.y > y) {
+//                float intersectX = v1.x + (y - v1.y) * ((v2.x - v1.x) / (v2.y - v1.y));
+//                if (intersectX > x) {
+//                    ++intersections;
+//                }
+//            }
+//            
+//            
+//        }
+//    }
+//   
+//    if (intersections % 2 == 0)
+//        return float4(1,1,1,1);
+//    else
+//        return float4(0,0,0,1);
+//}
+
+// my attempt
+// min distance to segment?
+// check intersections (want to see if its outside)
+// open questions: why do we need the fwidth derivatives?
+    // fragment shaders calculated in blocks; screenspace derivatives on the distance can help us find the size of a pixel based on the derivative with pixels around it
+// why do we need the sign?
+
+
+inline float signed_dist(float2 p, float2 a, float2 b) {
+    float2 ba = b - a;
+    float2 pa = p - a;
+    
+    float2 proj = ba*clamp(dot(pa, ba)/dot(ba,ba), 0.0, 1.0); // get the projection of the distance vector
+        
+    return length(pa-proj); // get the distance between the vector pa and the projection
+}
+
 fragment float4 fragment_main(
     VertexOut in [[stage_in]],
     constant float2* vertices [[buffer(1)]],
@@ -50,12 +113,11 @@ fragment float4 fragment_main(
     constant Constants& constants [[buffer(3)]]
 )
 {
-    float x = in.worldPos.x;
-    float y = in.worldPos.y;
+    float2 point = in.worldPos.xy;
     
     
     int intersections = 0;
-    
+    float minDist = 1e20;
     
     for (unsigned long c = 0; c < constants.numContours; ++c) {
         ContourBounds cb = contourBounds[c];
@@ -70,19 +132,30 @@ fragment float4 fragment_main(
             float2 v1 = vertices[edgeStart] / constants.scaling;
             float2 v2 = vertices[edgeEnd] / constants.scaling;
             
-            if (v1.y > y != v2.y > y) {
-                float intersectX = v1.x + (y - v1.y) * ((v2.x - v1.x) / (v2.y - v1.y));
-                if (intersectX > x) {
+            if (v1.y > point.y != v2.y > point.y) {
+                float intersectX = v1.x + (point.y - v1.y) * ((v2.x - v1.x) / (v2.y - v1.y));
+                if (intersectX > point.x) {
                     ++intersections;
                 }
             }
             
-            
+            float sd = signed_dist(point, v1, v2);
+            minDist = min(minDist, sd);
         }
     }
    
-    if (intersections % 2 == 0)
-        return float4(1,1,1,1);
-    else
-        return float4(0,0,0,1);
+    bool inside = intersections & 1;
+    
+    float sd = inside ? -minDist : minDist;
+    
+    float px = fwidth(sd);
+    
+    float alpha = clamp(0.5 - sd/px, 0.0, 1.0);
+    
+    float3 onColor {0,0,0};
+    float3 offColor {1,1,1};
+    
+    float3 rgb = mix(offColor, onColor, alpha);
+    
+    return float4(rgb*alpha,alpha);
 }

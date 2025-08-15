@@ -11,7 +11,7 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA[0]+pointB[0])/2,(pointA[1]+pointB[1])/2};
 }
 
-bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 32)
+bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 16)
 {
     float distanceSum = 0.0;
     simd_float2 firstPoint = controlPoints.front();
