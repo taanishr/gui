@@ -1,9 +1,10 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef WINDOW_HPP
+#define WINDOW_HPP
 #include <iostream>
 #include <functional>
 #include "metal_imports.hpp"
 #include "renderer.hpp"
+#include "windowConstants.hpp"
 
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:

@@ -5,6 +5,8 @@
 //  Created by Taanish Reja on 7/21/25.
 //
 
+#ifndef RENDERER_H
+#define RENDERER_H
 #include "metal_imports.hpp"
 #include "bezier.hpp"
 #include "freetype.hpp"
@@ -12,7 +14,7 @@
 #include <semaphore>
 
 
-constexpr std::string_view str {"test"};
+constexpr std::string_view str {"testing"};
 constexpr int maxOutstandingFrameCount = 3;
 constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
@@ -25,7 +27,6 @@ struct ContourBounds {
 struct Constants {
     unsigned long nPoints;
     unsigned long numContours;
-    float scaling;
 };
 
 class Renderer {
@@ -50,3 +51,5 @@ private:
     FT_Library ft;
     FT_Face face;
 };
+
+#endif

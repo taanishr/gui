@@ -9,7 +9,7 @@
 #include <iostream>
 #include <ranges>
 
-std::vector<simd_float2> controlPoints {simd_float2{0,0},simd_float2{0.25,0.5},simd_float2{0.5,0}};
+constexpr short pixelHeight = 24.0;
 
 void printPoint(const simd_float2& pt, bool newLine) {
     std::string end = newLine ? "\n" : "";
@@ -81,7 +81,7 @@ void Renderer::makePipeline() {
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
     FT_New_Face(ft, fontPath.data(), 0, &(this->face));
-    FT_Set_Pixel_Sizes(face, 0, 48);
+    FT_Set_Pixel_Sizes(face, 0, pixelHeight);
     this->glyphQuadBuffer = this->device->newBuffer(sizeof(simd_float2)*4, MTL::StorageModeShared);
     this->glyphContoursBuffer = this->device->newBuffer(sizeof(simd_float2)*4096, MTL::StorageModeShared);
     this->constantsBuffer = this->device->newBuffer(sizeof(Constants), MTL::StorageModeShared);
@@ -94,18 +94,17 @@ void Renderer::updateConstants() {
     std::vector<std::vector<simd_float2>> contours {};
     std::vector<ContourBounds> contourBounds {};
     
-    float penX = -8192.0;
+    float penX = FT_PIXEL_CF*(8.0);
+    float penY = FT_PIXEL_CF*(windowHeight-48.0);
     for (auto ch: str) {
         FT_Load_Char(face, ch, FT_LOAD_RENDER);
-        auto chContours = drawContours(ch, this->face, fontPath, penX);
+        auto chContours = drawContours(ch, this->face, fontPath, penX, penY);
         contours.insert(contours.end(), chContours.begin(), chContours.end());
         penX += face->glyph->advance.x;
     }
     
     
     Constants c;
-    
-    c.scaling = 10000.0;
     
     c.nPoints = 0;
     

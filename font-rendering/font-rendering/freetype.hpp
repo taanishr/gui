@@ -9,4 +9,6 @@
 #define FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+constexpr float FT_PIXEL_CF = 64.0f;
 #endif

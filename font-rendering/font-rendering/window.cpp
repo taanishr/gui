@@ -35,7 +35,7 @@ void AppDelegate::applicationWillFinishLaunching(NS::Notification* notification)
 
 void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 {
-    CGRect frame = CGRect{{100.0, 100.0}, {512.0, 512.0}};
+    CGRect frame = CGRect{{100.0, 100.0}, {windowHeight, windowWidth}};
     
     window = NS::Window::alloc()->init(
                 frame,
