@@ -18,7 +18,7 @@ simd_float2 toNDC(const simd_float2& pt, short unitsPerEm) {
 }
 
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
-    return simd_float2{(pointA[0]+pointB[0])/2,(pointA[1]+pointB[1])/2};
+    return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
 
 bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.001)
@@ -28,13 +28,13 @@ bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.0
     simd_float2 lastPoint = controlPoints.back();
 
     float thresholdSq = threshold * threshold;
-    float dx = firstPoint[0]-lastPoint[0];
-    float dy = firstPoint[1]-lastPoint[1];
+    float dx = firstPoint.x-lastPoint.x;
+    float dy = firstPoint.y-lastPoint.y;
     float denomSq = dx*dx+dy*dy;
 
     for (int i = 1; i < controlPoints.size() - 1; ++i) {
         simd_float2 currPoint = controlPoints[i];
-        float num = (dy*currPoint[0] - dx*currPoint[1] + dx*firstPoint[1] - dy*firstPoint[0]);
+        float num = (dy*currPoint.x - dx*currPoint.y + dx*firstPoint.y - dy*firstPoint.x);
         distanceSum += (num*num)/denomSq;
         if (distanceSum >= thresholdSq) return false;
     }

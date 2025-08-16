@@ -11,12 +11,13 @@
 #include "bezier.hpp"
 #include "freetype.hpp"
 #include "renderFace.hpp"
+#include "inputState.hpp"
 #include <semaphore>
 
 
-constexpr std::string_view str {"testing"};
+constexpr std::string_view str {"hello world"};
 constexpr int maxOutstandingFrameCount = 3;
-constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial.ttf"};
+constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial Bold.ttf"};
 
 
 struct ContourBounds {

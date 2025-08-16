@@ -26,6 +26,12 @@ public func setWindowTransparent(windowPtr: UnsafeMutableRawPointer) {
         contentView.layer?.isOpaque = false;
         contentView.layer?.backgroundColor = .clear;
     }
+}
+
+public func setMaximumDrawableCount(viewPtr: UnsafeMutableRawPointer, count: CInt) {
+    let view = Unmanaged<MTKView>.fromOpaque(viewPtr).takeUnretainedValue();
     
-  
+    if let CAMetalLayer = view.layer as? CAMetalLayer {
+        CAMetalLayer.maximumDrawableCount = Int(count);
+    }
 }

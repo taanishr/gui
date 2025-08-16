@@ -104,8 +104,8 @@ fragment float4 fragment_main(
     
     float alpha = clamp(0.5 - sd/px, 0.0, 1.0);
     
-    float3 onColor {0,0,0};
-    float3 offColor {1,1,1};
+    float3 onColor {1,1,1};
+    float3 offColor {0,0,0};
     
     float3 rgb = mix(offColor, onColor, alpha);
     

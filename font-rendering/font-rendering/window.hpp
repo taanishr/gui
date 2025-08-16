@@ -5,11 +5,14 @@
 #include "metal_imports.hpp"
 #include "renderer.hpp"
 #include "windowConstants.hpp"
+#include <ApplicationServices/ApplicationServices.h>
+#include <objc/runtime.h>
+#include "inputState.hpp"
+
 
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:
     MTKViewDelegate(MTL::Device* device, MTK::View* view);
-//    ~MTKViewDelegate();
     void drawInMTKView(MTK::View* view) override;
 private:
     MTK::View* view;

@@ -4155,6 +4155,7 @@ namespace _impl {
 extern "C" {
 #endif
 
+SWIFT_EXTERN void $s17AppKit_Extensions23setMaximumDrawableCount7viewPtr5countySv_s5Int32VtF(void * _Nonnull viewPtr, int count) SWIFT_NOEXCEPT SWIFT_CALL; // setMaximumDrawableCount(viewPtr:count:)
 SWIFT_EXTERN void $s17AppKit_Extensions22setTitleBarTransparent9windowPtrySv_tF(void * _Nonnull windowPtr) SWIFT_NOEXCEPT SWIFT_CALL; // setTitleBarTransparent(windowPtr:)
 SWIFT_EXTERN void $s17AppKit_Extensions20setWindowTransparent9windowPtrySv_tF(void * _Nonnull windowPtr) SWIFT_NOEXCEPT SWIFT_CALL; // setWindowTransparent(windowPtr:)
 
@@ -4165,6 +4166,10 @@ SWIFT_EXTERN void $s17AppKit_Extensions20setWindowTransparent9windowPtrySv_tF(vo
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-identifier"
 namespace AppKit_Extensions SWIFT_PRIVATE_ATTR SWIFT_SYMBOL_MODULE("AppKit_Extensions") {
+
+SWIFT_INLINE_THUNK void setMaximumDrawableCount(void * _Nonnull viewPtr, int count) noexcept SWIFT_SYMBOL("s:17AppKit_Extensions23setMaximumDrawableCount7viewPtr5countySv_s5Int32VtF") {
+  AppKit_Extensions::_impl::$s17AppKit_Extensions23setMaximumDrawableCount7viewPtr5countySv_s5Int32VtF(viewPtr, count);
+}
 
 SWIFT_INLINE_THUNK void setTitleBarTransparent(void * _Nonnull windowPtr) noexcept SWIFT_SYMBOL("s:17AppKit_Extensions22setTitleBarTransparent9windowPtrySv_tF") {
   AppKit_Extensions::_impl::$s17AppKit_Extensions22setTitleBarTransparent9windowPtrySv_tF(windowPtr);

@@ -9,7 +9,7 @@
 
 
 simd_float2 linearInterpolation(simd_float2 c1, simd_float2 c2, float t) {
-    return {c1[0] + t*(c2[0]-c1[0]), c1[1] + t*(c2[1]-c1[1])};
+    return {c1.x + t*(c2.x-c1.x), c1.y + t*(c2.y-c1.y)};
 }
 
 void splitBezierHelper(const std::vector<simd_float2>& controlPoints,

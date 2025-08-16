@@ -9,11 +9,11 @@
 #include <iostream>
 #include <ranges>
 
-constexpr short pixelHeight = 24.0;
+constexpr short pixelHeight = 64.0;
 
 void printPoint(const simd_float2& pt, bool newLine) {
     std::string end = newLine ? "\n" : "";
-    std::print("({},{}){}", pt[0], pt[1], end);
+    std::print("({},{}){}", pt.x, pt.y, end);
 }
 
 float linearInterpolation(float x1, float y1, float x2, float y2) {
@@ -57,6 +57,7 @@ void Renderer::makePipeline() {
     renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
     renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
     
+    
     renderPipelineDescriptor->setDepthAttachmentPixelFormat(this->view->depthStencilPixelFormat());
     
 
@@ -95,8 +96,8 @@ void Renderer::updateConstants() {
     std::vector<ContourBounds> contourBounds {};
     
     float penX = FT_PIXEL_CF*(8.0);
-    float penY = FT_PIXEL_CF*(windowHeight-48.0);
-    for (auto ch: str) {
+    float penY = FT_PIXEL_CF*(windowHeight-72.0);
+    for (auto ch: selectedString) {
         FT_Load_Char(face, ch, FT_LOAD_RENDER);
         auto chContours = drawContours(ch, this->face, fontPath, penX, penY);
         contours.insert(contours.end(), chContours.begin(), chContours.end());
@@ -123,17 +124,17 @@ void Renderer::updateConstants() {
         glyphOutlinePoints.insert(glyphOutlinePoints.end(), contour.begin(), contour.end());
         
         for (auto pt: contour) {
-            if (pt[0] < minX)
-                minX = pt[0];
+            if (pt.x < minX)
+                minX = pt.x;
             
-            if (pt[0] > maxX)
-                maxX = pt[0];
+            if (pt.x > maxX)
+                maxX = pt.x;
             
-            if (pt[1] < minY)
-                minY = pt[1];
+            if (pt.y < minY)
+                minY = pt.y;
             
-            if (pt[1] > maxY)
-                maxY = pt[1];
+            if (pt.y > maxY)
+                maxY = pt.y;
         }
     
         contourBounds.push_back({.start = contourStart, .end = contourStart+contour.size()});
