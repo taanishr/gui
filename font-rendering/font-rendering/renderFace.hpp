@@ -36,7 +36,6 @@ std::vector<simd_float2> drawContour(FT_Vector* points,
 
 std::vector<std::vector<simd_float2>> drawContours(char ch,
                                                 FT_Face face,
-                                                std::string_view fontPath,
                                                 float penX = 0.0,
                                                 float penY = 0.0);
 #endif

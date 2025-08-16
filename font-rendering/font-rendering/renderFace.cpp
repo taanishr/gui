@@ -121,7 +121,7 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     return renderedPoints;
 }
 
-std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, std::string_view fontPath, float penX, float penY)
+std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, float penX, float penY)
 {
     FT_Outline outline = face->glyph->outline;
 

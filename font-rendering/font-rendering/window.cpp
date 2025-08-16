@@ -8,23 +8,27 @@
 #include "window.hpp"
 #include <AppKit_Extensions-Swift.h>
 
+using KeyDownFunc = NS::String*(*)(id, SEL);
+
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
 
-using KeyDownFunc = NS::String*(*)(id, SEL);
-
 extern "C" void keyDown(id self, SEL _cmd, id event) {
-    KeyDownFunc f = (KeyDownFunc)objc_msgSend; // must cast the send function
-    auto chars = f(event, sel_registerName("characters")); // in obj-c, values are basically methods too
+    KeyDownFunc f = (KeyDownFunc)objc_msgSend;
+    auto chars = f(event, sel_registerName("characters"));
     
-    std::string inputStr = chars->cString(NS::UTF8StringEncoding);
+    char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
     
-    if (inputStr == "\x7F" && selectedString.length() > 0)
-        selectedString.pop_back();
-    else
-        selectedString += inputStr;
+    
+    if (inputChar == '\x7F') {
+        if (selectedString.length() > 0)
+            selectedString.pop_back();
+    }else if (isalpha(inputChar) || isspace(inputChar)){
+        selectedString += inputChar;
+    }
 }
+
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     view{view},
@@ -78,7 +82,8 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
-    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
+//    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
+    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
 

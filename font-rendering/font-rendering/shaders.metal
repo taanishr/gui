@@ -8,8 +8,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct Constants {
-    unsigned long nPoints;
+struct TextUniforms {
+    float3 color;
     unsigned long numContours;
 };
 
@@ -20,7 +20,6 @@ struct ContourBounds {
 
 struct VertexIn {
     float2 position [[attribute(0)]];
-
 };
 
 
@@ -30,8 +29,7 @@ struct VertexOut {
 };
 
 vertex VertexOut vertex_main(
-     VertexIn in [[stage_in]],
-     constant Constants& constants [[buffer(1)]]
+     VertexIn in [[stage_in]]
 )
 {
     VertexOut out;
@@ -62,7 +60,7 @@ fragment float4 fragment_main(
     VertexOut in [[stage_in]],
     constant float2* vertices [[buffer(1)]],
     constant ContourBounds* contourBounds [[buffer(2)]],
-    constant Constants& constants [[buffer(3)]]
+    constant TextUniforms& uniforms [[buffer(3)]]
 )
 {
     float2 point = in.worldPos.xy;
@@ -71,7 +69,7 @@ fragment float4 fragment_main(
     int intersections = 0;
     float minDist = 1e20;
     
-    for (unsigned long c = 0; c < constants.numContours; ++c) {
+    for (unsigned long c = 0; c < uniforms.numContours; ++c) {
         ContourBounds cb = contourBounds[c];
 
         unsigned long offset = cb.start;
@@ -103,11 +101,8 @@ fragment float4 fragment_main(
     float px = fwidth(sd);
     
     float alpha = clamp(0.5 - sd/px, 0.0, 1.0);
-    
-    float3 onColor {1,1,1};
-    float3 offColor {0,0,0};
-    
-    float3 rgb = mix(offColor, onColor, alpha);
+
+    float3 rgb = mix(uniforms.color, uniforms.color, alpha);
     
     return float4(rgb*alpha,alpha);
 }

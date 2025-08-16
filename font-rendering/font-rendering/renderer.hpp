@@ -13,17 +13,9 @@
 #include "renderFace.hpp"
 #include "inputState.hpp"
 #include <semaphore>
+#include "text.hpp"
 
-
-constexpr std::string_view str {"hello world"};
 constexpr int maxOutstandingFrameCount = 3;
-constexpr std::string_view fontPath {"/System/Library/Fonts/Supplemental/Arial Bold.ttf"};
-
-
-struct ContourBounds {
-    unsigned long start;
-    unsigned long end;
-};
 
 struct Constants {
     unsigned long nPoints;
@@ -43,14 +35,9 @@ private:
     MTL::CommandQueue* commandQueue;
     MTL::RenderPipelineState* renderPipelineState;
     MTK::View* view;
-    MTL::Buffer* glyphQuadBuffer;
-    MTL::Buffer* glyphContoursBuffer;
-    MTL::Buffer* constantsBuffer;
-    MTL::Buffer* contourBoundsBuffer;
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
-    std::vector<std::pair<long, long>> quadBounds;
     FT_Library ft;
-    FT_Face face;
+    std::vector<std::unique_ptr<Text>> textBlocks;
 };
 
 #endif
