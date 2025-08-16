@@ -13,9 +13,19 @@
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
-struct ContourBounds {
+struct Contour {
+    const std::vector<simd_float2>& points;
+    float penX;
+    float penY;
+};
+
+struct ContourMeta {
     unsigned long start;
     unsigned long end;
+    float minX;
+    float maxX;
+    float minY;
+    float maxY;
 };
 
 
@@ -25,7 +35,7 @@ struct TextUniforms {
 };
 
 struct Text {
-    Text(MTL::Device* device, FT_Library ft, const std::string& font = defaultFont.data(), float height=64.0, simd_float3 color={1,1,1});
+    Text(MTL::Device* device, FT_Library ft, float height=64.0, simd_float3 color={1,1,1}, const std::string& font = defaultFont.data());
     ~Text();
     
     void setText(const std::string& text);
@@ -38,7 +48,7 @@ struct Text {
     MTL::Buffer* uniformsBuffer;
     MTL::Buffer* quadBuffer;
     MTL::Buffer* contoursBuffer;
-    MTL::Buffer* contoursBoundsBuffer;
+    MTL::Buffer* contoursMetaBuffer;
     
     // size and positioning
     float height;
@@ -52,5 +62,8 @@ struct Text {
     
     // text
     std::string text;
+    
+    // cache needs to account for positioning
+    std::unordered_map<char, std::vector<std::vector<simd_float2>>> chContoursCache;
 };
 

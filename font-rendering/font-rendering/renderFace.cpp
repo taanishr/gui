@@ -66,6 +66,7 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     
     for (long p = start; p <= end; ++p) {
         simd_float2 currentPoint {(float)points[p].x + penX, (float)points[p].y + penY};
+//        simd_float2 currentPoint {(float)points[p].x, (float)points[p].y};
         currentPoint = toNDC(currentPoint, unitsPerEm);
 
         switch (tags[p]) {

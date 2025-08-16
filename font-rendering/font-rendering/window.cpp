@@ -24,7 +24,7 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     if (inputChar == '\x7F') {
         if (selectedString.length() > 0)
             selectedString.pop_back();
-    }else if (isalpha(inputChar) || isspace(inputChar)){
+    }else {
         selectedString += inputChar;
     }
 }

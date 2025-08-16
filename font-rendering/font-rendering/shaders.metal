@@ -13,9 +13,13 @@ struct TextUniforms {
     unsigned long numContours;
 };
 
-struct ContourBounds {
+struct ContourMeta {
     unsigned long start;
     unsigned long end;
+    float minX;
+    float maxX;
+    float minY;
+    float maxY;
 };
 
 struct VertexIn {
@@ -53,13 +57,13 @@ inline float signed_dist(float2 p, float2 a, float2 b) {
     
     float2 proj = ba*clamp(dot(pa, ba)/dot(ba,ba), 0.0, 1.0); // get the projection of the distance vector
         
-    return length(pa-proj); // get the distance between the vector pa and the projection
+    return distance_squared(pa, proj); // get the distance between the vector pa and the projection
 }
 
 fragment float4 fragment_main(
     VertexOut in [[stage_in]],
     constant float2* vertices [[buffer(1)]],
-    constant ContourBounds* contourBounds [[buffer(2)]],
+    constant ContourMeta* contourBounds [[buffer(2)]],
     constant TextUniforms& uniforms [[buffer(3)]]
 )
 {
@@ -70,7 +74,10 @@ fragment float4 fragment_main(
     float minDist = 1e20;
     
     for (unsigned long c = 0; c < uniforms.numContours; ++c) {
-        ContourBounds cb = contourBounds[c];
+        ContourMeta cb = contourBounds[c];
+        
+        if (point.x < cb.minX || point.x > cb.maxX || point.y < cb.minY || point.y > cb.maxY)
+            continue;
 
         unsigned long offset = cb.start;
         unsigned long contourSize = cb.end-cb.start;

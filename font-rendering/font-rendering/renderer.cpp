@@ -76,8 +76,8 @@ void Renderer::makePipeline() {
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    textBlocks.push_back(std::make_unique<Text>(device, ft));
-    textBlocks[0]->setText("hello");
+    textBlocks.push_back(std::make_unique<Text>(device, ft, 64.0));
+    textBlocks[0]->setText("h");
 }
 
 void Renderer::draw() {
@@ -96,7 +96,7 @@ void Renderer::draw() {
         renderCommandEncoder->setVertexBuffer(textBlock->quadBuffer, 0, 0);
         
         renderCommandEncoder->setFragmentBuffer(textBlock->contoursBuffer, 0, 1);
-        renderCommandEncoder->setFragmentBuffer(textBlock->contoursBoundsBuffer, 0, 2);
+        renderCommandEncoder->setFragmentBuffer(textBlock->contoursMetaBuffer, 0, 2);
         renderCommandEncoder->setFragmentBuffer(textBlock->uniformsBuffer, 0, 3);
         
         renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangleStrip, NS::UInteger(0), NS::UInteger(4));
