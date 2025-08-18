@@ -73,11 +73,14 @@ fragment float4 fragment_main(
     int intersections = 0;
     float minDist = 1e20;
     
+    
+    
     for (unsigned long c = 0; c < uniforms.numContours; ++c) {
         ContourMeta cb = contourBounds[c];
+
         
-        if (point.x < cb.minX || point.x > cb.maxX || point.y < cb.minY || point.y > cb.maxY)
-            continue;
+//        if (point.x < cb.minX || point.x >= cb.maxX || point.y < cb.minY || point.y >= cb.maxY)
+//            continue;
 
         unsigned long offset = cb.start;
         unsigned long contourSize = cb.end-cb.start;
@@ -96,11 +99,12 @@ fragment float4 fragment_main(
                 }
             }
             
-            float sd = signed_dist(point, v1, v2);
-            minDist = min(minDist, sd);
+            
+//            float sd = signed_dist(point, v1, v2);
+//            minDist = min(minDist, sd);
         }
     }
-   
+    
     bool inside = intersections & 1;
     
     float sd = inside ? -minDist : minDist;

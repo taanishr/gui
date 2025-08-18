@@ -10,6 +10,7 @@
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 
+
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
@@ -22,10 +23,9 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     
     
     if (inputChar == '\x7F') {
-        if (selectedString.length() > 0)
-            selectedString.pop_back();
+        SelectedString::removeChar();
     }else {
-        selectedString += inputChar;
+        SelectedString::addChar(inputChar);
     }
 }
 

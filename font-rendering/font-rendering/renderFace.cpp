@@ -7,7 +7,7 @@
 
 #include "renderFace.hpp"
 
-simd_float2 toNDC(const simd_float2& pt, short unitsPerEm) {
+simd_float2 toNDC(const simd_float2& pt) {
     float px = pt.x / FT_PIXEL_CF;
     float py = pt.y / FT_PIXEL_CF; // free type multiplies by 64.0f, I guess? Why, idk?
     
@@ -42,6 +42,7 @@ bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.0
     return true;
 }
 
+// 50ms
 void drawBezier(const std::vector<simd_float2>& controlPoints, std::vector<simd_float2>& curve) {
     curve.push_back(controlPoints[0]);
     if (isFlat(controlPoints)) {
@@ -56,18 +57,21 @@ void drawBezier(const std::vector<simd_float2>& controlPoints, std::vector<simd_
 }
 
 
-
+// ~ 128ms
 std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, long start,
-                                     long end, short unitsPerEm, float penX, float penY) {
+                                     long end, float penX, float penY) {
     std::vector<simd_float2> renderedPoints {};
     std::vector<simd_float2> renderedPointsBuffer {};
 
     Segment currentSegmentType = Segment::Line;
     
     for (long p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)points[p].x + penX, (float)points[p].y + penY};
-//        simd_float2 currentPoint {(float)points[p].x, (float)points[p].y};
-        currentPoint = toNDC(currentPoint, unitsPerEm);
+        
+        simd_float2 currentPoint {(float)points[p].x, (float)points[p].y};
+        
+//        simd_float2 currentPoint {(float)points[p].x + penX, (float)points[p].y + penY};
+        
+        currentPoint = toNDC(currentPoint);
 
         switch (tags[p]) {
             case FT_CURVE_TAG_CONIC:
@@ -122,15 +126,18 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
     return renderedPoints;
 }
 
-std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, float penX, float penY)
+//std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, float penX, float penY)
+std::vector<std::vector<simd_float2>> drawContours(FT_Outline* outlinePtr, float penX, float penY)
 {
-    FT_Outline outline = face->glyph->outline;
-
+//    FT_Outline g = face->glyph->outline;
+//
+    
+    FT_Outline outline = *outlinePtr;
+    
     long numContours = outline.n_contours;
     unsigned short* contours = outline.contours;
 
     // points and their tags
-    short unitsPerEm = face->units_per_EM;
     FT_Vector* points = outline.points;
     unsigned char* tags = outline.tags;
 
@@ -139,7 +146,7 @@ std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, float 
     
     int contourStart = 0;
     for (int i = 0; i < numContours; ++i) {
-        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], unitsPerEm, penX, penY);
+        std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], penX, penY);
         renderedContours.push_back(contourPoints);
         contourStart = contours[i]+1;
     }

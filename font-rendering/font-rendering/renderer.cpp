@@ -9,8 +9,6 @@
 #include <iostream>
 #include <ranges>
 
-constexpr short pixelHeight = 64.0;
-
 float linearInterpolation(float x1, float y1, float x2, float y2) {
     return (y2-y1)/(x2-x1);
 }
@@ -76,14 +74,16 @@ void Renderer::makePipeline() {
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    textBlocks.push_back(std::make_unique<Text>(device, ft, 64.0));
-    textBlocks[0]->setText("h");
+    textBlocks.push_back(std::make_unique<Text>(device, ft, 16.0));
+    SelectedString::textBlock = textBlocks[0].get();
 }
 
 void Renderer::draw() {
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
-    this->frameSemaphore.acquire();
+//    this->frameSemaphore.acquire();
+    
+    // try per quad rendering instead of this?
     
     MTL::CommandBuffer* commandBuffer = commandQueue->commandBuffer();
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
@@ -91,8 +91,6 @@ void Renderer::draw() {
     renderCommandEncoder->setRenderPipelineState(this->renderPipelineState);
 
     for (auto& textBlock: textBlocks) {
-        textBlock->setText(selectedString);
-        textBlock->update();
         renderCommandEncoder->setVertexBuffer(textBlock->quadBuffer, 0, 0);
         
         renderCommandEncoder->setFragmentBuffer(textBlock->contoursBuffer, 0, 1);
@@ -105,7 +103,7 @@ void Renderer::draw() {
     renderCommandEncoder->endEncoding();
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
-        this->frameSemaphore.release();
+//        this->frameSemaphore.release();
     };
     
     commandBuffer->addCompletedHandler(completedHandler);

@@ -9,7 +9,6 @@
 #include <objc/runtime.h>
 #include "inputState.hpp"
 
-
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:
     MTKViewDelegate(MTL::Device* device, MTK::View* view);

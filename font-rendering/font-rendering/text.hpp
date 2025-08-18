@@ -5,19 +5,15 @@
 //  Created by Taanish Reja on 8/15/25.
 //
 
+#ifndef TEXT_HPP
+#define TEXT_HPP
+
 #include "metal_imports.hpp"
 #include "bezier.hpp"
 #include "freetype.hpp"
 #include "renderFace.hpp"
-#include "inputState.hpp"
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
-
-struct Contour {
-    const std::vector<simd_float2>& points;
-    float penX;
-    float penY;
-};
 
 struct ContourMeta {
     unsigned long start;
@@ -35,7 +31,7 @@ struct TextUniforms {
 };
 
 struct Text {
-    Text(MTL::Device* device, FT_Library ft, float height=64.0, simd_float3 color={1,1,1}, const std::string& font = defaultFont.data());
+    Text(MTL::Device* device, FT_Library ft, float height=64.0, simd_float3 color={0,0,0}, const std::string& font = defaultFont.data());
     ~Text();
     
     void setText(const std::string& text);
@@ -54,6 +50,8 @@ struct Text {
     float height;
     float x;
     float y;
+    float quadHeight;
+    float quadWidth;
     
     // font details
     TextUniforms textUniforms;
@@ -64,6 +62,11 @@ struct Text {
     std::string text;
     
     // cache needs to account for positioning
-    std::unordered_map<char, std::vector<std::vector<simd_float2>>> chContoursCache;
+//    std::unordered_map<char, std::vector<std::vector<simd_float2>>> chContoursCache;
+    
+    // cache points and tags bc ft has hella latency on loading those
+    std::unordered_map<char, FT_Outline*> outlineCache;
 };
 
+
+#endif

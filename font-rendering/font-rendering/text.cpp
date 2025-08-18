@@ -5,6 +5,9 @@
 //  Created by Taanish Reja on 8/15/25.
 //
 
+// optimization tricks to try:
+// - quad per glpyh?
+
 #include "text.hpp"
 
 void printPoint(const simd_float2& pt, bool newLine) {
@@ -18,7 +21,9 @@ Text::Text(MTL::Device* device, FT_Library ft, float height, simd_float3 color, 
     textUniforms{.color=color, .numContours = 0},
     font{font},
     x{100.0},
-    y{100.0}
+    y{100.0},
+    quadWidth{0.0},
+    quadHeight{0.0}
 {
     FT_New_Face(ft, font.c_str(), 0, &(this->face));
     FT_Set_Pixel_Sizes(face, 0, height);
@@ -60,22 +65,38 @@ void Text::update() {
     std::vector<simd_float2> quadPoints {};
     std::vector<simd_float2> contourPoints {};
     std::vector<std::vector<simd_float2>> contours {};
+    std::vector<std::pair<float,float>> offsets;
     std::vector<ContourMeta> contoursMeta {};
 
     float penX = FT_PIXEL_CF*x;
     float penY = FT_PIXEL_CF*(windowHeight-y);
     for (auto ch: this->text) {
         FT_Load_Char(face, ch, FT_LOAD_RENDER);
+        FT_Outline* outlinePtr;
+        
+        if (outlineCache.find(ch) == outlineCache.end()) {
+            FT_Outline* newOutline = new FT_Outline();
+            FT_Load_Char(face, ch, FT_LOAD_RENDER);
+            
+            int err = FT_Outline_New(face->glyph->library, face->glyph->outline.n_points, face->glyph->outline.n_contours, newOutline);
+            
+            FT_Outline_Copy(&face->glyph->outline, newOutline);
+            
+            outlineCache[ch] = newOutline;
+        }
+        
+        outlinePtr = outlineCache[ch];
+        
         if (ch == '\r') {
             penY -= FT_PIXEL_CF*height;
             penX = FT_PIXEL_CF*x;
         }else {
-            auto chContours = drawContours(ch, this->face, penX, penY);
+            auto chContours = drawContours(outlinePtr, penX, penY);
             contours.insert(contours.end(), chContours.begin(), chContours.end());
-        
-            
-            penX += face->glyph->advance.x;
+            penX += this->face->glyph->advance.x;
         }
+        
+        offsets.push_back({penX, penY});
     }
     
     textUniforms.numContours = contours.size();
@@ -86,7 +107,7 @@ void Text::update() {
     float maxY = -std::numeric_limits<float>::infinity();
 
     unsigned long contourStart = 0;
-
+    
     for (auto& contour: contours) {
         contourPoints.insert(contourPoints.end(), contour.begin(), contour.end());
         
@@ -128,7 +149,10 @@ void Text::update() {
     simd_float2 topRight {maxX, minY};
     simd_float2 bottomLeft {minX, maxY};
     simd_float2 bottomRight {maxX, maxY};
-
+    
+    this->quadWidth = maxX-minX;
+    this->quadHeight = maxY-minY;
+    
     quadPoints.push_back(topLeft);
     quadPoints.push_back(topRight);
     quadPoints.push_back(bottomLeft);
@@ -137,7 +161,7 @@ void Text::update() {
     TextUniforms* uniformsBufferPtr = static_cast<TextUniforms*>(uniformsBuffer->contents());
     *uniformsBufferPtr = textUniforms;
     
-    std::memcpy(this->quadBuffer->contents(), quadPoints.data(), 4*sizeof(unsigned long));
+    std::memcpy(this->quadBuffer->contents(), quadPoints.data(), 4*sizeof(simd_float2));
 
     resizeBuffer(&contoursBuffer, sizeof(simd_float2)*contourPoints.size());
     resizeBuffer(&contoursMetaBuffer, sizeof(ContourMeta)*contoursMeta.size());
