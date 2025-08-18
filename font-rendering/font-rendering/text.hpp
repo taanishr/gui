@@ -15,19 +15,21 @@
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
+struct Quad {
+    simd_float2 position;
+    simd_float2 offset;
+    unsigned int firstContour;
+    unsigned int lastContour;
+};
+
 struct ContourMeta {
     unsigned long start;
     unsigned long end;
-    float minX;
-    float maxX;
-    float minY;
-    float maxY;
 };
 
 
 struct TextUniforms {
     simd_float3 color;
-    unsigned long numContours;
 };
 
 struct Text {
@@ -42,6 +44,7 @@ struct Text {
     
     // buffers
     MTL::Buffer* uniformsBuffer;
+    MTL::Buffer* glyphMetaBuffer;
     MTL::Buffer* quadBuffer;
     MTL::Buffer* contoursBuffer;
     MTL::Buffer* contoursMetaBuffer;
@@ -53,6 +56,8 @@ struct Text {
     float quadHeight;
     float quadWidth;
     
+    unsigned long numQuads;
+    
     // font details
     TextUniforms textUniforms;
     std::string font;
@@ -60,12 +65,12 @@ struct Text {
     
     // text
     std::string text;
-    
+
     // cache needs to account for positioning
 //    std::unordered_map<char, std::vector<std::vector<simd_float2>>> chContoursCache;
     
     // cache points and tags bc ft has hella latency on loading those
-    std::unordered_map<char, FT_Outline*> outlineCache;
+//    std::unordered_map<char, FT_Outline*> outlineCache;
 };
 
 

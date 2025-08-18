@@ -38,5 +38,6 @@ std::vector<simd_float2> drawContour(FT_Vector* points,
 //                                                FT_Face face,
 //                                                float penX = 0.0,
 //                                                float penY = 0.0);
-std::vector<std::vector<simd_float2>> drawContours(FT_Outline* outlinePtr, float penX, float penY);
+std::tuple<std::vector<std::vector<simd_float2>>, simd_float2, simd_float2>
+drawContours(FT_Outline* outlinePtr, float penX, float penY);
 #endif

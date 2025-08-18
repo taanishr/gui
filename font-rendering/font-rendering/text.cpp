@@ -18,17 +18,18 @@ void printPoint(const simd_float2& pt, bool newLine) {
 Text::Text(MTL::Device* device, FT_Library ft, float height, simd_float3 color, const std::string& font):
     device{device},
     height{height},
-    textUniforms{.color=color, .numContours = 0},
+    textUniforms{.color=color},
     font{font},
     x{100.0},
     y{100.0},
     quadWidth{0.0},
-    quadHeight{0.0}
+    quadHeight{0.0},
+    numQuads{0}
 {
     FT_New_Face(ft, font.c_str(), 0, &(this->face));
     FT_Set_Pixel_Sizes(face, 0, height);
     
-    this->quadBuffer = this->device->newBuffer(sizeof(simd_float2)*4, MTL::StorageModeShared);
+    this->quadBuffer = this->device->newBuffer(sizeof(Quad)*4, MTL::StorageModeShared);
     this->contoursBuffer = this->device->newBuffer(sizeof(simd_float2)*1024, MTL::StorageModeShared);
     this->uniformsBuffer = this->device->newBuffer(sizeof(TextUniforms), MTL::StorageModeShared);
     this->contoursMetaBuffer =  this->device->newBuffer(sizeof(ContourMeta)*4, MTL::StorageModeShared);
@@ -62,7 +63,7 @@ void Text::resizeBuffer(MTL::Buffer** buffer, unsigned long numBytes) {
 
 
 void Text::update() {
-    std::vector<simd_float2> quadPoints {};
+    std::vector<Quad> quads {};
     std::vector<simd_float2> contourPoints {};
     std::vector<std::vector<simd_float2>> contours {};
     std::vector<std::pair<float,float>> offsets;
@@ -70,102 +71,68 @@ void Text::update() {
 
     float penX = FT_PIXEL_CF*x;
     float penY = FT_PIXEL_CF*(windowHeight-y);
+    unsigned int firstContour = 0;
+    unsigned int numQuadsInUpdate = 0;
     for (auto ch: this->text) {
         FT_Load_Char(face, ch, FT_LOAD_RENDER);
-        FT_Outline* outlinePtr;
         
-        if (outlineCache.find(ch) == outlineCache.end()) {
-            FT_Outline* newOutline = new FT_Outline();
-            FT_Load_Char(face, ch, FT_LOAD_RENDER);
-            
-            int err = FT_Outline_New(face->glyph->library, face->glyph->outline.n_points, face->glyph->outline.n_contours, newOutline);
-            
-            FT_Outline_Copy(&face->glyph->outline, newOutline);
-            
-            outlineCache[ch] = newOutline;
-        }
-        
-        outlinePtr = outlineCache[ch];
+        FT_Outline* outlinePtr = &face->glyph->outline;
         
         if (ch == '\r') {
             penY -= FT_PIXEL_CF*height;
             penX = FT_PIXEL_CF*x;
         }else {
-            auto chContours = drawContours(outlinePtr, penX, penY);
+            auto chContoursAndQuad = drawContours(outlinePtr, penX, penY);
+            // handle contours
+            auto& chContours = std::get<0>(chContoursAndQuad);
             contours.insert(contours.end(), chContours.begin(), chContours.end());
+            unsigned int lastContour = firstContour + static_cast<unsigned int>(chContours.size());
+            
+            // handle quad
+            auto topLeft = std::get<1>(chContoursAndQuad);
+            auto bottomRight = std::get<2>(chContoursAndQuad);
+            quads.push_back({.position=topLeft, .offset={penX,penY},.firstContour = firstContour, .lastContour = lastContour});
+            quads.push_back({.position={bottomRight.x, topLeft.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
+            quads.push_back({.position={topLeft.x, bottomRight.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
+            quads.push_back({.position={topLeft.x, bottomRight.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
+            quads.push_back({.position={bottomRight.x, topLeft.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
+            quads.push_back({.position=bottomRight, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
+            ++numQuadsInUpdate;
+            
+            firstContour = lastContour;
+            
             penX += this->face->glyph->advance.x;
         }
         
         offsets.push_back({penX, penY});
     }
     
-    textUniforms.numContours = contours.size();
-
-    float minX = std::numeric_limits<float>::infinity();
-    float maxX = -std::numeric_limits<float>::infinity();
-    float minY = std::numeric_limits<float>::infinity();
-    float maxY = -std::numeric_limits<float>::infinity();
-
+    this->numQuads = numQuadsInUpdate;
+    
+    std::println("num quads: {}", numQuads);
+    
     unsigned long contourStart = 0;
     
     for (auto& contour: contours) {
         contourPoints.insert(contourPoints.end(), contour.begin(), contour.end());
         
-        float minContourX = std::numeric_limits<float>::infinity();
-        float maxContourX = -std::numeric_limits<float>::infinity();
-        float minContourY = std::numeric_limits<float>::infinity();
-        float maxContourY = -std::numeric_limits<float>::infinity();
-        
-        for (auto pt: contour) {
-            if (pt.x < minX)
-                minX = pt.x;
-            if (pt.x < minContourX)
-                minContourX = pt.x;
-
-            if (pt.x > maxX)
-                maxX = pt.x;
-            if (pt.x > maxContourX)
-                maxContourX = pt.x;
-
-            if (pt.y < minY)
-                minY = pt.y;
-            if (pt.y < minContourY)
-                minContourY = pt.y;
-
-            if (pt.y > maxY)
-                maxY = pt.y;
-            if (pt.y > maxContourY)
-                maxContourY = pt.y;
-        }
- 
-        contoursMeta.push_back({.start = contourStart, .end = contourStart+contour.size(),
-                                .minX = minContourX, .maxX=maxContourX,
-                                .minY = minContourY, .maxY=maxContourY});
+        std::println("num points per contour: {}", contour.size());
+    
+        contoursMeta.push_back({.start = contourStart, .end = contourStart+contour.size()});
         
         contourStart += contour.size();
     }
-
-    simd_float2 topLeft {minX, minY};
-    simd_float2 topRight {maxX, minY};
-    simd_float2 bottomLeft {minX, maxY};
-    simd_float2 bottomRight {maxX, maxY};
-    
-    this->quadWidth = maxX-minX;
-    this->quadHeight = maxY-minY;
-    
-    quadPoints.push_back(topLeft);
-    quadPoints.push_back(topRight);
-    quadPoints.push_back(bottomLeft);
-    quadPoints.push_back(bottomRight);
     
     TextUniforms* uniformsBufferPtr = static_cast<TextUniforms*>(uniformsBuffer->contents());
     *uniformsBufferPtr = textUniforms;
     
-    std::memcpy(this->quadBuffer->contents(), quadPoints.data(), 4*sizeof(simd_float2));
+    std::println("num points: {}", contourPoints.size());
 
+    resizeBuffer(&quadBuffer, sizeof(Quad)*quads.size());
     resizeBuffer(&contoursBuffer, sizeof(simd_float2)*contourPoints.size());
     resizeBuffer(&contoursMetaBuffer, sizeof(ContourMeta)*contoursMeta.size());
     
+    std::memcpy(this->quadBuffer->contents(), quads.data(), quads.size()*sizeof(Quad));
     std::memcpy(this->contoursBuffer->contents(), contourPoints.data(), sizeof(simd_float2)*contourPoints.size());
     std::memcpy(this->contoursMetaBuffer->contents(), contoursMeta.data(), sizeof(ContourMeta)*contoursMeta.size());
 }

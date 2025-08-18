@@ -8,37 +8,53 @@
 #include <metal_stdlib>
 using namespace metal;
 
+float2 toNDC(const float2 pt) {
+    float ndcX = (pt.x / 512.0) * 2.0f - 1.0f;
+    float ndcY = (pt.y / 512.0) * 2.0f - 1.0f;
+
+    return {ndcX, ndcY};
+}
+
+struct GlyphMeta {
+    simd_float2 offset;
+};
+
 struct TextUniforms {
     float3 color;
-    unsigned long numContours;
 };
 
 struct ContourMeta {
     unsigned long start;
     unsigned long end;
-    float minX;
-    float maxX;
-    float minY;
-    float maxY;
 };
 
 struct VertexIn {
     float2 position [[attribute(0)]];
+    float2 offset [[attribute(1)]];
+    uint firstContour [[attribute(2)]];
+    uint lastContour [[attribute(3)]];
 };
 
 
 struct VertexOut {
     float4 position [[position]];
     float2 worldPos;
+    uint firstContour [[flat]];
+    uint lastContour [[flat]];
 };
 
 vertex VertexOut vertex_main(
-     VertexIn in [[stage_in]]
+    VertexIn in [[stage_in]]
 )
 {
+    float2 adjustedPos = toNDC((in.position + in.offset)/64.0f);
+    
     VertexOut out;
-    out.position = float4(in.position, 0.0, 1.0);
+    
+    out.position = float4(adjustedPos, 0.0, 1.0);
     out.worldPos = in.position;
+    out.firstContour = in.firstContour;
+    out.lastContour = in.lastContour;
     
     return out;
 }
@@ -75,12 +91,8 @@ fragment float4 fragment_main(
     
     
     
-    for (unsigned long c = 0; c < uniforms.numContours; ++c) {
+    for (unsigned long c = in.firstContour; c < in.lastContour; ++c) {
         ContourMeta cb = contourBounds[c];
-
-        
-//        if (point.x < cb.minX || point.x >= cb.maxX || point.y < cb.minY || point.y >= cb.maxY)
-//            continue;
 
         unsigned long offset = cb.start;
         unsigned long contourSize = cb.end-cb.start;
@@ -100,8 +112,8 @@ fragment float4 fragment_main(
             }
             
             
-//            float sd = signed_dist(point, v1, v2);
-//            minDist = min(minDist, sd);
+            float sd = signed_dist(point, v1, v2);
+            minDist = min(minDist, sd);
         }
     }
     
@@ -117,3 +129,13 @@ fragment float4 fragment_main(
     
     return float4(rgb*alpha,alpha);
 }
+//
+//fragment float4 fragment_main(
+//    VertexOut in [[stage_in]],
+//    constant float2* vertices [[buffer(1)]],
+//    constant ContourMeta* contourBounds [[buffer(2)]],
+//    constant TextUniforms& uniforms [[buffer(3)]]
+//)
+//{
+//    return float4(1,1,1,1);
+//}

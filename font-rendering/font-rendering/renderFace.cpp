@@ -21,7 +21,7 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
 
-bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 0.001)
+bool isFlat(const std::vector<simd_float2>& controlPoints, float threshold = 1)
 {
     float distanceSum = 0.0;
     simd_float2 firstPoint = controlPoints.front();
@@ -71,7 +71,7 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
         
 //        simd_float2 currentPoint {(float)points[p].x + penX, (float)points[p].y + penY};
         
-        currentPoint = toNDC(currentPoint);
+//        currentPoint = toNDC(currentPoint);
 
         switch (tags[p]) {
             case FT_CURVE_TAG_CONIC:
@@ -127,7 +127,8 @@ std::vector<simd_float2> drawContour(FT_Vector* points, unsigned char* tags, lon
 }
 
 //std::vector<std::vector<simd_float2>> drawContours(char ch, FT_Face face, float penX, float penY)
-std::vector<std::vector<simd_float2>> drawContours(FT_Outline* outlinePtr, float penX, float penY)
+std::tuple<std::vector<std::vector<simd_float2>>, simd_float2, simd_float2>
+    drawContours(FT_Outline* outlinePtr, float penX, float penY)
 {
 //    FT_Outline g = face->glyph->outline;
 //
@@ -145,11 +146,24 @@ std::vector<std::vector<simd_float2>> drawContours(FT_Outline* outlinePtr, float
     std::vector<std::vector<simd_float2>> renderedContours {};
     
     int contourStart = 0;
+    simd_float2 topLeft {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+    simd_float2 bottomRight {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+        
     for (int i = 0; i < numContours; ++i) {
         std::vector<simd_float2> contourPoints = drawContour(points, tags, contourStart, contours[i], penX, penY);
+        
+        for (auto contourPoint: contourPoints) {
+            if (contourPoint.x < topLeft.x)      topLeft.x = contourPoint.x;
+            if (contourPoint.y < topLeft.y)      topLeft.y = contourPoint.y;
+            if (contourPoint.x > bottomRight.x)  bottomRight.x = contourPoint.x;
+            if (contourPoint.y > bottomRight.y)  bottomRight.y = contourPoint.y;
+        }
+        
+        
         renderedContours.push_back(contourPoints);
         contourStart = contours[i]+1;
     }
+        
     
-    return renderedContours;
+    return {renderedContours, topLeft, bottomRight};
 }
