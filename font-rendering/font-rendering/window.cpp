@@ -56,7 +56,7 @@ void AppDelegate::applicationWillFinishLaunching(NS::Notification* notification)
 
 void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 {
-    CGRect frame = CGRect{{100.0, 100.0}, {windowHeight, windowWidth}};
+    CGRect frame = CGRect{{100.0, 100.0}, {512.0, 512.0}};
     
     window = NS::Window::alloc()->init(
                 frame,
@@ -79,12 +79,13 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     
 
-    view->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
+    view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
     view->setClearColor(MTL::ClearColor::Make(1,1,1,1));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
+    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
     
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
     view->setDelegate(viewDelegate.get());

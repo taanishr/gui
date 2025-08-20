@@ -12,7 +12,6 @@
 #include "freetype.hpp"
 #include "metal_imports.hpp"
 #include "bezier.hpp"
-#include "windowConstants.hpp"
 
 enum class Segment {
     Line,

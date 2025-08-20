@@ -8,12 +8,17 @@
 #include <metal_stdlib>
 using namespace metal;
 
-float2 toNDC(const float2 pt) {
-    float ndcX = (pt.x / 512.0) * 2.0f - 1.0f;
-    float ndcY = (pt.y / 512.0) * 2.0f - 1.0f;
+float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f) {
+    float ndcX = (pt.x / width) * 2.0f - 1.0f;
+    float ndcY = (pt.y / height) * 2.0f - 1.0f;
 
     return {ndcX, ndcY};
 }
+
+struct FrameInfo {
+    float width;
+    float height;
+};
 
 struct GlyphMeta {
     simd_float2 offset;
@@ -26,7 +31,7 @@ struct TextUniforms {
 struct VertexIn {
     float2 position [[attribute(0)]];
     float2 offset [[attribute(1)]];
-    int metadataIndex [[attribute(3)]];
+    int metadataIndex [[attribute(2)]];
 };
 
 
@@ -36,15 +41,15 @@ struct VertexOut {
     int metadataIndex [[flat]];
 };
 
-vertex VertexOut vertex_main(
-    VertexIn in [[stage_in]]
+vertex VertexOut vertex_text(
+    VertexIn in [[stage_in]],
+    constant FrameInfo* frameInfo [[buffer(1)]]
 )
 {
-    
     VertexOut out;
     
     float2 adjustedPos = (in.position+in.offset)/64.0f;
-    float2 ndcPos = toNDC(adjustedPos);
+    float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
     out.metadataIndex = in.metadataIndex;
@@ -135,11 +140,11 @@ float approximateDistance(float2 p0, float2 p1, float2 p2, float2 q) {
     return distance(q, B);
 }
 
-fragment float4 fragment_main(
+fragment float4 fragment_text(
     VertexOut in [[stage_in]],
-    constant float2* bezierPoints [[buffer(1)]],
-    constant int* glyphMeta [[buffer(2)]],
-    constant TextUniforms* uniforms [[buffer(3)]]
+    constant float2* bezierPoints [[buffer(0)]],
+    constant int* glyphMeta [[buffer(1)]],
+    constant TextUniforms* uniforms [[buffer(2)]]
 )
 {
     float4 fragPt = in.worldPosition;

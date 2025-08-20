@@ -35,3 +35,11 @@ public func setMaximumDrawableCount(viewPtr: UnsafeMutableRawPointer, count: CIn
         CAMetalLayer.maximumDrawableCount = Int(count);
     }
 }
+
+public func setSyncEnabled(viewPtr: UnsafeMutableRawPointer, enabled: CBool) {
+    let view = Unmanaged<MTKView>.fromOpaque(viewPtr).takeUnretainedValue();
+    
+    if let CAMetalLayer = view.layer as? CAMetalLayer {
+        CAMetalLayer.displaySyncEnabled = enabled;
+    }
+}

@@ -4,7 +4,6 @@
 #include <functional>
 #include "metal_imports.hpp"
 #include "renderer.hpp"
-#include "windowConstants.hpp"
 #include <ApplicationServices/ApplicationServices.h>
 #include <objc/runtime.h>
 #include "inputState.hpp"

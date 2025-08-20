@@ -15,13 +15,14 @@ void printPoint(const simd_float2& pt, bool newLine) {
     std::print("({},{}){}", pt.x, pt.y, end);
 }
 
-Text::Text(MTL::Device* device, FT_Library ft, float fontSize, simd_float3 color, const std::string& font):
+Text::Text(MTL::Device* device, MTK::View* view, FT_Library ft, float x, float y, float fontSize, simd_float3 color, const std::string& font):
     device{device},
+    view{view},
+    x{x},
+    y{y},
     fontSize{fontSize},
     color{color},
     font{font},
-    x{25.0},
-    y{50.0},
     lastBezierPoint{0},
     numQuadPoints{0}
 {
@@ -30,11 +31,13 @@ Text::Text(MTL::Device* device, FT_Library ft, float fontSize, simd_float3 color
     
     this->quadBuffer = device->newBuffer(sizeof(QuadPoint)*256, MTL::ResourceStorageModeShared);
     this->bezierPointsBuffer = device->newBuffer(sizeof(simd_float2)*112, MTL::ResourceStorageModeShared);
-    this->uniformsBuffer = device->newBuffer(sizeof(Uniforms)*1, MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
     this->glyphMetaBuffer = device->newBuffer(sizeof(int)*256, MTL::ResourceStorageModeShared);
+    this->frameInfoBuffer = device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
 }
 
 Text::~Text() {
+    this->frameInfoBuffer->release();
     this->glyphMetaBuffer->release();
     this->uniformsBuffer->release();
     this->bezierPointsBuffer->release();
@@ -42,12 +45,79 @@ Text::~Text() {
     FT_Done_Face(face);
 }
 
+void Text::buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt) {
+    MTL::Library* defaultLibrary = device->newDefaultLibrary();
+    MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
+    
+    // set up vertex descriptor
+    MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
+    vertexDescriptor->attributes()->object(0)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+    vertexDescriptor->attributes()->object(0)->setOffset(0);
+    vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
+    
+    vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+    vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
+    vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
+    
+    vertexDescriptor->attributes()->object(2)->setFormat(MTL::VertexFormat::VertexFormatInt);
+    vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2)*2);
+    vertexDescriptor->attributes()->object(2)->setBufferIndex(0);
+
+    vertexDescriptor->layouts()->object(0)->setStride(sizeof(QuadPoint));
+    
+    renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
+
+    
+    // set up vertex function
+    MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_text", NS::UTF8StringEncoding));
+    renderPipelineDescriptor->setVertexFunction(vertexFunction);
+    
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(colorFmt);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    
+    
+    renderPipelineDescriptor->setDepthAttachmentPixelFormat(depthFmt);
+    
+
+    // set up fragment function
+    MTL::Function* fragmentFunction = defaultLibrary->newFunction(NS::String::string("fragment_text", NS::UTF8StringEncoding));
+    renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
+    
+    
+    NS::Error* error = nullptr;
+    pipeline = device->newRenderPipelineState(renderPipelineDescriptor, &error);
+    
+    if (error != nullptr)
+        std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
+    
+    
+    defaultLibrary->release();
+    renderPipelineDescriptor->release();
+    vertexDescriptor->release();
+    vertexFunction->release();
+}
+
+MTL::RenderPipelineState* Text::getTextPipeline(MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt) {
+    static MTL::RenderPipelineState* pipeline = nullptr;
+    
+    if (!pipeline) {
+        buildTextPipeline(pipeline, device, colorFmt, depthFmt);
+    }
+    
+    return pipeline;
+}
+
 void Text::setText(const std::string& text) {
     this->text = text;
 }
 
-void Text::resizeBuffer(MTL::Buffer** buffer, unsigned long numBytes) {
-    unsigned long oldLength = (*buffer)->length();
+void Text::resizeBuffer(MTL::Buffer*& buffer, unsigned long numBytes) {
+    unsigned long oldLength = buffer->length();
 
     if (numBytes < oldLength)
         return;
@@ -55,8 +125,8 @@ void Text::resizeBuffer(MTL::Buffer** buffer, unsigned long numBytes) {
     unsigned long newLength = std::max(oldLength*2, numBytes);
 
     MTL::Buffer* newBuffer = this->device->newBuffer(newLength, MTL::StorageModeShared);
-    (*buffer)->release();
-    (*buffer) = newBuffer;
+    buffer->release();
+    buffer = newBuffer;
 }
 
 void Text::update() {
@@ -66,7 +136,10 @@ void Text::update() {
     int metadataIndex = 0;
     int bezierIndex = lastBezierPoint;
     
-    simd_float2 drawOffset {this->x*64.0f, (windowHeight-this->y)*64.0f};
+    Uniforms uniforms {.color=this->color};
+    auto frameInfo = getFrameInfo();
+    simd_float2 drawOffset {this->x*64.0f, (frameInfo.height-fontSize-this->y)*64.0f};
+    
     for (auto ch : text) {
         if (ch == '\r') {
             drawOffset.y -= this->fontSize*64.0f;
@@ -155,15 +228,36 @@ void Text::update() {
     this->numQuadPoints = quadPoints.size();
     
     // copy uniforms buffer
-    Uniforms uniforms {.color=this->color};
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
     
+    // copy frame info buffer
+    std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
+    
+    
     // copy resizable buffers
-    resizeBuffer(&quadBuffer, quadPoints.size()*sizeof(QuadPoint));
-    resizeBuffer(&bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
-    resizeBuffer(&glyphMetaBuffer, glyphMeta.size()*sizeof(int));
+    resizeBuffer(quadBuffer, quadPoints.size()*sizeof(QuadPoint));
+    resizeBuffer(bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
+    resizeBuffer(glyphMetaBuffer, glyphMeta.size()*sizeof(int));
 
     std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
     std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
+}
+
+void Text::encode(MTL::RenderCommandEncoder* encoder) {
+    auto pipeline = getTextPipeline(this->device, this->view->colorPixelFormat(), this->view->depthStencilPixelFormat());
+    encoder->setRenderPipelineState(pipeline);
+    encoder->setVertexBuffer(this->quadBuffer, 0, 0);
+    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
+
+    encoder->setFragmentBuffer(this->bezierPointsBuffer, 0, 0);
+    encoder->setFragmentBuffer(this->glyphMetaBuffer, 0, 1);
+    encoder->setFragmentBuffer(this->uniformsBuffer, 0, 2);
+    
+    encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(this->numQuadPoints));
+}
+
+FrameInfo Text::getFrameInfo() {
+    auto frameDimensions = this->view->drawableSize();
+    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
 }

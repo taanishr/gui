@@ -13,6 +13,8 @@
 #include "inputState.hpp"
 #include <semaphore>
 #include "text.hpp"
+#include <iostream>
+#include <ranges>
 
 constexpr int maxOutstandingFrameCount = 3;
 
@@ -26,7 +28,6 @@ public:
     Renderer(MTL::Device* device, MTK::View* view);
     ~Renderer();
     void updateConstants();
-    void makePipeline();
     void makeResources();
     void draw();
 private:
