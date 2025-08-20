@@ -20,15 +20,17 @@ void SelectedString::removeChar() {
     
     if (textBlock) {
         textBlock->setText(selectedString);
-        textBlock->update();
+//        textBlock->update();
     }
 }
 
 void SelectedString::addChar(char ch) {
     selectedString += ch;
     
+//    std::println("selected string: {}", selectedString);
+    
     if (textBlock) {
         textBlock->setText(selectedString);
-        textBlock->update();
+//        textBlock->update();
     }
 }

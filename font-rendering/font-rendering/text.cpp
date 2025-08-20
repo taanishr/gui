@@ -15,31 +15,30 @@ void printPoint(const simd_float2& pt, bool newLine) {
     std::print("({},{}){}", pt.x, pt.y, end);
 }
 
-Text::Text(MTL::Device* device, FT_Library ft, float height, simd_float3 color, const std::string& font):
+Text::Text(MTL::Device* device, FT_Library ft, float fontSize, simd_float3 color, const std::string& font):
     device{device},
-    height{height},
-    textUniforms{.color=color},
+    fontSize{fontSize},
+    color{color},
     font{font},
     x{100.0},
     y{100.0},
-    quadWidth{0.0},
-    quadHeight{0.0},
-    numQuads{0}
+    lastBezierPoint{0},
+    numQuadPoints{0}
 {
     FT_New_Face(ft, font.c_str(), 0, &(this->face));
-    FT_Set_Pixel_Sizes(face, 0, height);
+    FT_Set_Pixel_Sizes(face, 0, fontSize);
     
-    this->quadBuffer = this->device->newBuffer(sizeof(Quad)*4, MTL::StorageModeShared);
-    this->contoursBuffer = this->device->newBuffer(sizeof(simd_float2)*1024, MTL::StorageModeShared);
-    this->uniformsBuffer = this->device->newBuffer(sizeof(TextUniforms), MTL::StorageModeShared);
-    this->contoursMetaBuffer =  this->device->newBuffer(sizeof(ContourMeta)*4, MTL::StorageModeShared);
+    this->quadBuffer = device->newBuffer(sizeof(QuadPoint)*256, MTL::ResourceStorageModeShared);
+    this->bezierPointsBuffer = device->newBuffer(sizeof(simd_float2)*112, MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = device->newBuffer(sizeof(Uniforms)*1, MTL::ResourceStorageModeShared);
+    this->glyphMetaBuffer = device->newBuffer(sizeof(int)*256, MTL::ResourceStorageModeShared);
 }
 
 Text::~Text() {
-    uniformsBuffer->release();
-    quadBuffer->release();
-    contoursBuffer->release();
-    contoursMetaBuffer->release();
+    this->glyphMetaBuffer->release();
+    this->uniformsBuffer->release();
+    this->bezierPointsBuffer->release();
+    this->quadBuffer->release();
     FT_Done_Face(face);
 }
 
@@ -49,90 +48,170 @@ void Text::setText(const std::string& text) {
 
 void Text::resizeBuffer(MTL::Buffer** buffer, unsigned long numBytes) {
     unsigned long oldLength = (*buffer)->length();
-    
+
     if (numBytes < oldLength)
         return;
-    
+
     unsigned long newLength = std::max(oldLength*2, numBytes);
-    
-    // no need to copy contents
+
     MTL::Buffer* newBuffer = this->device->newBuffer(newLength, MTL::StorageModeShared);
     (*buffer)->release();
     (*buffer) = newBuffer;
 }
 
-
 void Text::update() {
-    std::vector<Quad> quads {};
-    std::vector<simd_float2> contourPoints {};
-    std::vector<std::vector<simd_float2>> contours {};
-    std::vector<std::pair<float,float>> offsets;
-    std::vector<ContourMeta> contoursMeta {};
-
-    float penX = FT_PIXEL_CF*x;
-    float penY = FT_PIXEL_CF*(windowHeight-y);
-    unsigned int firstContour = 0;
-    unsigned int numQuadsInUpdate = 0;
-    for (auto ch: this->text) {
-        FT_Load_Char(face, ch, FT_LOAD_RENDER);
-        
-        FT_Outline* outlinePtr = &face->glyph->outline;
-        
+    std::vector<QuadPoint> quadPoints;
+    std::vector<int> glyphMeta;
+    
+    int metadataIndex = 0;
+    int bezierIndex = lastBezierPoint;
+    
+    simd_float2 drawOffset {this->x*64.0f, (windowHeight-this->y)*64.0f};
+    for (auto ch : text) {
         if (ch == '\r') {
-            penY -= FT_PIXEL_CF*height;
-            penX = FT_PIXEL_CF*x;
-        }else {
-            auto chContoursAndQuad = drawContours(outlinePtr, penX, penY);
-            // handle contours
-            auto& chContours = std::get<0>(chContoursAndQuad);
-            contours.insert(contours.end(), chContours.begin(), chContours.end());
-            unsigned int lastContour = firstContour + static_cast<unsigned int>(chContours.size());
+            drawOffset.y -= this->fontSize*64.0f;
+            drawOffset.x = this->x*64.0f;
+            continue;
+        }
+            
+        FT_Load_Char(this->face, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
+        
+        auto glyph = this->face->glyph;
+        auto outline = &this->face->glyph->outline;
+        
+        bool contoursCached = glyphBezierMap.find(ch) != glyphBezierMap.end();
+        
+        if (!contoursCached) {
+            auto processedGlyph = processContours(outline, bezierIndex);
             
             // handle quad
-            auto topLeft = std::get<1>(chContoursAndQuad);
-            auto bottomRight = std::get<2>(chContoursAndQuad);
-            quads.push_back({.position=topLeft, .offset={penX,penY},.firstContour = firstContour, .lastContour = lastContour});
-            quads.push_back({.position={bottomRight.x, topLeft.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
-            quads.push_back({.position={topLeft.x, bottomRight.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
-            quads.push_back({.position={topLeft.x, bottomRight.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
-            quads.push_back({.position={bottomRight.x, topLeft.y}, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
-            quads.push_back({.position=bottomRight, .offset={penX,penY}, .firstContour = firstContour, .lastContour = lastContour});
-            ++numQuadsInUpdate;
+            auto quad = processedGlyph.quad;
             
-            firstContour = lastContour;
+            // cache points metadata and glyph
+            glyphBezierMap[ch] = bezierIndex;
+            glyphMap[ch] = processedGlyph;
             
-            penX += this->face->glyph->advance.x;
+            quadPoints.push_back({
+                .position = quad.topLeft,
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.bottomRight.x, quad.topLeft.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.topLeft.x, quad.bottomRight.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.topLeft.x, quad.bottomRight.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            
+            quadPoints.push_back({
+                .position = {quad.bottomRight.x, quad.topLeft.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = quad.bottomRight,
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+        
+            // handle metadata
+            glyphMeta.push_back(bezierIndex); // bezier index; pull from map
+            glyphMeta.push_back(processedGlyph.numContours); // numContours
+            for (int contourSize : processedGlyph.contourSizes) // num points per contour
+                glyphMeta.push_back(contourSize);
+            
+            metadataIndex += 2 + processedGlyph.contourSizes.size();
+            
+            // handle points
+            bezierPoints.insert(bezierPoints.end(), processedGlyph.points.begin(), processedGlyph.points.end());
+            
+            // increment counters
+            lastBezierPoint = bezierIndex + processedGlyph.points.size();
+        }else {
+            bezierIndex = glyphBezierMap[ch];
+            
+            auto& processedGlyph = glyphMap[ch];
+            
+            // handle quad
+            auto quad = processedGlyph.quad;
+            
+            quadPoints.push_back({
+                .position = quad.topLeft,
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.bottomRight.x, quad.topLeft.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.topLeft.x, quad.bottomRight.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = {quad.topLeft.x, quad.bottomRight.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            
+            quadPoints.push_back({
+                .position = {quad.bottomRight.x, quad.topLeft.y},
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            quadPoints.push_back({
+                .position = quad.bottomRight,
+                .offset = drawOffset,
+                .metadataIndex = metadataIndex
+            });
+            
+            // handle metadata
+            glyphMeta.push_back(bezierIndex); // bezier index; pull from map
+            glyphMeta.push_back(processedGlyph.numContours); // numContours
+            for (int contourSize : processedGlyph.contourSizes) // num points per contour
+                glyphMeta.push_back(contourSize);
+            
+            metadataIndex += 2 + processedGlyph.contourSizes.size();
         }
         
-        offsets.push_back({penX, penY});
+        drawOffset.x += glyph->metrics.horiAdvance;
+        bezierIndex = lastBezierPoint;
     }
     
-    this->numQuads = numQuadsInUpdate;
+    this->numQuadPoints = quadPoints.size();
     
-    std::println("num quads: {}", numQuads);
+    // copy uniforms buffer
+    Uniforms uniforms {.color=this->color};
+    std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
     
-    unsigned long contourStart = 0;
-    
-    for (auto& contour: contours) {
-        contourPoints.insert(contourPoints.end(), contour.begin(), contour.end());
-        
-        std::println("num points per contour: {}", contour.size());
-    
-        contoursMeta.push_back({.start = contourStart, .end = contourStart+contour.size()});
-        
-        contourStart += contour.size();
-    }
-    
-    TextUniforms* uniformsBufferPtr = static_cast<TextUniforms*>(uniformsBuffer->contents());
-    *uniformsBufferPtr = textUniforms;
-    
-    std::println("num points: {}", contourPoints.size());
+    // copy resizable buffers
+    resizeBuffer(&quadBuffer, quadPoints.size()*sizeof(QuadPoint));
+    resizeBuffer(&bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
+    resizeBuffer(&glyphMetaBuffer, glyphMeta.size()*sizeof(int));
 
-    resizeBuffer(&quadBuffer, sizeof(Quad)*quads.size());
-    resizeBuffer(&contoursBuffer, sizeof(simd_float2)*contourPoints.size());
-    resizeBuffer(&contoursMetaBuffer, sizeof(ContourMeta)*contoursMeta.size());
-    
-    std::memcpy(this->quadBuffer->contents(), quads.data(), quads.size()*sizeof(Quad));
-    std::memcpy(this->contoursBuffer->contents(), contourPoints.data(), sizeof(simd_float2)*contourPoints.size());
-    std::memcpy(this->contoursMetaBuffer->contents(), contoursMeta.data(), sizeof(ContourMeta)*contoursMeta.size());
+    std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
+    std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
+    std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
 }

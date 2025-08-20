@@ -89,8 +89,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
     view->setDelegate(viewDelegate.get());
-    
-    view->setPreferredFramesPerSecond(0);
+
 
 
     window->setContentView(view);

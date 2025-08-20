@@ -23,97 +23,143 @@ struct TextUniforms {
     float3 color;
 };
 
-struct ContourMeta {
-    unsigned long start;
-    unsigned long end;
-};
-
 struct VertexIn {
     float2 position [[attribute(0)]];
     float2 offset [[attribute(1)]];
-    uint firstContour [[attribute(2)]];
-    uint lastContour [[attribute(3)]];
+    int metadataIndex [[attribute(2)]];
 };
 
 
 struct VertexOut {
     float4 position [[position]];
-    float2 worldPos;
-    uint firstContour [[flat]];
-    uint lastContour [[flat]];
+    float4 worldPosition;
+    int metadataIndex [[flat]];
 };
 
 vertex VertexOut vertex_main(
     VertexIn in [[stage_in]]
 )
 {
-    float2 adjustedPos = toNDC((in.position + in.offset)/64.0f);
     
     VertexOut out;
     
+    float2 adjustedPos = toNDC((in.position+in.offset)/64.0f);
     out.position = float4(adjustedPos, 0.0, 1.0);
-    out.worldPos = in.position;
-    out.firstContour = in.firstContour;
-    out.lastContour = in.lastContour;
+    out.worldPosition = float4(in.position, 0.0, 1.0);
+    out.metadataIndex = in.metadataIndex;
     
     return out;
 }
 
-// my attempt
-// min distance to segment?
-// check intersections (want to see if its outside)
-// open questions: why do we need the fwidth derivatives?
-    // fragment shaders calculated in blocks; screenspace derivatives on the distance can help us find the size of a pixel based on the derivative with pixels around it
-// why do we need the sign?
-
-
-inline float signed_dist(float2 p, float2 a, float2 b) {
-    float2 ba = b - a;
-    float2 pa = p - a;
+int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY) {
+    float eps = 1e-6;
+    // bezier quadratic: (P_0-2P_1+P_2)t^2+(P_1-P_2)t+P_0
     
-    float2 proj = ba*clamp(dot(pa, ba)/dot(ba,ba), 0.0, 1.0); // get the projection of the distance vector
+    float minY = min(min(p0.y, p1.y), p2.y);
+    float maxY = max(max(p0.y, p1.y), p2.y);
+    if (fragY <= minY - eps || fragY > maxY + eps) return 0;
+    
+    // (-b +- sqrt(b^2-4ac))/2a
+    
+    float a = p0.y-2.0f*p1.y+p2.y;
+    float b = 2.0f*(p1.y-p0.y);
+    float c = p0.y - fragY; // solving for f(x) = fragY
+
+    int intersections = 0;
+    
+    if (fabs(a) < eps) { // degens to line
+        if (fabs(b) < eps) return 0;
         
-    return distance_squared(pa, proj); // get the distance between the vector pa and the projection
+        float t = -c / b;
+        
+        if (fabs(t) < eps) t = 0.0f;
+        if (fabs(1.0-t) < eps) t = 1.0f;
+        
+        if (t >= 0.0 && t <= 1.0) {
+            float x = mix(mix(p0.x, p1.x, t), mix(p1.x, p2.x, t), t);
+            
+            if (x > fragX) ++intersections;
+        }
+        
+    }else {
+        float discrim = b*b-4.0f*a*c;
+        if (discrim >= 0.0) {
+            float sqDiscrim = sqrt(discrim);
+            float inv = 1.0f/(2.0f*a);
+            float t1 = (-b + sqDiscrim) * inv;
+            float t2 = (-b - sqDiscrim) * inv;
+            
+            if (fabs(t1) < eps) t1 = 0.0f;
+            if (fabs(1.0-t1) < eps) t1 = 1.0f;
+            
+            if (fabs(t2) < eps) t2 = 0.0f;
+            if (fabs(1.0-t2) < eps) t2 = 1.0f;
+            
+            if (t1 >= 0.0 && t1 <= 1.0) {
+                float x = (p0.x-2.0f*p1.x+p2.x)*t1*t1+2.0f*(p1.x-p0.x)*t1+p0.x;
+                
+                if (x > fragX) ++intersections;
+            }
+            
+            if (t2 >= 0.0 && t2 <= 1.0) {
+                float x = (p0.x-2.0f*p1.x+p2.x)*t2*t2+2.0f*(p1.x-p0.x)*t2+p0.x;
+                
+                if (x > fragX) ++intersections;
+            }
+        }
+    }
+    
+    return intersections;
+}
+
+// newton distance
+float approximateDistance(float2 p0, float2 p1, float2 p2, float2 q) {
+    float2 a = p0 - 2.0*p1 + p2;
+    float2 b = 2.0*(p1 - p0);
+    float2 c = p0;
+
+    float2 chord = p2 - p0;
+    float t = clamp(dot(q - p0, chord) / dot(chord,chord), 0.0, 1.0);
+
+    for (int i=0; i<2; ++i) {
+        float2 B  = (a*t + b)*t + c;
+        float2 dB = 2.0*a*t + b;
+        float2 r  = B - q;
+        float f   = dot(r, dB);
+        float df  = dot(dB, dB) + dot(r, 2.0*a);
+        t = clamp(t - f/df, 0.0, 1.0);
+    }
+
+    float2 B = (a*t + b)*t + c;
+    return distance(q, B);
 }
 
 fragment float4 fragment_main(
     VertexOut in [[stage_in]],
-    constant float2* vertices [[buffer(1)]],
-    constant ContourMeta* contourBounds [[buffer(2)]],
-    constant TextUniforms& uniforms [[buffer(3)]]
+    constant float2* bezierPoints [[buffer(1)]],
+    constant int* glyphMeta [[buffer(2)]],
+    constant TextUniforms* uniforms [[buffer(3)]]
 )
 {
-    float2 point = in.worldPos.xy;
-    
-    
-    int intersections = 0;
+    float4 fragPt = in.worldPosition;
+    int metadataIndex = in.metadataIndex;
+    int bezierIndex = glyphMeta[metadataIndex];
+    int numContours = glyphMeta[metadataIndex+1];
     float minDist = 1e20;
     
-    
-    
-    for (unsigned long c = in.firstContour; c < in.lastContour; ++c) {
-        ContourMeta cb = contourBounds[c];
-
-        unsigned long offset = cb.start;
-        unsigned long contourSize = cb.end-cb.start;
+    int intersections = 0;
+    int coff = 0;
+    for (int ci = 0; ci < numContours; ++ci) {
+        int contourSize = glyphMeta[metadataIndex+2+ci];
         
-        for (unsigned long p = 0; p < contourSize; ++p) {
-            unsigned long edgeStart = offset + p;
-            unsigned long edgeEnd = offset + (p+1)%contourSize;
+        for (int cpi = 0; cpi < contourSize; cpi += 3, coff += 3) {
+            auto p0 = bezierPoints[bezierIndex+coff];
+            auto p1 = bezierPoints[bezierIndex+coff+1];
+            auto p2 = bezierPoints[bezierIndex+coff+2];
             
-            float2 v1 = vertices[edgeStart];
-            float2 v2 = vertices[edgeEnd];
+            minDist = min(minDist, approximateDistance(p0, p1, p2, fragPt.xy));
             
-            if (v1.y > point.y != v2.y > point.y) {
-                float intersectX = v1.x + (point.y - v1.y) * ((v2.x - v1.x) / (v2.y - v1.y));
-                if (intersectX > point.x) {
-                    ++intersections;
-                }
-            }
-            
-            
-            float sd = signed_dist(point, v1, v2);
-            minDist = min(minDist, sd);
+            intersections += countIntersections(p0, p1, p2, fragPt.x, fragPt.y);
         }
     }
     
@@ -122,20 +168,10 @@ fragment float4 fragment_main(
     float sd = inside ? -minDist : minDist;
     
     float px = fwidth(sd);
-    
+
     float alpha = clamp(0.5 - sd/px, 0.0, 1.0);
 
-    float3 rgb = mix(uniforms.color, uniforms.color, alpha);
-    
+    float3 rgb = mix(float3{uniforms->color}, float3{uniforms->color}, alpha);
+
     return float4(rgb*alpha,alpha);
 }
-//
-//fragment float4 fragment_main(
-//    VertexOut in [[stage_in]],
-//    constant float2* vertices [[buffer(1)]],
-//    constant ContourMeta* contourBounds [[buffer(2)]],
-//    constant TextUniforms& uniforms [[buffer(3)]]
-//)
-//{
-//    return float4(1,1,1,1);
-//}
