@@ -28,13 +28,13 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
             quad.topLeft.x = currentPoint.x;
         
         if (currentPoint.y < quad.topLeft.y)
-            quad.topLeft.y = currentPoint.y;
+            quad.topLeft.y = currentPoint.y - 1.0f;
         
         if (currentPoint.x > quad.bottomRight.x)
             quad.bottomRight.x = currentPoint.x;
         
         if (currentPoint.y > quad.bottomRight.y)
-            quad.bottomRight.y = currentPoint.y;
+            quad.bottomRight.y = currentPoint.y + 1.0f;
 
         // contour handling
         switch (tags[p]) {

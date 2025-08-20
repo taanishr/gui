@@ -14,28 +14,6 @@
 #include "bezier.hpp"
 #include "windowConstants.hpp"
 
-//// vertex points are just the 1st buffer
-//// std::vector<GlyphMeta> all the metadata, can just be ints
-//
-//// Fragment Shader
-//// i dont need to differentiate between quadratic and cubic just yet i dont think
-//// std::vector<simd_float2> bezier points; buffer 1
-//
-//struct GlyphMeta {
-//    int bezierIndex;
-//    int numContours;
-//    int contourPoints;
-//};
-//
-//// std::vector<int>; buffer 2
-//
-//struct Uniforms {
-//    simd_float3 color;
-//}; // should not be embedded in glyph meta; does not vary; buffer 3
-//
-//
-//// std::vector<Uniforms>; buffer 3
-
 enum class Segment {
     Line,
     Conic,

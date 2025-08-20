@@ -26,7 +26,7 @@ struct TextUniforms {
 struct VertexIn {
     float2 position [[attribute(0)]];
     float2 offset [[attribute(1)]];
-    int metadataIndex [[attribute(2)]];
+    int metadataIndex [[attribute(3)]];
 };
 
 
@@ -43,8 +43,9 @@ vertex VertexOut vertex_main(
     
     VertexOut out;
     
-    float2 adjustedPos = toNDC((in.position+in.offset)/64.0f);
-    out.position = float4(adjustedPos, 0.0, 1.0);
+    float2 adjustedPos = (in.position+in.offset)/64.0f;
+    float2 ndcPos = toNDC(adjustedPos);
+    out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
     out.metadataIndex = in.metadataIndex;
     
@@ -57,7 +58,7 @@ int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY
     
     float minY = min(min(p0.y, p1.y), p2.y);
     float maxY = max(max(p0.y, p1.y), p2.y);
-    if (fragY <= minY - eps || fragY > maxY + eps) return 0;
+    if (fragY < minY || fragY >= maxY) return 0;
     
     // (-b +- sqrt(b^2-4ac))/2a
     
@@ -112,7 +113,7 @@ int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY
     return intersections;
 }
 
-// newton distance
+// newton approximation distance
 float approximateDistance(float2 p0, float2 p1, float2 p2, float2 q) {
     float2 a = p0 - 2.0*p1 + p2;
     float2 b = 2.0*(p1 - p0);
@@ -164,6 +165,7 @@ fragment float4 fragment_main(
     }
     
     bool inside = intersections & 1;
+
     
     float sd = inside ? -minDist : minDist;
     

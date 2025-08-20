@@ -10,7 +10,6 @@
 #include "metal_imports.hpp"
 #include "bezier.hpp"
 #include "freetype.hpp"
-#include "renderFace.hpp"
 #include "inputState.hpp"
 #include <semaphore>
 #include "text.hpp"

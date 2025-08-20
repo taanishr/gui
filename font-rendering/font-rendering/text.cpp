@@ -20,8 +20,8 @@ Text::Text(MTL::Device* device, FT_Library ft, float fontSize, simd_float3 color
     fontSize{fontSize},
     color{color},
     font{font},
-    x{100.0},
-    y{100.0},
+    x{25.0},
+    y{50.0},
     lastBezierPoint{0},
     numQuadPoints{0}
 {
@@ -84,117 +84,69 @@ void Text::update() {
         if (!contoursCached) {
             auto processedGlyph = processContours(outline, bezierIndex);
             
-            // handle quad
-            auto quad = processedGlyph.quad;
-            
             // cache points metadata and glyph
             glyphBezierMap[ch] = bezierIndex;
             glyphMap[ch] = processedGlyph;
-            
-            quadPoints.push_back({
-                .position = quad.topLeft,
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.bottomRight.x, quad.topLeft.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.topLeft.x, quad.bottomRight.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.topLeft.x, quad.bottomRight.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            
-            quadPoints.push_back({
-                .position = {quad.bottomRight.x, quad.topLeft.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = quad.bottomRight,
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-        
-            // handle metadata
-            glyphMeta.push_back(bezierIndex); // bezier index; pull from map
-            glyphMeta.push_back(processedGlyph.numContours); // numContours
-            for (int contourSize : processedGlyph.contourSizes) // num points per contour
-                glyphMeta.push_back(contourSize);
-            
-            metadataIndex += 2 + processedGlyph.contourSizes.size();
-            
-            // handle points
+    
+            // inset points
             bezierPoints.insert(bezierPoints.end(), processedGlyph.points.begin(), processedGlyph.points.end());
             
-            // increment counters
+            // increment counter
             lastBezierPoint = bezierIndex + processedGlyph.points.size();
-        }else {
-            bezierIndex = glyphBezierMap[ch];
-            
-            auto& processedGlyph = glyphMap[ch];
-            
-            // handle quad
-            auto quad = processedGlyph.quad;
-            
-            quadPoints.push_back({
-                .position = quad.topLeft,
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.bottomRight.x, quad.topLeft.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.topLeft.x, quad.bottomRight.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = {quad.topLeft.x, quad.bottomRight.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            
-            quadPoints.push_back({
-                .position = {quad.bottomRight.x, quad.topLeft.y},
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            quadPoints.push_back({
-                .position = quad.bottomRight,
-                .offset = drawOffset,
-                .metadataIndex = metadataIndex
-            });
-            
-            // handle metadata
-            glyphMeta.push_back(bezierIndex); // bezier index; pull from map
-            glyphMeta.push_back(processedGlyph.numContours); // numContours
-            for (int contourSize : processedGlyph.contourSizes) // num points per contour
-                glyphMeta.push_back(contourSize);
-            
-            metadataIndex += 2 + processedGlyph.contourSizes.size();
         }
+        
+        bezierIndex = glyphBezierMap[ch];
+        auto& processedGlyph = glyphMap[ch];
+        
+        // handle quad
+        auto quad = processedGlyph.quad;
+    
+        quadPoints.push_back({
+            .position = quad.topLeft,
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        quadPoints.push_back({
+            .position = {quad.bottomRight.x, quad.topLeft.y},
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        quadPoints.push_back({
+            .position = {quad.topLeft.x, quad.bottomRight.y},
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        quadPoints.push_back({
+            .position = {quad.topLeft.x, quad.bottomRight.y},
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        
+        quadPoints.push_back({
+            .position = {quad.bottomRight.x, quad.topLeft.y},
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        quadPoints.push_back({
+            .position = quad.bottomRight,
+            .offset = drawOffset,
+            .metadataIndex = metadataIndex
+        });
+        
+        
+        // handle metadata
+        glyphMeta.push_back(bezierIndex); // bezier index; pull from map
+        glyphMeta.push_back(processedGlyph.numContours); // numContours
+        for (int contourSize : processedGlyph.contourSizes) // num points per contour
+            glyphMeta.push_back(contourSize);
+        
+        metadataIndex += 2 + processedGlyph.contourSizes.size();
+    
         
         drawOffset.x += glyph->metrics.horiAdvance;
         bezierIndex = lastBezierPoint;

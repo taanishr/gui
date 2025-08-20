@@ -37,9 +37,9 @@ void Renderer::makePipeline() {
     vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
     vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
     
-    vertexDescriptor->attributes()->object(2)->setFormat(MTL::VertexFormat::VertexFormatInt);
-    vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2)*2);
-    vertexDescriptor->attributes()->object(2)->setBufferIndex(0);
+    vertexDescriptor->attributes()->object(3)->setFormat(MTL::VertexFormat::VertexFormatInt);
+    vertexDescriptor->attributes()->object(3)->setOffset(sizeof(simd_float2)*2);
+    vertexDescriptor->attributes()->object(3)->setBufferIndex(0);
 
     vertexDescriptor->layouts()->object(0)->setStride(sizeof(QuadPoint));
     
@@ -82,7 +82,7 @@ void Renderer::makePipeline() {
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    textBlocks.push_back(std::make_unique<Text>(device, ft, 64.0, simd_float3{0.33,0,0}));
+    textBlocks.push_back(std::make_unique<Text>(device, ft, 24.0, simd_float3{0.33,0,0}));
 //    textBlocks[0]->setText("will this work");
     SelectedString::textBlock = textBlocks[0].get();
 }
@@ -90,7 +90,7 @@ void Renderer::makeResources() {
 void Renderer::draw() {
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
-    this->frameSemaphore.acquire();
+//    this->frameSemaphore.acquire();
     
     // try per quad rendering instead of this?
     
@@ -113,7 +113,7 @@ void Renderer::draw() {
     renderCommandEncoder->endEncoding();
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
-        this->frameSemaphore.release();
+//        this->frameSemaphore.release();
     };
     
     commandBuffer->addCompletedHandler(completedHandler);

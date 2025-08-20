@@ -68,8 +68,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     device = MTL::CreateSystemDefaultDevice();
 
     view = MTK::View::alloc()->init(frame, device);
-    
-    
+
     // adding input!!!
     id objcInstance = reinterpret_cast<id>(view);
     Class cls = object_getClass(objcInstance);
@@ -83,21 +82,18 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
-    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
+//    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
+    view->setClearColor(MTL::ClearColor::Make(1,1,1,1));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
-    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
-
+    
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
     view->setDelegate(viewDelegate.get());
-
-
-
+    
     window->setContentView(view);
     
     window->setTitle(NS::String::string("window", NS::StringEncoding::UTF8StringEncoding ));
 
     window->makeKeyAndOrderFront(nullptr);
-
     
     AppKit_Extensions::setTitleBarTransparent(reinterpret_cast<void*>(window));
     AppKit_Extensions::setWindowTransparent(reinterpret_cast<void*>(window));
