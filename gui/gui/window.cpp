@@ -83,12 +83,13 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
-    view->setClearColor(MTL::ClearColor::Make(0,0,0,1));
+    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.5));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
     
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
     view->setDelegate(viewDelegate.get());
+    
     
     window->setContentView(view);
     

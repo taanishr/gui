@@ -10,15 +10,10 @@
 
 #include "metal_imports.hpp"
 #include "freetype.hpp"
-#include "processContours.hpp"
+#include "process_contours.hpp"
 #include "renderable.hpp"
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
-
-struct FrameInfo {
-    float width;
-    float height;
-};
 
 struct QuadPoint {
     simd_float2 position;

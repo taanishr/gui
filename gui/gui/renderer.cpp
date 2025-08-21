@@ -22,9 +22,9 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    textBlocks.push_back(std::make_unique<Text>(device, view, ft, 10.0, 25.0, 20.0, simd_float3{1,1,1}));
-//    textBlocks[0]->setText("will this work");
-    SelectedString::textBlock = dynamic_cast<Text*>(textBlocks[0].get());
+    renderables.push_back(std::make_unique<Text>(device, view, ft, 10.0, 25.0, 32.0, simd_float3{1,1,1}));
+    renderables.push_back(std::make_unique<Shell>(device, view, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}));
+    SelectedString::textBlock = dynamic_cast<Text*>(renderables[0].get());
 }
 
 void Renderer::draw() {
@@ -36,9 +36,9 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
 
-    for (auto& textBlock: textBlocks) {
-        textBlock->update();
-        textBlock->encode(renderCommandEncoder);
+    for (auto& renderable: renderables) {
+        renderable->update();
+        renderable->encode(renderCommandEncoder);
     }
 
     renderCommandEncoder->endEncoding();

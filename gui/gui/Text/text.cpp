@@ -100,9 +100,8 @@ void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
 MTL::RenderPipelineState* Text::getPipeline() {
     static MTL::RenderPipelineState* pipeline = nullptr;
     
-    if (!pipeline) {
+    if (!pipeline)
         buildPipeline(pipeline);
-    }
     
     return pipeline;
 }

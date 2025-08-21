@@ -13,7 +13,7 @@
 #include "renderer.hpp"
 #include <ApplicationServices/ApplicationServices.h>
 #include <objc/runtime.h>
-#include "inputState.hpp"
+#include "input_state.hpp"
 
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:

@@ -5,11 +5,16 @@
 //  Created by Taanish Reja on 8/20/25.
 //
 
-#ifndef TO_NDC_METAL
-#define TO_NDC_METAL
+#ifndef COMMON_METAL
+#define COMMON_METAL
 
 #include <metal_stdlib>
 using namespace metal;
+
+struct FrameInfo {
+    float width;
+    float height;
+};
 
 inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f) {
     float ndcX = (pt.x / width) * 2.0f - 1.0f;

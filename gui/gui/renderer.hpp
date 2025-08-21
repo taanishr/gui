@@ -9,13 +9,14 @@
 #define RENDERER_H
 #include "metal_imports.hpp"
 #include "freetype.hpp"
-#include "inputState.hpp"
+#include "input_state.hpp"
 #include <semaphore>
 #include "text.hpp"
 #include <iostream>
 #include <ranges>
+#include "shell.hpp"
 
-constexpr int maxOutstandingFrameCount = 3;
+constexpr int maxOutstandingFrameCount = 2;
 
 struct Constants {
     unsigned long nPoints;
@@ -36,7 +37,7 @@ private:
     MTK::View* view;
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
     FT_Library ft;
-    std::vector<std::unique_ptr<Renderable>> textBlocks;
+    std::vector<std::unique_ptr<Renderable>> renderables;
 };
 
 #endif

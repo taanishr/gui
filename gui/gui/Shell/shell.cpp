@@ -5,3 +5,118 @@
 //  Created by Taanish Reja on 8/20/25.
 //
 
+#include "shell.hpp"
+
+Shell::Shell(MTL::Device* device, MTK::View* view, float width, float height, float x, float y, simd_float4 color):
+    device{device},
+    view{view},
+    width{width},
+    height{height},
+    x{x},
+    y{y},
+    color{color}
+{
+    this->quadPointsBuffer = device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = device->newBuffer(sizeof(ShellUniforms),  MTL::ResourceStorageModeShared);
+    this->frameInfoBuffer = device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
+}
+
+void Shell::update() {
+    auto frameInfo = getFrameInfo();
+    
+    simd_float2 drawOffset {x, frameInfo.height - y};
+    
+    ShellUniforms uniforms {.color=color};
+    
+    std::array<ShellQuadPoint, 6> quadPoints {{
+        {.position={drawOffset.x,drawOffset.y}},
+        {.position={drawOffset.x+width,drawOffset.y}},
+        {.position={drawOffset.x,drawOffset.y+height}},
+        {.position={drawOffset.x,drawOffset.y+height}},
+        {.position={drawOffset.x+width,drawOffset.y}},
+        {.position={drawOffset.x+width,drawOffset.y+height}},
+    }};
+    
+    std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
+    std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(ShellUniforms));
+                
+    std::memcpy(this->quadPointsBuffer->contents(), quadPoints.data(), 6*sizeof(ShellQuadPoint));
+}
+
+void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
+    MTL::Library* defaultLibrary = device->newDefaultLibrary();
+    MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
+    
+    // set up vertex descriptor
+    MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
+    vertexDescriptor->attributes()->object(0)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+    vertexDescriptor->attributes()->object(0)->setOffset(0);
+    vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
+
+    vertexDescriptor->layouts()->object(0)->setStride(sizeof(ShellQuadPoint));
+    
+    renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
+
+    
+    // set up vertex function
+    MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_shell", NS::UTF8StringEncoding));
+    renderPipelineDescriptor->setVertexFunction(vertexFunction);
+    
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(view->colorPixelFormat());
+    renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+    
+    
+    renderPipelineDescriptor->setDepthAttachmentPixelFormat(view->depthStencilPixelFormat());
+    
+
+    // set up fragment function
+    MTL::Function* fragmentFunction = defaultLibrary->newFunction(NS::String::string("fragment_shell", NS::UTF8StringEncoding));
+    renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
+    
+    
+    NS::Error* error = nullptr;
+    pipeline = device->newRenderPipelineState(renderPipelineDescriptor, &error);
+    
+    if (error != nullptr)
+        std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
+    
+    
+    defaultLibrary->release();
+    renderPipelineDescriptor->release();
+    vertexDescriptor->release();
+    vertexFunction->release();
+}
+
+MTL::RenderPipelineState* Shell::getPipeline() {
+    static MTL::RenderPipelineState* pipeline = nullptr;
+    
+    if (!pipeline)
+        buildPipeline(pipeline);
+    
+    return pipeline;
+}
+
+void Shell::encode(MTL::RenderCommandEncoder* encoder) {
+    auto pipeline = getPipeline();
+    encoder->setRenderPipelineState(pipeline);
+
+    encoder->setVertexBuffer(this->quadPointsBuffer, 0, 0);
+    encoder->setFragmentBuffer(this->uniformsBuffer, 0, 0);
+    
+    encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
+}
+
+Shell::~Shell() {
+    this->quadPointsBuffer->release();
+}
+
+FrameInfo Shell::getFrameInfo() {
+    auto frameDimensions = this->view->drawableSize();
+
+    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
+}
