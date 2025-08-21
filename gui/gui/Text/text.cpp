@@ -5,14 +5,13 @@
 //  Created by Taanish Reja on 8/15/25.
 //
 
-// optimization tricks to try:
-// - quad per glpyh?
-
 #include "text.hpp"
+#include "Renderer.hpp"
 
-Text::Text(MTL::Device* device, MTK::View* view, FT_Library ft, float x, float y, float fontSize, simd_float3 color, const std::string& font):
-    device{device},
-    view{view},
+using namespace TextRender;
+
+Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float3 color, const std::string& font):
+    renderer{renderer},
     x{x},
     y{y},
     fontSize{fontSize},
@@ -21,14 +20,14 @@ Text::Text(MTL::Device* device, MTK::View* view, FT_Library ft, float x, float y
     lastBezierPoint{0},
     numQuadPoints{0}
 {
-    FT_New_Face(ft, font.c_str(), 0, &(this->face));
+    FT_New_Face(renderer.ft, font.c_str(), 0, &(this->face));
     FT_Set_Pixel_Sizes(face, 0, fontSize);
     
-    this->quadBuffer = device->newBuffer(sizeof(QuadPoint)*256, MTL::ResourceStorageModeShared);
-    this->bezierPointsBuffer = device->newBuffer(sizeof(simd_float2)*112, MTL::ResourceStorageModeShared);
-    this->uniformsBuffer = device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
-    this->glyphMetaBuffer = device->newBuffer(sizeof(int)*256, MTL::ResourceStorageModeShared);
-    this->frameInfoBuffer = device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
+    this->quadBuffer = renderer.device->newBuffer(sizeof(QuadPoint)*256, MTL::ResourceStorageModeShared);
+    this->bezierPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*112, MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
+    this->glyphMetaBuffer = renderer.device->newBuffer(sizeof(int)*256, MTL::ResourceStorageModeShared);
+    this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
 }
 
 Text::~Text() {
@@ -41,7 +40,7 @@ Text::~Text() {
 }
 
 void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
-    MTL::Library* defaultLibrary = device->newDefaultLibrary();
+    MTL::Library* defaultLibrary = renderer.device->newDefaultLibrary();
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
     
     // set up vertex descriptor
@@ -67,7 +66,7 @@ void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_text", NS::UTF8StringEncoding));
     renderPipelineDescriptor->setVertexFunction(vertexFunction);
     
-    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(view->colorPixelFormat());
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(renderer.view->colorPixelFormat());
     renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
     renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
     renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
@@ -76,7 +75,7 @@ void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
     
     
-    renderPipelineDescriptor->setDepthAttachmentPixelFormat(view->depthStencilPixelFormat());
+    renderPipelineDescriptor->setDepthAttachmentPixelFormat(renderer.view->depthStencilPixelFormat());
     
 
     // set up fragment function
@@ -85,7 +84,7 @@ void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     
     
     NS::Error* error = nullptr;
-    pipeline = device->newRenderPipelineState(renderPipelineDescriptor, &error);
+    pipeline = renderer.device->newRenderPipelineState(renderPipelineDescriptor, &error);
     
     if (error != nullptr)
         std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
@@ -110,19 +109,6 @@ void Text::setText(const std::string& text) {
     this->text = text;
 }
 
-void Text::resizeBuffer(MTL::Buffer*& buffer, unsigned long numBytes) {
-    unsigned long oldLength = buffer->length();
-
-    if (numBytes < oldLength)
-        return;
-
-    unsigned long newLength = std::max(oldLength*2, numBytes);
-
-    MTL::Buffer* newBuffer = this->device->newBuffer(newLength, MTL::StorageModeShared);
-    buffer->release();
-    buffer = newBuffer;
-}
-
 void Text::update() {
     std::vector<QuadPoint> quadPoints;
     std::vector<int> glyphMeta;
@@ -131,7 +117,7 @@ void Text::update() {
     int bezierIndex = lastBezierPoint;
     
     Uniforms uniforms {.color=this->color};
-    auto frameInfo = getFrameInfo();
+    auto frameInfo = renderer.getFrameInfo();
     simd_float2 drawOffset {this->x*64.0f, (frameInfo.height-fontSize-this->y)*64.0f};
     
     for (auto ch : text) {
@@ -229,9 +215,9 @@ void Text::update() {
     
     
     // copy resizable buffers
-    resizeBuffer(quadBuffer, quadPoints.size()*sizeof(QuadPoint));
-    resizeBuffer(bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
-    resizeBuffer(glyphMetaBuffer, glyphMeta.size()*sizeof(int));
+    resizeBuffer(renderer.device, quadBuffer, quadPoints.size()*sizeof(QuadPoint));
+    resizeBuffer(renderer.device, bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
+    resizeBuffer(renderer.device, glyphMetaBuffer, glyphMeta.size()*sizeof(int));
 
     std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
     std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
@@ -249,10 +235,4 @@ void Text::encode(MTL::RenderCommandEncoder* encoder) {
     encoder->setFragmentBuffer(this->uniformsBuffer, 0, 2);
     
     encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(this->numQuadPoints));
-}
-
-FrameInfo Text::getFrameInfo() {
-    auto frameDimensions = this->view->drawableSize();
-
-    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
 }

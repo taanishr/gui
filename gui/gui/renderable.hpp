@@ -5,15 +5,9 @@
 //  Created by Taanish Reja on 8/20/25.
 //
 
-#ifndef RENDERABLE_HPP
-#define RENDERABLE_HPP
+#pragma once
 
 #include "metal_imports.hpp"
-
-struct FrameInfo {
-    float width;
-    float height;
-};
 
 class Renderable {
 public:
@@ -25,5 +19,3 @@ public:
 private:
     virtual void buildPipeline(MTL::RenderPipelineState*& pipeline) = 0;
 };
-
-#endif

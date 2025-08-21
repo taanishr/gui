@@ -6,24 +6,21 @@
 //
 
 #include "renderer.hpp"
-
-float linearInterpolation(float x1, float y1, float x2, float y2) {
-    return (y2-y1)/(x2-x1);
-}
+#include "ui.hpp";
 
 Renderer::Renderer(MTL::Device* device, MTK::View* view):
     device{device},
     view{view},
     commandQueue(device->newCommandQueue()),
-    frameSemaphore{maxOutstandingFrameCount}
+    frameSemaphore{MaxOutstandingFrameCount}
 {
     makeResources();
 }
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    renderables.push_back(std::make_unique<Text>(device, view, ft, 10.0, 25.0, 32.0, simd_float3{1,1,1}));
-    renderables.push_back(std::make_unique<Shell>(device, view, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}));
+    renderables.push_back(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}));
+    renderables.push_back(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}));
     SelectedString::textBlock = dynamic_cast<Text*>(renderables[0].get());
 }
 
@@ -53,6 +50,13 @@ void Renderer::draw() {
     
     autoreleasePool->release();
 }
+
+FrameInfo Renderer::getFrameInfo() {
+    auto frameDimensions = this->view->drawableSize();
+
+    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
+}
+
 
 Renderer::~Renderer() {
     commandQueue->release();

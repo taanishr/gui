@@ -5,10 +5,9 @@
 //  Created by Taanish Reja on 8/15/25.
 //
 
-#ifndef INPUT_STATE_H
-#define INPUT_STATE_H
+#pragma once
 #include <string>
-#include "text.hpp"
+#include "ui.hpp"
 
 struct SelectedString {
     static void removeChar();
@@ -17,7 +16,3 @@ struct SelectedString {
     static Text* textBlock;
     static std::string selectedString;
 };
-
-//extern std::string selectedString;
-
-#endif

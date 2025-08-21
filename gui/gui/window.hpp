@@ -5,8 +5,7 @@
 //  Created by Taanish Reja on 8/20/25.
 //
 
-#ifndef WINDOW_HPP
-#define WINDOW_HPP
+#pragma once
 #include <iostream>
 #include <functional>
 #include "metal_imports.hpp"
@@ -37,5 +36,3 @@ private:
     MTL::Device* device;
     std::unique_ptr<MTKViewDelegate> viewDelegate;
 };
-
-#endif

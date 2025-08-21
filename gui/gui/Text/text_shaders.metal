@@ -108,7 +108,7 @@ int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY
     return intersections;
 }
 
-// newton approximation distance
+// newton approximation for distance
 float approximateDistance(float2 p0, float2 p1, float2 p2, float2 q) {
     float2 a = p0 - 2.0*p1 + p2;
     float2 b = 2.0*(p1 - p0);

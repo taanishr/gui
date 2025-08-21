@@ -5,23 +5,16 @@
 //  Created by Taanish Reja on 7/21/25.
 //
 
-#ifndef RENDERER_H
-#define RENDERER_H
+#pragma once
 #include "metal_imports.hpp"
 #include "freetype.hpp"
 #include "input_state.hpp"
 #include <semaphore>
-#include "text.hpp"
 #include <iostream>
 #include <ranges>
-#include "shell.hpp"
+#include "frame_info.hpp"
 
-constexpr int maxOutstandingFrameCount = 2;
-
-struct Constants {
-    unsigned long nPoints;
-    unsigned long numContours;
-};
+constexpr int MaxOutstandingFrameCount = 2;
 
 class Renderer {
 public:
@@ -30,14 +23,15 @@ public:
     void updateConstants();
     void makeResources();
     void draw();
-private:
+    FrameInfo getFrameInfo();
+    
     MTL::Device* device;
+    MTK::View* view;
+    FT_Library ft;
+    
+private:
     MTL::CommandQueue* commandQueue;
     MTL::RenderPipelineState* renderPipelineState;
-    MTK::View* view;
-    std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
-    FT_Library ft;
+    std::counting_semaphore<MaxOutstandingFrameCount> frameSemaphore;
     std::vector<std::unique_ptr<Renderable>> renderables;
 };
-
-#endif

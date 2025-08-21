@@ -5,11 +5,9 @@
 //  Created by Taanish Reja on 7/25/25.
 //
 
-#ifndef FREETYPE
-#define FREETYPE
+#pragma once
 #include <ft2build.h>
 #include <freetype/ftoutln.h>
 #include FT_FREETYPE_H
 
 constexpr float FT_PIXEL_CF = 64.0f;
-#endif

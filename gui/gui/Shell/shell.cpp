@@ -6,29 +6,31 @@
 //
 
 #include "shell.hpp"
+#include "renderer.hpp"
 
-Shell::Shell(MTL::Device* device, MTK::View* view, float width, float height, float x, float y, simd_float4 color):
-    device{device},
-    view{view},
+using namespace ShellRender;
+
+Shell::Shell(Renderer& renderer, float width, float height, float x, float y, simd_float4 color):
+    renderer{renderer},
     width{width},
     height{height},
     x{x},
     y{y},
     color{color}
 {
-    this->quadPointsBuffer = device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
-    this->uniformsBuffer = device->newBuffer(sizeof(ShellUniforms),  MTL::ResourceStorageModeShared);
-    this->frameInfoBuffer = device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
+    this->quadPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms),  MTL::ResourceStorageModeShared);
+    this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
 }
 
 void Shell::update() {
-    auto frameInfo = getFrameInfo();
+    auto frameInfo = renderer.getFrameInfo();
     
     simd_float2 drawOffset {x, frameInfo.height - y};
     
-    ShellUniforms uniforms {.color=color};
+    Uniforms uniforms {.color=color};
     
-    std::array<ShellQuadPoint, 6> quadPoints {{
+    std::array<QuadPoint, 6> quadPoints {{
         {.position={drawOffset.x,drawOffset.y}},
         {.position={drawOffset.x+width,drawOffset.y}},
         {.position={drawOffset.x,drawOffset.y+height}},
@@ -38,13 +40,13 @@ void Shell::update() {
     }};
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
-    std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(ShellUniforms));
+    std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
                 
-    std::memcpy(this->quadPointsBuffer->contents(), quadPoints.data(), 6*sizeof(ShellQuadPoint));
+    std::memcpy(this->quadPointsBuffer->contents(), quadPoints.data(), 6*sizeof(QuadPoint));
 }
 
 void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
-    MTL::Library* defaultLibrary = device->newDefaultLibrary();
+    MTL::Library* defaultLibrary = renderer.device->newDefaultLibrary();
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
     
     // set up vertex descriptor
@@ -53,7 +55,7 @@ void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     vertexDescriptor->attributes()->object(0)->setOffset(0);
     vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
 
-    vertexDescriptor->layouts()->object(0)->setStride(sizeof(ShellQuadPoint));
+    vertexDescriptor->layouts()->object(0)->setStride(sizeof(QuadPoint));
     
     renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
 
@@ -62,7 +64,7 @@ void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_shell", NS::UTF8StringEncoding));
     renderPipelineDescriptor->setVertexFunction(vertexFunction);
     
-    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(view->colorPixelFormat());
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(renderer.view->colorPixelFormat());
     renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
     renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
     renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
@@ -71,7 +73,7 @@ void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
     
     
-    renderPipelineDescriptor->setDepthAttachmentPixelFormat(view->depthStencilPixelFormat());
+    renderPipelineDescriptor->setDepthAttachmentPixelFormat(renderer.view->depthStencilPixelFormat());
     
 
     // set up fragment function
@@ -80,7 +82,7 @@ void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     
     
     NS::Error* error = nullptr;
-    pipeline = device->newRenderPipelineState(renderPipelineDescriptor, &error);
+    pipeline = renderer.device->newRenderPipelineState(renderPipelineDescriptor, &error);
     
     if (error != nullptr)
         std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
@@ -113,10 +115,4 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
 
 Shell::~Shell() {
     this->quadPointsBuffer->release();
-}
-
-FrameInfo Shell::getFrameInfo() {
-    auto frameDimensions = this->view->drawableSize();
-
-    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
 }

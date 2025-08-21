@@ -4,8 +4,8 @@
 //
 //  Created by Taanish Reja on 8/18/25.
 //
-#ifndef PROCESS_CONTOURS_HPP
-#define PROCESS_CONTOURS_HPP
+#pragma once
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -40,5 +40,3 @@ struct Glyph {
 
 Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, int offset = 0);
 Glyph processContours(FT_Outline* outlinePtr, int offset);
-
-#endif

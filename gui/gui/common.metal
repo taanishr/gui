@@ -5,8 +5,7 @@
 //  Created by Taanish Reja on 8/20/25.
 //
 
-#ifndef COMMON_METAL
-#define COMMON_METAL
+#pragma once
 
 #include <metal_stdlib>
 using namespace metal;
@@ -22,5 +21,3 @@ inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f
 
     return {ndcX, ndcY};
 }
-
-#endif

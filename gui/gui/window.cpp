@@ -5,8 +5,13 @@
 //  Created by Taanish Reja on 7/21/25.
 //
 
+
+
 #include "window.hpp"
 #include <AppKit_Extensions-Swift.h>
+
+// refactor objective c into a cleaner interface? maybe a struct with key funcs?
+
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 
@@ -28,6 +33,8 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
         SelectedString::addChar(inputChar);
     }
 }
+
+
 
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
@@ -75,7 +82,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
-    
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     
 
@@ -84,7 +90,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 //    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
 //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
     view->setClearColor(MTL::ClearColor::Make(0,0,0,0.5));
-    view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
+//    view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float)
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
     
     viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
@@ -93,7 +99,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     window->setContentView(view);
     
-//    window->setTitle(NS::String::string("window", NS::StringEncoding::UTF8StringEncoding ));
+    window->setTitle(NS::String::string("window", NS::StringEncoding::UTF8StringEncoding ));
 
     window->makeKeyAndOrderFront(nullptr);
     
