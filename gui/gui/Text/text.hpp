@@ -9,9 +9,9 @@
 #define TEXT_HPP
 
 #include "metal_imports.hpp"
-#include "bezier.hpp"
 #include "freetype.hpp"
 #include "processContours.hpp"
+#include "renderable.hpp"
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
@@ -31,16 +31,17 @@ struct Uniforms {
 };
 
 
-struct Text {
+class Text : public Renderable {
+public:
     Text(MTL::Device* device, MTK::View* view, FT_Library ft,float x, float y, float fontSize=64.0, simd_float3 color={0,0,0}, const std::string& font = defaultFont.data());
     ~Text();
     
-    static MTL::RenderPipelineState* getTextPipeline(MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt);
+    MTL::RenderPipelineState* getPipeline();
     void setText(const std::string& text);
     void update();
     void encode(MTL::RenderCommandEncoder* encoder);
 private:
-    static void buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt);
+    void buildPipeline(MTL::RenderPipelineState*& pipeline);
     void resizeBuffer(MTL::Buffer*& buffer, unsigned long numBytes);
     FrameInfo getFrameInfo();
     

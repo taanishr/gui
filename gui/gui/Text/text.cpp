@@ -40,7 +40,7 @@ Text::~Text() {
     FT_Done_Face(face);
 }
 
-void Text::buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt) {
+void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     MTL::Library* defaultLibrary = device->newDefaultLibrary();
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
     
@@ -67,7 +67,7 @@ void Text::buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* d
     MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_text", NS::UTF8StringEncoding));
     renderPipelineDescriptor->setVertexFunction(vertexFunction);
     
-    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(colorFmt);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(view->colorPixelFormat());
     renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
     renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
     renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
@@ -76,7 +76,7 @@ void Text::buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* d
     renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
     
     
-    renderPipelineDescriptor->setDepthAttachmentPixelFormat(depthFmt);
+    renderPipelineDescriptor->setDepthAttachmentPixelFormat(view->depthStencilPixelFormat());
     
 
     // set up fragment function
@@ -97,11 +97,11 @@ void Text::buildTextPipeline(MTL::RenderPipelineState*& pipeline, MTL::Device* d
     vertexFunction->release();
 }
 
-MTL::RenderPipelineState* Text::getTextPipeline(MTL::Device* device, MTL::PixelFormat colorFmt, MTL::PixelFormat depthFmt) {
+MTL::RenderPipelineState* Text::getPipeline() {
     static MTL::RenderPipelineState* pipeline = nullptr;
     
     if (!pipeline) {
-        buildTextPipeline(pipeline, device, colorFmt, depthFmt);
+        buildPipeline(pipeline);
     }
     
     return pipeline;
@@ -240,8 +240,8 @@ void Text::update() {
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {
-    auto pipeline = getTextPipeline(this->device, this->view->colorPixelFormat(), this->view->depthStencilPixelFormat());
-    encoder->setRenderPipelineState(pipeline);    
+    auto pipeline = getPipeline();
+    encoder->setRenderPipelineState(pipeline);
     encoder->setVertexBuffer(this->quadBuffer, 0, 0);
     encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
 
