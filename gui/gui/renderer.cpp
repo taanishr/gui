@@ -6,7 +6,7 @@
 //
 
 #include "renderer.hpp"
-#include "ui.hpp";
+#include "ui.hpp"
 
 Renderer::Renderer(MTL::Device* device, MTK::View* view):
     device{device},

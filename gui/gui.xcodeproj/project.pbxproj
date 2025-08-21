@@ -41,9 +41,22 @@
 		A576DD8D2E565EB200B8CA82 /* libfreetype.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfreetype.a; path = ../../../../../opt/homebrew/Cellar/freetype/2.13.3/lib/libfreetype.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		A52990782E57D29600C93D30 /* Exceptions for "gui" folder in "Compile Sources" phase from "gui" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = A576DD702E5655F400B8CA82 /* Sources */;
+			membershipExceptions = (
+				RenderTree/render_tree.hpp,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A576DD762E5655F400B8CA82 /* gui */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A52990782E57D29600C93D30 /* Exceptions for "gui" folder in "Compile Sources" phase from "gui" target */,
+			);
 			path = gui;
 			sourceTree = "<group>";
 		};
@@ -136,6 +149,7 @@
 				TargetAttributes = {
 					A576DD732E5655F400B8CA82 = {
 						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
 					};
 				};
 			};
@@ -299,24 +313,29 @@
 		A576DD7C2E5655F400B8CA82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/homebrew/Cellar/freetype/2.13.3/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
 		A576DD7D2E5655F400B8CA82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/homebrew/Cellar/freetype/2.13.3/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
