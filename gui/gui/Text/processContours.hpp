@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <cmath>
 #include "freetype.hpp"
+#include "printers.hpp"
 #include "metal_imports.hpp"
 
 enum class Segment {

@@ -22,9 +22,9 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    textBlocks.push_back(std::make_unique<Text>(device, view, ft, 0, 0.0, 64.0, simd_float3{0,0,0}));
+    textBlocks.push_back(std::make_unique<Text>(device, view, ft, 10.0, 25.0, 20.0, simd_float3{1,1,1}));
 //    textBlocks[0]->setText("will this work");
-    SelectedString::textBlock = textBlocks[0].get();
+    SelectedString::textBlock = dynamic_cast<Text*>(textBlocks[0].get());
 }
 
 void Renderer::draw() {

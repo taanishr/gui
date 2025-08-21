@@ -6,6 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A576DD802E565DA900B8CA82 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD7F2E565DA900B8CA82 /* Foundation.framework */; };
+		A576DD822E565DB200B8CA82 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD812E565DB200B8CA82 /* Cocoa.framework */; };
+		A576DD842E565DBA00B8CA82 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD832E565DBA00B8CA82 /* AppKit.framework */; };
+		A576DD862E565DC000B8CA82 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD852E565DC000B8CA82 /* QuartzCore.framework */; };
+		A576DD882E565DC500B8CA82 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD872E565DC500B8CA82 /* MetalKit.framework */; };
+		A576DD8A2E565DCB00B8CA82 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD892E565DCB00B8CA82 /* Metal.framework */; };
+		A576DD8C2E565E6700B8CA82 /* AppKit-Extensions in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */; };
+		A576DD8E2E565EB200B8CA82 /* libfreetype.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD8D2E565EB200B8CA82 /* libfreetype.a */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		A576DD722E5655F400B8CA82 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -20,6 +31,14 @@
 
 /* Begin PBXFileReference section */
 		A576DD742E5655F400B8CA82 /* gui */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = gui; sourceTree = BUILT_PRODUCTS_DIR; };
+		A576DD7F2E565DA900B8CA82 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		A576DD812E565DB200B8CA82 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		A576DD832E565DBA00B8CA82 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		A576DD852E565DC000B8CA82 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		A576DD872E565DC500B8CA82 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		A576DD892E565DCB00B8CA82 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "AppKit-Extensions"; path = "../AppKit-Extensions-Library/AppKit-Extensions"; sourceTree = "<group>"; };
+		A576DD8D2E565EB200B8CA82 /* libfreetype.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfreetype.a; path = ../../../../../opt/homebrew/Cellar/freetype/2.13.3/lib/libfreetype.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -35,6 +54,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A576DD8E2E565EB200B8CA82 /* libfreetype.a in Frameworks */,
+				A576DD8C2E565E6700B8CA82 /* AppKit-Extensions in Frameworks */,
+				A576DD842E565DBA00B8CA82 /* AppKit.framework in Frameworks */,
+				A576DD802E565DA900B8CA82 /* Foundation.framework in Frameworks */,
+				A576DD822E565DB200B8CA82 /* Cocoa.framework in Frameworks */,
+				A576DD8A2E565DCB00B8CA82 /* Metal.framework in Frameworks */,
+				A576DD882E565DC500B8CA82 /* MetalKit.framework in Frameworks */,
+				A576DD862E565DC000B8CA82 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -45,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				A576DD762E5655F400B8CA82 /* gui */,
+				A576DD7E2E565DA900B8CA82 /* Frameworks */,
 				A576DD752E5655F400B8CA82 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -55,6 +83,21 @@
 				A576DD742E5655F400B8CA82 /* gui */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A576DD7E2E565DA900B8CA82 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A576DD8D2E565EB200B8CA82 /* libfreetype.a */,
+				A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */,
+				A576DD892E565DCB00B8CA82 /* Metal.framework */,
+				A576DD872E565DC500B8CA82 /* MetalKit.framework */,
+				A576DD852E565DC000B8CA82 /* QuartzCore.framework */,
+				A576DD832E565DBA00B8CA82 /* AppKit.framework */,
+				A576DD812E565DB200B8CA82 /* Cocoa.framework */,
+				A576DD7F2E565DA900B8CA82 /* Foundation.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -133,7 +176,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++23";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -178,6 +221,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/opt/freetype/include/freetype2,
+					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+					"/Users/treja/metal-cpp-extensions",
+					"/Users/treja/metal-cpp",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -194,7 +243,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++23";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -233,6 +282,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/opt/freetype/include/freetype2,
+					"/Users/treja/projects/gui/AppKit-Extensions-Library",
+					"/Users/treja/metal-cpp-extensions",
+					"/Users/treja/metal-cpp",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -245,6 +300,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -253,6 +312,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

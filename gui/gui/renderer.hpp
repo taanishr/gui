@@ -8,7 +8,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 #include "metal_imports.hpp"
-#include "bezier.hpp"
 #include "freetype.hpp"
 #include "inputState.hpp"
 #include <semaphore>
@@ -37,7 +36,7 @@ private:
     MTK::View* view;
     std::counting_semaphore<maxOutstandingFrameCount> frameSemaphore;
     FT_Library ft;
-    std::vector<std::unique_ptr<Text>> textBlocks;
+    std::vector<std::unique_ptr<Renderable>> textBlocks;
 };
 
 #endif

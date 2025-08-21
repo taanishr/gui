@@ -7,6 +7,8 @@
 
 #include "processContours.hpp"
 
+
+
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
@@ -132,6 +134,7 @@ Glyph processContours(FT_Outline* outlinePtr, int offset)
         if (contour.quad.bottomRight.y > quad.bottomRight.y)
             quad.bottomRight.y = contour.quad.bottomRight.y;
         
+        
         // flatten points
         points.insert(points.end(), contour.points.begin(), contour.points.end());
 
@@ -141,10 +144,10 @@ Glyph processContours(FT_Outline* outlinePtr, int offset)
         // process sizes
         contourSizes.push_back(contour.points.size());
         
-        contourStart += contours[c] + 1;
+        contourStart = contours[c] + 1;
     }
     
-    
+
     return {.quad = quad, .points = points, .numContours = numContours, .contourOffsets = contourOffsets, .contourSizes = contourSizes};
 }
 
