@@ -13,6 +13,7 @@
 #include <iostream>
 #include <ranges>
 #include "frame_info.hpp"
+#include "render_tree.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 
@@ -28,6 +29,8 @@ public:
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
+    
+    RenderTree renderTree;
     
 private:
     MTL::CommandQueue* commandQueue;

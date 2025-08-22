@@ -7,6 +7,14 @@
 
 #include "render_tree.hpp"
 
+bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNode>& a, const std::unique_ptr<RenderNode>& b) const
+{
+    if (a->zIndex != b->zIndex)
+        return a->zIndex < b->zIndex;
+    
+    return a.get() < b.get();
+}
+
 RenderNode::RenderNode()
 {}
 
@@ -15,9 +23,20 @@ void RenderNode::update() {
         renderable->update();
 }
 
-void RenderNode::render(MTL::RenderCommandEncoder* encoder) {
+
+void RenderNode::encode(MTL::RenderCommandEncoder* encoder) {
     if (renderable)
         renderable->encode(encoder);
+}
+
+void RenderNode::render(MTL::RenderCommandEncoder* encoder) {
+    if (renderable) {
+        update();
+        encode(encoder);
+    }
+        
+    for (const auto& child: children)
+        child->render(encoder);
 }
 
 RenderTree::RenderTree():
@@ -26,36 +45,25 @@ RenderTree::RenderTree():
     root->zIndex = 0;
 }
 
-void RenderTree::insertNode(std::unique_ptr<Renderable> renderable, RenderNode *parent)
+void RenderTree::render(MTL::RenderCommandEncoder* encoder) const {
+    root->render(encoder);
+}
+
+RenderNode* RenderTree::insertNode(std::unique_ptr<Renderable> renderable, RenderNode *parent)
 {
     auto newNode = std::make_unique<RenderNode>();
     newNode->parent = parent;
     newNode->zIndex = parent->zIndex;
     newNode->renderable = std::move(renderable);
     
-    parent->children.push_back(std::move(newNode));
+    auto [it, _] = parent->children.insert(std::move(newNode));
+    
+    return (*it).get();
 }
 
 void RenderTree::deleteNode(RenderNode* node)
 {
-    
-    // rough sketch for deletion
-    if (node->parent) {
-        auto curr = node->parent->children.begin();
-        auto end = node->parent->children.end();
-        for (; curr != end; ++curr) {
-            if (curr->get() == node) {
-                node->parent->children.erase(curr);
-                break;
-            }
-        }
-    }
-    
-    node->children.clear();
-}
-
-
-void RenderTree::draw()
-{
-    // TBD
+    std::erase_if(node->parent->children, [node](const std::unique_ptr<RenderNode>& child){
+        return node == child.get();
+    });
 }

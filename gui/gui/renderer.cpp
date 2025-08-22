@@ -12,16 +12,23 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     device{device},
     view{view},
     commandQueue(device->newCommandQueue()),
-    frameSemaphore{MaxOutstandingFrameCount}
+    frameSemaphore{MaxOutstandingFrameCount},
+    renderTree{}
 {
     makeResources();
 }
 
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
-    renderables.push_back(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}));
-    renderables.push_back(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}));
-    SelectedString::textBlock = dynamic_cast<Text*>(renderables[0].get());
+//    renderables.push_back(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}));
+//    renderables.push_back(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}));
+//    SelectedString::textBlock = dynamic_cast<Text*>(renderables[0].get());
+    
+    auto root = renderTree.root.get();
+    auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
+    renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}), root);
+    
+    SelectedString::textBlock = dynamic_cast<Text*>(textBlock->renderable.get());
 }
 
 void Renderer::draw() {
@@ -33,10 +40,12 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
 
-    for (auto& renderable: renderables) {
-        renderable->update();
-        renderable->encode(renderCommandEncoder);
-    }
+//    for (auto& renderable: renderables) {
+//        renderable->update();
+//        renderable->encode(renderCommandEncoder);
+//    }
+    
+    renderTree.render(renderCommandEncoder);
 
     renderCommandEncoder->endEncoding();
     
