@@ -108,6 +108,8 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
     encoder->setRenderPipelineState(pipeline);
 
     encoder->setVertexBuffer(this->quadPointsBuffer, 0, 0);
+    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
+    
     encoder->setFragmentBuffer(this->uniformsBuffer, 0, 0);
     
     encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
