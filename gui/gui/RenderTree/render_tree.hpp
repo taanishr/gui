@@ -18,6 +18,7 @@
 #include <set>
 #include "renderable.hpp"
 #include <print>
+#include <algorithm>
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
@@ -36,13 +37,13 @@ struct RenderNode {
     
     void update();
     
-    void encode(MTL::RenderCommandEncoder* encoder);
+    void encode(MTL::RenderCommandEncoder* encoder) const;
     
-    void render(MTL::RenderCommandEncoder* encoder);
+    void render(MTL::RenderCommandEncoder* encoder) const;
     
     RenderNode* parent;
     
-    std::set<std::unique_ptr<RenderNode>, RenderNodeComparator> children;
+    std::vector<std::unique_ptr<RenderNode>> children;
     
     std::unique_ptr<Renderable> renderable;
     
@@ -52,10 +53,12 @@ struct RenderNode {
 struct RenderTree {
     RenderTree();
 
+    void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
     
     RenderNode* insertNode(std::unique_ptr<Renderable> renderable, RenderNode* parent);
     void deleteNode(RenderNode* node);
+    
     std::unique_ptr<RenderNode> root;
 };
 

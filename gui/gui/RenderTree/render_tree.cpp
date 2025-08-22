@@ -19,19 +19,21 @@ RenderNode::RenderNode()
 {}
 
 void RenderNode::update() {
-    if (renderable) // find a better way to express this contract
+    if (renderable)
         renderable->update();
+    
+    for (const auto& child: children)
+        child->update();
 }
 
 
-void RenderNode::encode(MTL::RenderCommandEncoder* encoder) {
+void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const{
     if (renderable)
         renderable->encode(encoder);
 }
 
-void RenderNode::render(MTL::RenderCommandEncoder* encoder) {
+void RenderNode::render(MTL::RenderCommandEncoder* encoder) const {
     if (renderable) {
-        update();
         encode(encoder);
     }
         
@@ -45,6 +47,11 @@ RenderTree::RenderTree():
     root->zIndex = 0;
 }
 
+
+void RenderTree::update() {
+    root->update();
+}
+
 void RenderTree::render(MTL::RenderCommandEncoder* encoder) const {
     root->render(encoder);
 }
@@ -56,9 +63,12 @@ RenderNode* RenderTree::insertNode(std::unique_ptr<Renderable> renderable, Rende
     newNode->zIndex = parent->zIndex;
     newNode->renderable = std::move(renderable);
     
-    auto [it, _] = parent->children.insert(std::move(newNode));
+    parent->children.push_back(std::move(newNode));
+    auto& back = parent->children.back();
     
-    return (*it).get();
+    std::sort(parent->children.begin(), parent->children.end(), RenderNodeComparator{});
+    
+    return back.get();
 }
 
 void RenderTree::deleteNode(RenderNode* node)

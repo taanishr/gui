@@ -45,6 +45,7 @@ void Renderer::draw() {
 //        renderable->encode(renderCommandEncoder);
 //    }
     
+    renderTree.update();
     renderTree.render(renderCommandEncoder);
 
     renderCommandEncoder->endEncoding();
