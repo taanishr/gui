@@ -72,6 +72,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
                 false
              );
     
+    
     device = MTL::CreateSystemDefaultDevice();
 
     view = MTK::View::alloc()->init(frame, device);
@@ -105,6 +106,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     AppKit_Extensions::setTitleBarTransparent(reinterpret_cast<void*>(window));
     AppKit_Extensions::setWindowTransparent(reinterpret_cast<void*>(window));
+    
 
     NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
     

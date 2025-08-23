@@ -12,7 +12,7 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNode>& a, cons
     if (a->zIndex != b->zIndex)
         return a->zIndex < b->zIndex;
     
-    return a.get() < b.get();
+    return a->insertionId < b->insertionId;
 }
 
 RenderNode::RenderNode()
@@ -27,7 +27,7 @@ void RenderNode::update() {
 }
 
 
-void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const{
+void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const {
     if (renderable)
         renderable->encode(encoder);
 }
@@ -39,6 +39,11 @@ void RenderNode::render(MTL::RenderCommandEncoder* encoder) const {
         
     for (const auto& child: children)
         child->render(encoder);
+}
+
+void RenderNode::changeZIndex(int zIndex) {
+    this->zIndex = this->parent->zIndex + zIndex;
+    std::sort(this->parent->children.begin(), this->parent->children.end());
 }
 
 RenderTree::RenderTree():
@@ -62,11 +67,15 @@ RenderNode* RenderTree::insertNode(std::unique_ptr<Renderable> renderable, Rende
     newNode->parent = parent;
     newNode->zIndex = parent->zIndex;
     newNode->renderable = std::move(renderable);
+    newNode->insertionId = nextInsertionId;
     
     parent->children.push_back(std::move(newNode));
     auto& back = parent->children.back();
     
     std::sort(parent->children.begin(), parent->children.end(), RenderNodeComparator{});
+    
+    ++nodes;
+    ++nextInsertionId;
     
     return back.get();
 }
@@ -76,4 +85,20 @@ void RenderTree::deleteNode(RenderNode* node)
     std::erase_if(node->parent->children, [node](const std::unique_ptr<RenderNode>& child){
         return node == child.get();
     });
+    
+    --nodes;
+}
+
+void RenderTree::reparent(RenderNode* node, RenderNode* newParent)
+{
+    auto curr = node->parent->children.begin();
+    auto end = node->parent->children.end();
+    for (; curr != end; ++curr) {
+        if ((*curr).get() == node) {
+            newParent->children.push_back(std::move(*curr));
+            node->parent->children.erase(curr);
+            node->parent = newParent;
+            break;
+        }
+    }
 }

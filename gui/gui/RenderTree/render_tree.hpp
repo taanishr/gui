@@ -41,6 +41,8 @@ struct RenderNode {
     
     void render(MTL::RenderCommandEncoder* encoder) const;
     
+    void changeZIndex(int zIndex);
+    
     RenderNode* parent;
     
     std::vector<std::unique_ptr<RenderNode>> children;
@@ -48,6 +50,8 @@ struct RenderNode {
     std::unique_ptr<Renderable> renderable;
     
     int zIndex;
+    
+    int insertionId;
 };
 
 struct RenderTree {
@@ -59,7 +63,11 @@ struct RenderTree {
     RenderNode* insertNode(std::unique_ptr<Renderable> renderable, RenderNode* parent);
     void deleteNode(RenderNode* node);
     
+    void reparent(RenderNode* node, RenderNode* newParent);
+    
     std::unique_ptr<RenderNode> root;
+    
+    int nodes;
+    int nextInsertionId;
 };
-
 
