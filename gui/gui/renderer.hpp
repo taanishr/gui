@@ -8,12 +8,12 @@
 #pragma once
 #include "metal_imports.hpp"
 #include "freetype.hpp"
-#include "input_state.hpp"
 #include <semaphore>
 #include <iostream>
 #include <ranges>
 #include "frame_info.hpp"
 #include "render_tree.hpp"
+#include "events.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 

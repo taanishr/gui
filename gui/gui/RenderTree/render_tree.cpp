@@ -18,21 +18,25 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNode>& a, cons
 RenderNode::RenderNode()
 {}
 
-void RenderNode::update() {
+void RenderNode::update()
+{
     if (renderable)
         renderable->update();
     
+    std::sort(children.begin(), children.end(), RenderNodeComparator{});
     for (const auto& child: children)
         child->update();
 }
 
 
-void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const {
+void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const
+{
     if (renderable)
         renderable->encode(encoder);
 }
 
-void RenderNode::render(MTL::RenderCommandEncoder* encoder) const {
+void RenderNode::render(MTL::RenderCommandEncoder* encoder) const
+{
     if (renderable) {
         encode(encoder);
     }
@@ -43,7 +47,42 @@ void RenderNode::render(MTL::RenderCommandEncoder* encoder) const {
 
 void RenderNode::changeZIndex(int zIndex) {
     this->zIndex = this->parent->zIndex + zIndex;
-    std::sort(this->parent->children.begin(), this->parent->children.end());
+}
+
+void RenderNode::addEventHandler(EventType type, EventHandler eventHandler)
+{
+    handlerMap[type] = eventHandler;
+}
+
+void RenderNode::handleEvent(Event& event) {
+    auto handler = handlerMap[event.type];
+    
+    if (handler) {
+        switch (event.type) {
+            case EventType::Click:
+                {
+                    auto payload = std::any_cast<MousePayload>(event.payload);
+                    auto bounds = renderable->bounds();
+                    
+                    bool oob = payload.x < bounds.topLeft.x || payload.x > bounds.bottomRight.x ||
+                    payload.y < bounds.topLeft.y || payload.y > bounds.bottomRight.y;
+                    
+                    if (!oob) {
+                        handler(event);
+                    }
+                }
+            case EventType::KeyboardDown:
+            {
+                auto payload = std::any_cast<KeyboardPayload>(event.payload);
+                handler(event);
+            }
+            default:
+                break;
+        }
+    }
+    
+    for (auto& child: children)
+        child->handleEvent(event);
 }
 
 RenderTree::RenderTree():
@@ -57,7 +96,8 @@ void RenderTree::update() {
     root->update();
 }
 
-void RenderTree::render(MTL::RenderCommandEncoder* encoder) const {
+void RenderTree::render(MTL::RenderCommandEncoder* encoder) const
+{
     root->render(encoder);
 }
 
@@ -72,10 +112,11 @@ RenderNode* RenderTree::insertNode(std::unique_ptr<Renderable> renderable, Rende
     parent->children.push_back(std::move(newNode));
     auto& back = parent->children.back();
     
-    std::sort(parent->children.begin(), parent->children.end(), RenderNodeComparator{});
+    nodeMap[nextInsertionId] = back.get();
     
     ++nodes;
     ++nextInsertionId;
+
     
     return back.get();
 }
@@ -85,6 +126,8 @@ void RenderTree::deleteNode(RenderNode* node)
     std::erase_if(node->parent->children, [node](const std::unique_ptr<RenderNode>& child){
         return node == child.get();
     });
+    
+    nodeMap.erase(node->insertionId);
     
     --nodes;
 }
@@ -102,3 +145,18 @@ void RenderTree::reparent(RenderNode* node, RenderNode* newParent)
         }
     }
 }
+
+
+void RenderTree::handleEvent(Event& event)
+{
+    root->handleEvent(event);
+}
+
+
+// handling events?
+
+// tree needs a handle event type
+// struct with position and enum?
+//
+
+

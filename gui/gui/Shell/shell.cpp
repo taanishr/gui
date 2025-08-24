@@ -39,6 +39,9 @@ void Shell::update() {
         {.position={drawOffset.x+width,drawOffset.y+height}},
     }};
     
+    elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
+        .bottomRight ={drawOffset.x + width, drawOffset.y + height}};
+    
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
                 
@@ -115,6 +118,14 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
     encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
 }
 
+
+const Bounds& Shell::bounds() {
+    return elementBounds;
+}
+
+
 Shell::~Shell() {
     this->quadPointsBuffer->release();
+    this->uniformsBuffer->release();
+    this->frameInfoBuffer->release();
 }

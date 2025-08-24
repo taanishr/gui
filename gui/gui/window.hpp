@@ -12,13 +12,17 @@
 #include "renderer.hpp"
 #include <ApplicationServices/ApplicationServices.h>
 #include <objc/runtime.h>
-#include "input_state.hpp"
+#include "events.hpp"
+
+struct HandlerState {
+    std::function<void(char ch)> keyboardHandler;
+};
+
 
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:
     MTKViewDelegate(MTL::Device* device, MTK::View* view);
     void drawInMTKView(MTK::View* view) override;
-private:
     MTK::View* view;
     std::unique_ptr<Renderer> renderer;
 };
@@ -30,7 +34,7 @@ public:
     void applicationWillFinishLaunching(NS::Notification* notification) override;
     void applicationDidFinishLaunching(NS::Notification* notification) override;
     bool applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender) override;
-private:
+    
     NS::Window* window;
     MTK::View* view;
     MTL::Device* device;

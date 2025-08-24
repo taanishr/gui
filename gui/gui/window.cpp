@@ -11,7 +11,7 @@
 #include <AppKit_Extensions-Swift.h>
 
 // refactor objective c into a cleaner interface? maybe a struct with key funcs?
-
+HandlerState hs {};
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 
@@ -20,6 +20,7 @@ extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
 
+
 extern "C" void keyDown(id self, SEL _cmd, id event) {
     KeyDownFunc f = (KeyDownFunc)objc_msgSend;
     auto chars = f(event, sel_registerName("characters"));
@@ -27,11 +28,13 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
     
     
-    if (inputChar == '\x7F') {
-        SelectedString::removeChar();
-    }else {
-        SelectedString::addChar(inputChar);
-    }
+    hs.keyboardHandler(inputChar);
+//    
+//    if (inputChar == '\x7F') {
+//        SelectedString::removeChar();
+//    }else {
+//        SelectedString::addChar(inputChar);
+//    }
 }
 
 
@@ -80,6 +83,15 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     // adding input!!!
     id objcInstance = reinterpret_cast<id>(view);
     Class cls = object_getClass(objcInstance);
+    
+    hs.keyboardHandler = [this](char ch){
+        Event e;
+        e.type = EventType::KeyboardDown;
+        e.payload = KeyboardPayload{
+            .ch = ch
+        };
+        this->viewDelegate->renderer->renderTree.handleEvent(e);
+    };
     
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");

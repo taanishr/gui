@@ -36,12 +36,16 @@ namespace TextRender {
         
         MTL::RenderPipelineState* getPipeline();
         void setText(const std::string& text);
+        void addChar(char ch);
+        void removeChar();
         void update();
         void encode(MTL::RenderCommandEncoder* encoder);
+        const Bounds& bounds();
     private:
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         FrameInfo getFrameInfo();
         
+    
         // renderer (for device, view and frame info)
         Renderer& renderer;
         
@@ -73,6 +77,8 @@ namespace TextRender {
         float fontSize;
         float x;
         float y;
+        
+        Bounds elementBounds;
         
         std::unordered_map<char,Glyph> glyphMap;
         std::unordered_map<char,int> glyphBezierMap;

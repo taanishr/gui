@@ -109,6 +109,15 @@ void Text::setText(const std::string& text) {
     this->text = text;
 }
 
+void Text::addChar(char ch) {
+    this->text += ch;
+}
+
+void Text::removeChar() {
+    if (this->text.size() > 0)
+        this->text.pop_back();
+}
+
 void Text::update() {
     std::vector<QuadPoint> quadPoints;
     std::vector<int> glyphMeta;
@@ -207,6 +216,9 @@ void Text::update() {
     
     this->numQuadPoints = quadPoints.size();
     
+    if (this->numQuadPoints > 0)
+        this->elementBounds = {.topLeft = quadPoints.front().position, .bottomRight = quadPoints.back().position};
+    
     // copy uniforms buffer
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
     
@@ -222,6 +234,11 @@ void Text::update() {
     std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
     std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
+}
+
+
+const Bounds& Text::bounds() {
+    return elementBounds;
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {

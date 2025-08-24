@@ -9,11 +9,17 @@
 
 #include "metal_imports.hpp"
 
+struct Bounds {
+    simd_float2 topLeft;
+    simd_float2 bottomRight;
+};
+
 class Renderable {
 public:
     virtual void update() = 0;
     virtual MTL::RenderPipelineState* getPipeline() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) = 0;
+    virtual const Bounds& bounds() = 0;
     virtual ~Renderable() = default;
 
 private:
