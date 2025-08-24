@@ -10,13 +10,14 @@
 
 using namespace ShellRender;
 
-Shell::Shell(Renderer& renderer, float width, float height, float x, float y, simd_float4 color):
+Shell::Shell(Renderer& renderer, float width, float height, float x, float y, simd_float4 color, float cornerRadius):
     renderer{renderer},
     width{width},
     height{height},
     x{x},
     y{y},
-    color{color}
+    color{color},
+    cornerRadius{cornerRadius}
 {
     this->quadPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
     this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms),  MTL::ResourceStorageModeShared);
@@ -27,8 +28,6 @@ void Shell::update() {
     auto frameInfo = renderer.getFrameInfo();
     
     simd_float2 drawOffset {x, frameInfo.height - y};
-    
-    Uniforms uniforms {.color=color};
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={drawOffset.x,drawOffset.y}},
@@ -41,6 +40,18 @@ void Shell::update() {
     
     elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
         .bottomRight ={drawOffset.x + width, drawOffset.y + height}};
+    
+    this->center = {drawOffset.x + width/2.0f, drawOffset.y + height/2.0f};
+    this->halfExtent = {width / 2.0f, height / 2.0f};
+    
+    Uniforms uniforms { .color=color,
+                        .rectCenter = center,
+                        .halfExtent = halfExtent,
+                        .cornerRadius = cornerRadius};
+    
+    std::println("corner radius: {}, halfExtent x: {}, halfExtent y: {}", cornerRadius, width / 2.0f, height / 2.0f);
+    
+    
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
@@ -66,7 +77,8 @@ void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     // set up vertex function
     MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_shell", NS::UTF8StringEncoding));
     renderPipelineDescriptor->setVertexFunction(vertexFunction);
-    
+
+    //
     renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(renderer.view->colorPixelFormat());
     renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
     renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);

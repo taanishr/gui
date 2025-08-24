@@ -63,6 +63,8 @@ void RenderNode::handleEvent(Event& event) {
                 {
                     auto payload = std::any_cast<MousePayload>(event.payload);
                     auto bounds = renderable->bounds();
+                
+                    // use sdf for hit testing this
                     
                     bool oob = payload.x < bounds.topLeft.x || payload.x > bounds.bottomRight.x ||
                     payload.y < bounds.topLeft.y || payload.y > bounds.bottomRight.y;
@@ -152,12 +154,3 @@ void RenderTree::handleEvent(Event& event)
 {
     root->handleEvent(event);
 }
-
-
-// handling events?
-
-// tree needs a handle event type
-// struct with position and enum?
-//
-
-

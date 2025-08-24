@@ -21,10 +21,13 @@ namespace ShellRender {
 
     struct Uniforms {
         simd_float4 color;
+        simd_float2 rectCenter;
+        simd_float2 halfExtent;
+        float cornerRadius;
     };
 
     struct Shell : public Renderable {
-        Shell(Renderer& renderer, float width, float height, float x = 0.0, float y = 0.0, simd_float4 color={0,0,0,1});
+        Shell(Renderer& renderer, float width, float height, float x = 0.0, float y = 0.0, simd_float4 color={0,0,0,1}, float cornerRadius = 0.0);
         
         void update();
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
@@ -39,15 +42,16 @@ namespace ShellRender {
         MTL::Buffer* uniformsBuffer;
         MTL::Buffer* frameInfoBuffer;
         
-        // uniforms
+        // uniforms, size and positioning
         simd_float4 color;
-        
-        // size and positioning
         float height;
         float width;
         float x;
         float y;
+        float cornerRadius = 0.0;
         Bounds elementBounds;
+        simd_float2 halfExtent;
+        simd_float2 center;
         
     };
 

@@ -16,10 +16,14 @@ struct ShellVertexIn {
 
 struct ShellVertexOut {
     float4 position [[position]];
+    float4 worldPosition;
 };
 
 struct ShellUniforms {
     float4 color;
+    float2 rectCenter;
+    float2 halfExtent;
+    float cornerRadius;
 };
 
 vertex ShellVertexOut vertex_shell(
@@ -30,14 +34,30 @@ vertex ShellVertexOut vertex_shell(
     ShellVertexOut out;
     float2 adjustedPosition = toNDC(in.position, frameInfo->width, frameInfo->height);
     out.position = float4(adjustedPosition, 0.0, 1.0);
+    out.worldPosition = float4(in.position, 0.0, 1.0);
     return out;
 }
+
+float rounded_rect_sdf(float2 pt, float2 halfExtent, float r)
+{
+    r = clamp(r, 0.0, min(halfExtent.x, halfExtent.y));
+    float2 q = abs(pt) - halfExtent + r;
+    return length(max(q, 0.0)) + min(max(q.x,q.y),0.0) - r;
+}
+
 
 fragment float4 fragment_shell(
     ShellVertexOut in [[stage_in]],
     constant ShellUniforms* uniforms [[buffer(0)]]
 )
 {
-    float4 color = uniforms->color;
-    return color;
+    float2 localPosition = in.worldPosition.xy - uniforms->rectCenter;
+    float d = rounded_rect_sdf(localPosition, uniforms->halfExtent, uniforms->cornerRadius);
+    
+    float px = fwidth(d);
+
+    float alpha = clamp(0.5 - d/px, 0.0, 1.0);
+
+    float finalAlpha = uniforms->color.a * alpha;
+    return float4(uniforms->color.xyz, finalAlpha);
 }

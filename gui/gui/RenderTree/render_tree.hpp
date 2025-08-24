@@ -22,6 +22,7 @@
 #include <any>
 #include <functional>
 #include "events.hpp"
+#include "sdf_helpers.hpp"
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
