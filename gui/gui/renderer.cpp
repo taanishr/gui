@@ -22,7 +22,7 @@ void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
     
     auto root = renderTree.root.get();
-    renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}), root);
+    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}), root);
     auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
     renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5}), root);
     
@@ -36,6 +36,12 @@ void Renderer::makeResources() {
         }else {
             textBlockRenderable->addChar(payload.ch);
         }
+    });
+    
+    s1->addEventHandler(EventType::Click, [s1](Event& event) {
+        auto s1Renderable = dynamic_cast<Shell*>(s1->renderable.get());
+    
+        s1Renderable->color = simd_float4{0,0.5,0,0.5};
     });
 }
 

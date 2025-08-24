@@ -14,12 +14,11 @@
 HandlerState hs {};
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
-
+using MouseDownFunc = CGPoint(*)(id, SEL);
 
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
-
 
 extern "C" void keyDown(id self, SEL _cmd, id event) {
     KeyDownFunc f = (KeyDownFunc)objc_msgSend;
@@ -29,15 +28,14 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     
     
     hs.keyboardHandler(inputChar);
-//    
-//    if (inputChar == '\x7F') {
-//        SelectedString::removeChar();
-//    }else {
-//        SelectedString::addChar(inputChar);
-//    }
 }
 
-
+extern "C" void mouseDown(id self, SEL _cmd, id event) {
+    MouseDownFunc f = (MouseDownFunc)objc_msgSend;
+    auto point = f(event, sel_registerName("locationInWindow"));
+    
+    hs.mouseDownHandler(point.x, point.y);
+}
 
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
@@ -93,9 +91,20 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         this->viewDelegate->renderer->renderTree.handleEvent(e);
     };
     
+    hs.mouseDownHandler = [this](float x, float y){
+        Event e;
+        e.type = EventType::Click;
+        e.payload = MousePayload{
+            .x = x,
+            .y = y
+        };
+        this->viewDelegate->renderer->renderTree.handleEvent(e);
+    };
+    
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
+    class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
     
 
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);

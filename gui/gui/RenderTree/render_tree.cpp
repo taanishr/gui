@@ -70,11 +70,12 @@ void RenderNode::handleEvent(Event& event) {
                     if (!oob) {
                         handler(event);
                     }
+                    break;
                 }
             case EventType::KeyboardDown:
             {
-                auto payload = std::any_cast<KeyboardPayload>(event.payload);
                 handler(event);
+                break;
             }
             default:
                 break;

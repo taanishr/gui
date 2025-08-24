@@ -16,6 +16,7 @@
 
 struct HandlerState {
     std::function<void(char ch)> keyboardHandler;
+    std::function<void(float x, float y)> mouseDownHandler;
 };
 
 
