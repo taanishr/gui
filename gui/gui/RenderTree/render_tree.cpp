@@ -60,20 +60,15 @@ void RenderNode::handleEvent(Event& event) {
     if (handler) {
         switch (event.type) {
             case EventType::Click:
-                {
-                    auto payload = std::any_cast<MousePayload>(event.payload);
-                    auto bounds = renderable->bounds();
+            {
+                auto payload = std::any_cast<MousePayload>(event.payload);
                 
-                    // use sdf for hit testing this
-                    
-                    bool oob = payload.x < bounds.topLeft.x || payload.x > bounds.bottomRight.x ||
-                    payload.y < bounds.topLeft.y || payload.y > bounds.bottomRight.y;
-                    
-                    if (!oob) {
-                        handler(event);
-                    }
-                    break;
+                if (renderable->inBounds({payload.x, payload.y})) {
+                    handler(event);
                 }
+                
+                break;
+            }
             case EventType::KeyboardDown:
             {
                 handler(event);

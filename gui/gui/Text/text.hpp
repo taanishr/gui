@@ -40,7 +40,8 @@ namespace TextRender {
         void removeChar();
         void update();
         void encode(MTL::RenderCommandEncoder* encoder);
-        const Bounds& bounds();
+        bool inBounds(simd_float2 point) const;
+        const Bounds& bounds() const;
     private:
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         FrameInfo getFrameInfo();

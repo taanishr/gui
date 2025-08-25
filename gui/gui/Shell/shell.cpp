@@ -49,7 +49,7 @@ void Shell::update() {
                         .halfExtent = halfExtent,
                         .cornerRadius = cornerRadius};
     
-    std::println("corner radius: {}, halfExtent x: {}, halfExtent y: {}", cornerRadius, width / 2.0f, height / 2.0f);
+//    std::println("corner radius: {}, halfExtent x: {}, halfExtent y: {}", cornerRadius, width / 2.0f, height / 2.0f);
     
     
     
@@ -131,10 +131,16 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
 }
 
 
-const Bounds& Shell::bounds() {
+const Bounds& Shell::bounds() const
+{
     return elementBounds;
 }
 
+bool Shell::inBounds(simd_float2 point) const
+{
+    simd_float2 localPoint {point.x - center.x, point.y - center.y};
+    return rounded_rect_sdf(localPoint, halfExtent, cornerRadius) <= 0;
+}
 
 Shell::~Shell() {
     this->quadPointsBuffer->release();

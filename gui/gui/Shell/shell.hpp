@@ -33,7 +33,8 @@ namespace ShellRender {
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
-        const Bounds& bounds();
+        const Bounds& bounds() const;
+        bool inBounds(simd_float2 point) const;
         ~Shell();
         
         Renderer& renderer;

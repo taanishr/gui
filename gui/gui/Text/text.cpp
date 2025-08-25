@@ -237,8 +237,15 @@ void Text::update() {
 }
 
 
-const Bounds& Text::bounds() {
+const Bounds& Text::bounds() const
+{
     return elementBounds;
+}
+
+bool Text::inBounds(simd_float2 point) const
+{
+    return point.x < elementBounds.topLeft.x || point.x > elementBounds.bottomRight.x ||
+    point.y < elementBounds.topLeft.y || point.y > elementBounds.bottomRight.y;
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {
