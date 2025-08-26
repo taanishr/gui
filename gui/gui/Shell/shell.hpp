@@ -27,7 +27,7 @@ namespace ShellRender {
         float cornerRadius;
     };
 
-    struct Shell : public Drawable {
+    struct Shell {
         Shell(Renderer& renderer, float width, float height, float x = 0.0, float y = 0.0, simd_float4 color={0,0,0,1}, float cornerRadius = 0.0);
         
         void update();

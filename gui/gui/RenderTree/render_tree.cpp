@@ -16,7 +16,7 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, 
 
 
 RenderTree::RenderTree():
-    root{std::make_unique<RenderNode<Shell>>()}
+    root{std::make_unique<RenderNode<RootDrawable>>()}
 {
     root->zIndex = 0;
 }

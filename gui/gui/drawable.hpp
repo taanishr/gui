@@ -14,15 +14,13 @@ struct Bounds {
     simd_float2 bottomRight;
 };
 
-class Drawable {
-public:
-    virtual void update() = 0;
-    virtual MTL::RenderPipelineState* getPipeline() = 0;
-    virtual void encode(MTL::RenderCommandEncoder* encoder) = 0;
-    virtual bool contains(simd_float2) const = 0;
-    virtual const Bounds& bounds() const = 0;
-    virtual ~Drawable() = default;
-
-private:
-    virtual void buildPipeline(MTL::RenderPipelineState*& pipeline) = 0;
+template <typename T>
+concept Drawable = requires(T t, MTL::RenderCommandEncoder* encoder, simd_float2 pt) {
+    { t.getPipeline() } -> std::same_as<MTL::RenderPipelineState*>;
+    
+    { t.update() } -> std::same_as<void>;
+    { t.encode(encoder) } -> std::same_as<void>;
+    
+    { t.bounds() } -> std::same_as<const Bounds&>;
+    { t.contains(pt) } -> std::same_as<bool>;
 };

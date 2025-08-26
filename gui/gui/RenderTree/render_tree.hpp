@@ -36,7 +36,8 @@ struct RenderNodeComparator {
     bool operator()(const std::unique_ptr<RenderNodeBase>& a, const std::unique_ptr<RenderNodeBase>& b) const;
 };
 
-struct RenderNodeBase {
+class RenderNodeBase {
+public:
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
@@ -44,18 +45,15 @@ struct RenderNodeBase {
     virtual void dispatch(const Event& event) = 0;
     
     RenderNodeBase* parent;
-
     std::vector<std::unique_ptr<RenderNodeBase>> children;
-    
     int zIndex;
-
     uint64_t insertionId;
-
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
-template <typename DrawableType>
-struct RenderNode : RenderNodeBase {
+template <Drawable DrawableType>
+class RenderNode : public RenderNodeBase {
+public:
     RenderNode() {};
 
     void update() {
@@ -84,7 +82,22 @@ struct RenderNode : RenderNodeBase {
     }
 
     template <EventType E, typename F>
-    void addEventHandler(F&& f);
+    void addEventHandler(F&& f) {
+        EventHandler wrapper = [fn = std::forward<F>(f)](RenderNodeBase& self, const Event& event){
+            auto& typedSelf = static_cast<RenderNode<DrawableType>&>(self);
+            
+            if constexpr (E == EventType::Click) {
+                auto& mousePayload = std::get<MousePayload>(event.payload);
+
+                if (!typedSelf.drawable->contains({mousePayload.x, mousePayload.y}))
+                    return;
+            }
+
+            fn(typedSelf, std::get<event_payload_t<E>>(event.payload));
+        };
+
+        handlers[E].push_back(std::move(wrapper));
+    }
 
     void dispatch(const Event& event) {
         auto it = handlers.find(event.type);
@@ -98,34 +111,32 @@ struct RenderNode : RenderNodeBase {
     std::unique_ptr<DrawableType> drawable;
 };
 
-template <typename DrawableType>
-template <EventType E, typename F>
-void RenderNode<DrawableType>::addEventHandler(F&& f)
-{
-    EventHandler wrapper = [fn = std::forward<F>(f)](RenderNodeBase& self, const Event& event){
-        auto& typedSelf = static_cast<RenderNode<DrawableType>&>(self);
-        
-        if constexpr (E == EventType::Click) {
-            auto& mousePayload = std::get<MousePayload>(event.payload);
-
-            if (!typedSelf.drawable->contains({mousePayload.x, mousePayload.y}))
-                return;
-        }
-
-        fn(typedSelf, std::get<event_payload_t<E>>(event.payload));
-    };
-
-    handlers[E].push_back(std::move(wrapper));
-}
-
-struct RenderTree {
+class RenderTree {
+public:
     RenderTree();
 
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
 
     template <typename DrawableType>
-    RenderNode<DrawableType>* insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent);
+    RenderNode<DrawableType>* insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent)
+    {
+        auto newNode = std::make_unique<RenderNode<DrawableType>>();
+        newNode->parent = parent;
+        newNode->zIndex = parent->zIndex;
+        newNode->drawable = std::move(drawable);
+        newNode->insertionId = nextInsertionId;
+        
+        auto nodePtr = newNode.get();
+    
+        parent->children.push_back(std::move(newNode));
+        
+        nodeMap[nextInsertionId] = nodePtr;
+        ++nodes;
+        ++nextInsertionId;
+
+        return nodePtr;
+    }
 
     void deleteNode(RenderNodeBase* node);
 
@@ -133,31 +144,26 @@ struct RenderTree {
 
     void dispatch(const Event& event);
 
-    std::unique_ptr<RenderNode<Shell>> root;
+    std::unique_ptr<RenderNode<RootDrawable>> root;
     std::unordered_map<uint64_t, RenderNodeBase*> nodeMap;
+    
+    
+    // to do
+    // - flatten render node base; sorted by global z index (so we don't have cousin drift)
+    // - metal depth buffering
+    // - only resort when children z changes (dirty flag)
+    // - secondary sort (same z buffer) -> do it by render pipeline key
+    
+    // structure:
+    // - have update flatten draw list
+    // - track both local and global z index
+    // - map pipeline keys somehow
+    // - have encode just run through the draw list
+    
+    
+//    std::vector<RenderNodeBase*> flattened;
 
     size_t nodes;
     uint64_t nextInsertionId;
 };
-
-template <typename DrawableType>
-RenderNode<DrawableType>* RenderTree::insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent)
-{
-    auto newNode = std::make_unique<RenderNode<DrawableType>>();
-    newNode->parent = parent;
-    newNode->zIndex = parent->zIndex;
-    newNode->drawable = std::move(drawable);
-    newNode->insertionId = nextInsertionId;
-    auto nodePtr = newNode.get();
-    
-    parent->children.push_back(std::move(newNode));
-
-    nodeMap[nextInsertionId] = nodePtr;
-
-    ++nodes;
-    ++nextInsertionId;
-
-
-    return nodePtr;
-}
 

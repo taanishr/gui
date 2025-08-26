@@ -29,7 +29,7 @@ namespace TextRender {
         simd_float3 color;
     };
 
-    class Text : public Drawable {
+    class Text {
     public:
         Text(Renderer& renderer, float x, float y, float fontSize=64.0, simd_float3 color={0,0,0}, const std::string& font = defaultFont.data());
         ~Text();

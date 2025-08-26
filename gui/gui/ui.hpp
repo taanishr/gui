@@ -7,6 +7,8 @@
 
 #include "shell.hpp"
 #include "text.hpp"
+#include "root_drawable.hpp"
 
 using Text = TextRender::Text;
 using Shell = ShellRender::Shell;
+using RootDrawable = RootRender::RootDrawable;

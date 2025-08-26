@@ -14,6 +14,7 @@
 #include "frame_info.hpp"
 #include "render_tree.hpp"
 #include "events.hpp"
+#include <chrono>
 
 constexpr int MaxOutstandingFrameCount = 2;
 
@@ -21,6 +22,7 @@ class Renderer {
 public:
     Renderer(MTL::Device* device, MTK::View* view);
     ~Renderer();
+    MTL::DepthStencilState* getDefaultDepthStencilState();
     void updateConstants();
     void makeResources();
     void draw();
@@ -33,8 +35,10 @@ public:
     
     RenderTree renderTree;
     
+    std::chrono::high_resolution_clock clock {};
+    
+    
 private:
     MTL::CommandQueue* commandQueue;
-    MTL::RenderPipelineState* renderPipelineState;
     std::counting_semaphore<MaxOutstandingFrameCount> frameSemaphore;
 };

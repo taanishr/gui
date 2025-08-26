@@ -107,11 +107,12 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
     
 
+    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
+        view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
+    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
+    
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);
-//    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
-//    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
-//    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
-    view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
+//    view->setClearColor(MTL::ClearColor::Make(0,0,0,1));
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
     
