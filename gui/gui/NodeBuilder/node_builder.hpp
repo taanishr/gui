@@ -26,10 +26,11 @@ struct NodeBuilder {
         (..., renderTree.reparent(this->node, children.node));
     }
     
-//    template <EventType E, typename F>
-//    void on(F&& f) {
-//        node->addEventHandler(f);
-//    }
+    template <EventType E, typename F>
+    NodeBuilder<DrawableType> on(F&& f) {
+        node->template addEventHandler<E>(f);
+        return *this;
+    }
 };
 
 NodeBuilder<Shell> div(Renderer& renderer, float w, float h, float x = 0, float y = 0, simd_float4 color = {0,0,0,1}, float cornerRadius = 0);

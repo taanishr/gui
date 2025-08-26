@@ -52,8 +52,25 @@ void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
     
-    div(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0)(
-        text(*this, "hello world!", 24.0, 10, 25),
+    auto inputListener = [](auto& self, const auto& payload){
+        auto drawable = self.drawable.get();
+
+        if (payload.ch == '\x7F') {
+            drawable->removeChar();
+        }else {
+            drawable->addChar(payload.ch);
+        }
+    };
+    
+    auto onClick = [](auto& self, const auto& payload) {
+        auto drawable = self.drawable.get();
+
+        drawable->color = simd_float4{0,0.5,0,0.5};
+    };
+    
+    div(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0).on<EventType::Click>(onClick)
+    (
+        text(*this, "", 24.0, 10, 25).on<EventType::KeyboardDown>(inputListener),
         div(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5})
     );
     
