@@ -50,34 +50,37 @@ MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()
 
 void Renderer::makeResources()
 {
-    // make elements
     FT_Init_FreeType(&(this->ft));
     
-    auto root = renderTree.root.get();
+    div(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0)(
+        text(*this, "hello world!", 24.0, 10, 25),
+        div(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5})
+    );
     
-    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0), root);
     
-    auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
-    
-    renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5}), root);
-    
-    textBlock->addEventHandler<EventType::KeyboardDown>([](auto& self, const auto& payload){
-        auto drawable = self.drawable.get();
-    
-        if (payload.ch == '\x7F') {
-            drawable->removeChar();
-        }else {
-            drawable->addChar(payload.ch);
-        }
-    });
-    
-//    textBlock->drawable.get()->setText("This is a prerendered scene");
-
-    s1->addEventHandler<EventType::Click>([](auto& self, const auto& payload) {
-        auto drawable = self.drawable.get();
-    
-        drawable->color = simd_float4{0,0.5,0,0.5};
-    });
+//    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0), root);
+//    
+//    auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
+//    
+//    renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5}), root);
+//    
+//    textBlock->addEventHandler<EventType::KeyboardDown>([](auto& self, const auto& payload){
+//        auto drawable = self.drawable.get();
+//    
+//        if (payload.ch == '\x7F') {
+//            drawable->removeChar();
+//        }else {
+//            drawable->addChar(payload.ch);
+//        }
+//    });
+//    
+////    textBlock->drawable.get()->setText("This is a prerendered scene");
+//
+//    s1->addEventHandler<EventType::Click>([](auto& self, const auto& payload) {
+//        auto drawable = self.drawable.get();
+//    
+//        drawable->color = simd_float4{0,0.5,0,0.5};
+//    });
 
     
 }

@@ -50,13 +50,14 @@ public:
     int localZIndex;
     int globalZIndex;
     uint64_t insertionId;
+    uintptr_t pipelineId;
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
 template <Drawable DrawableType>
 class RenderNode : public RenderNodeBase {
 public:
-    RenderNode() {};
+    RenderNode() {}
 
     void update() {
         if (drawable)
@@ -129,6 +130,7 @@ public:
         newNode->parent = parent;
         newNode->localZIndex = 0;
         newNode->globalZIndex = parent->globalZIndex;
+        newNode->pipelineId = reinterpret_cast<std::uintptr_t>(drawable->getPipeline());
         newNode->drawable = std::move(drawable);
         newNode->insertionId = nextInsertionId;
         
@@ -163,7 +165,7 @@ public:
     // - track both local and global z index
     // - map pipeline keys somehow
     // - have encode just run through the draw list
-    
+
 
     size_t nodes;
     uint64_t nextInsertionId;

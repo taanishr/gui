@@ -15,6 +15,7 @@
 #include "render_tree.hpp"
 #include "events.hpp"
 #include <chrono>
+#include "node_builder.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 
