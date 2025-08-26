@@ -242,13 +242,16 @@ const Bounds& Text::bounds() const
     return elementBounds;
 }
 
-bool Text::inBounds(simd_float2 point) const
+bool Text::contains(simd_float2 point) const
 {
     return point.x < elementBounds.topLeft.x || point.x > elementBounds.bottomRight.x ||
     point.y < elementBounds.topLeft.y || point.y > elementBounds.bottomRight.y;
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {
+//    auto framePixelSize = renderer.getFramePixelSize();
+//    encoder->setScissorRect({0,0, static_cast<unsigned long>(framePixelSize.width), static_cast<unsigned long>(framePixelSize.height)});
+    
     auto pipeline = getPipeline();
     encoder->setRenderPipelineState(pipeline);
     encoder->setVertexBuffer(this->quadBuffer, 0, 0);

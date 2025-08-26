@@ -136,10 +136,10 @@ const Bounds& Shell::bounds() const
     return elementBounds;
 }
 
-bool Shell::inBounds(simd_float2 point) const
+bool Shell::contains(simd_float2 point) const
 {
     simd_float2 localPoint {point.x - center.x, point.y - center.y};
-    return rounded_rect_sdf(localPoint, halfExtent, cornerRadius) <= 0;
+    return rounded_rect_sdf(localPoint, halfExtent, cornerRadius) < 0;
 }
 
 Shell::~Shell() {

@@ -18,31 +18,47 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     makeResources();
 }
 
+
+// things to sort out:
+
+// ideal api
+/*
+    root()(
+        div().flex().color(simd_float3{0.5,0.5,0.3}).on<Click>([](RenderNode& self, KeyboardPayload payload){})
+        (
+            div(),
+            text().on<KeyboardDown>(lambda)
+        )
+    );
+ */
+
+// getting rid of this nasty dyncast
+
 void Renderer::makeResources() {
     FT_Init_FreeType(&(this->ft));
     
     auto root = renderTree.root.get();
-    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0), root);
+    
+    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 16.0), root);
     auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
     renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5}), root);
     
-    
-    textBlock->addEventHandler(EventType::KeyboardDown, [textBlock](Event& event){
-        auto textBlockRenderable = dynamic_cast<Text*>(textBlock->renderable.get());
-        auto payload = std::any_cast<KeyboardPayload>(event.payload);
+    textBlock->addEventHandler<EventType::KeyboardDown>([](RenderNode& self, KeyboardPayload payload){
+        auto drawable = dynamic_cast<Text*>(self.drawable.get());
     
         if (payload.ch == '\x7F') {
-            textBlockRenderable->removeChar();
+            drawable->removeChar();
         }else {
-            textBlockRenderable->addChar(payload.ch);
+            drawable->addChar(payload.ch);
         }
     });
+
+    s1->addEventHandler<EventType::Click>([](RenderNode& self, MousePayload payload) {
+        auto drawable = dynamic_cast<Shell*>(self.drawable.get());
     
-    s1->addEventHandler(EventType::Click, [s1](Event& event) {
-        auto s1Renderable = dynamic_cast<Shell*>(s1->renderable.get());
-    
-        s1Renderable->color = simd_float4{0,0.5,0,0.5};
+        drawable->color = simd_float4{0,0.5,0,0.5};
     });
+    
 }
 
 void Renderer::draw() {
@@ -68,6 +84,12 @@ void Renderer::draw() {
     commandBuffer->commit();
     
     autoreleasePool->release();
+}
+
+FrameInfo Renderer::getFramePixelSize() {
+    auto frameDimensions = this->view->drawableSize();
+
+    return {.width=static_cast<float>(frameDimensions.width), .height=static_cast<float>(frameDimensions.height)};
 }
 
 FrameInfo Renderer::getFrameInfo() {

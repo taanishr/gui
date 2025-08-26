@@ -6,15 +6,11 @@
 //
 
 #pragma once
+#include <variant>
 
 enum class EventType {
     KeyboardDown,
     Click,
-};
-
-struct Event {
-    EventType type;
-    std::any payload;
 };
 
 struct MousePayload {
@@ -26,5 +22,15 @@ struct KeyboardPayload {
     char ch;
 };
 
-using EventHandler = std::function<void(Event&)>;
+using EventPayload = std::variant<MousePayload, KeyboardPayload>;
+
+struct Event {
+    EventType type;
+    EventPayload payload;
+};
+
+template<EventType E> struct event_payload;
+template<> struct event_payload<EventType::KeyboardDown > { using type = KeyboardPayload; };
+template<> struct event_payload<EventType::Click> { using type = MousePayload; };
+template<EventType E> using event_payload_t = typename event_payload<E>::type;
 

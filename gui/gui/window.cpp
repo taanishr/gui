@@ -88,7 +88,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         e.payload = KeyboardPayload{
             .ch = ch
         };
-        this->viewDelegate->renderer->renderTree.handleEvent(e);
+        this->viewDelegate->renderer->renderTree.dispatch(e);
     };
     
     hs.mouseDownHandler = [this](float x, float y){
@@ -98,7 +98,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .x = x,
             .y = y
         };
-        this->viewDelegate->renderer->renderTree.handleEvent(e);
+        this->viewDelegate->renderer->renderTree.dispatch(e);
     };
     
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),

@@ -1,5 +1,5 @@
 //
-//  renderable.cpp
+//  render_tree.cpp
 //  gui
 //
 //  Created by Taanish Reja on 8/21/25.
@@ -20,8 +20,8 @@ RenderNode::RenderNode()
 
 void RenderNode::update()
 {
-    if (renderable)
-        renderable->update();
+    if (drawable)
+        drawable->update();
     
     std::sort(children.begin(), children.end(), RenderNodeComparator{});
     for (const auto& child: children)
@@ -31,13 +31,13 @@ void RenderNode::update()
 
 void RenderNode::encode(MTL::RenderCommandEncoder* encoder) const
 {
-    if (renderable)
-        renderable->encode(encoder);
+    if (drawable)
+        drawable->encode(encoder);
 }
 
 void RenderNode::render(MTL::RenderCommandEncoder* encoder) const
 {
-    if (renderable) {
+    if (drawable) {
         encode(encoder);
     }
         
@@ -49,38 +49,13 @@ void RenderNode::changeZIndex(int zIndex) {
     this->zIndex = this->parent->zIndex + zIndex;
 }
 
-void RenderNode::addEventHandler(EventType type, EventHandler eventHandler)
-{
-    handlerMap[type] = eventHandler;
-}
-
-void RenderNode::handleEvent(Event& event) {
-    auto handler = handlerMap[event.type];
+void RenderNode::dispatch(const Event& event) {
+    auto it = handlers.find(event.type);
     
-    if (handler) {
-        switch (event.type) {
-            case EventType::Click:
-            {
-                auto payload = std::any_cast<MousePayload>(event.payload);
-                
-                if (renderable->inBounds({payload.x, payload.y})) {
-                    handler(event);
-                }
-                
-                break;
-            }
-            case EventType::KeyboardDown:
-            {
-                handler(event);
-                break;
-            }
-            default:
-                break;
-        }
-    }
+    if (it != handlers.end())
+        for (auto& h : it->second) h(*this, event);
     
-    for (auto& child: children)
-        child->handleEvent(event);
+    for (auto& child : children) child->dispatch(event);
 }
 
 RenderTree::RenderTree():
@@ -99,12 +74,12 @@ void RenderTree::render(MTL::RenderCommandEncoder* encoder) const
     root->render(encoder);
 }
 
-RenderNode* RenderTree::insertNode(std::unique_ptr<Renderable> renderable, RenderNode *parent)
+RenderNode* RenderTree::insertNode(std::unique_ptr<Drawable> drawable, RenderNode *parent)
 {
     auto newNode = std::make_unique<RenderNode>();
     newNode->parent = parent;
     newNode->zIndex = parent->zIndex;
-    newNode->renderable = std::move(renderable);
+    newNode->drawable = std::move(drawable);
     newNode->insertionId = nextInsertionId;
     
     parent->children.push_back(std::move(newNode));
@@ -145,7 +120,7 @@ void RenderTree::reparent(RenderNode* node, RenderNode* newParent)
 }
 
 
-void RenderTree::handleEvent(Event& event)
+void RenderTree::dispatch(const Event& event)
 {
-    root->handleEvent(event);
+    root->dispatch(event);
 }

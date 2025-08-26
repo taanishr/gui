@@ -10,7 +10,7 @@
 #include "metal_imports.hpp"
 #include "freetype.hpp"
 #include "process_contours.hpp"
-#include "renderable.hpp"
+#include "drawable.hpp"
 #include "frame_info.hpp"
 #include "buffer_helpers.hpp"
 
@@ -29,7 +29,7 @@ namespace TextRender {
         simd_float3 color;
     };
 
-    class Text : public Renderable {
+    class Text : public Drawable {
     public:
         Text(Renderer& renderer, float x, float y, float fontSize=64.0, simd_float3 color={0,0,0}, const std::string& font = defaultFont.data());
         ~Text();
@@ -40,7 +40,7 @@ namespace TextRender {
         void removeChar();
         void update();
         void encode(MTL::RenderCommandEncoder* encoder);
-        bool inBounds(simd_float2 point) const;
+        bool contains(simd_float2 point) const;
         const Bounds& bounds() const;
     private:
         void buildPipeline(MTL::RenderPipelineState*& pipeline);

@@ -24,6 +24,7 @@ public:
     void updateConstants();
     void makeResources();
     void draw();
+    FrameInfo getFramePixelSize();
     FrameInfo getFrameInfo();
     
     MTL::Device* device;
@@ -36,5 +37,5 @@ private:
     MTL::CommandQueue* commandQueue;
     MTL::RenderPipelineState* renderPipelineState;
     std::counting_semaphore<MaxOutstandingFrameCount> frameSemaphore;
-    std::vector<std::unique_ptr<Renderable>> renderables;
+    std::vector<std::unique_ptr<Drawable>> drawables;
 };

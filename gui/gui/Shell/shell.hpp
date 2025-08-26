@@ -8,7 +8,7 @@
 #pragma once
 #include "metal_imports.hpp"
 #include "printers.hpp"
-#include "renderable.hpp"
+#include "drawable.hpp"
 #include <print>
 #include "frame_info.hpp"
 
@@ -26,7 +26,7 @@ namespace ShellRender {
         float cornerRadius;
     };
 
-    struct Shell : public Renderable {
+    struct Shell : public Drawable {
         Shell(Renderer& renderer, float width, float height, float x = 0.0, float y = 0.0, simd_float4 color={0,0,0,1}, float cornerRadius = 0.0);
         
         void update();
@@ -34,7 +34,7 @@ namespace ShellRender {
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
         const Bounds& bounds() const;
-        bool inBounds(simd_float2 point) const;
+        bool contains(simd_float2 point) const;
         ~Shell();
         
         Renderer& renderer;

@@ -16,7 +16,7 @@
 #include "metal_imports.hpp"
 #include <memory>
 #include <set>
-#include "renderable.hpp"
+#include "drawable.hpp"
 #include <print>
 #include <algorithm>
 #include <any>
@@ -27,8 +27,9 @@
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
 
-
 struct RenderNode;
+
+using EventHandler = std::function<void(RenderNode&, const Event&)>;
 
 struct RenderNodeComparator {
     bool operator()(const std::unique_ptr<RenderNode>& a, const std::unique_ptr<RenderNode>& b) const;
@@ -37,7 +38,7 @@ struct RenderNodeComparator {
 struct RenderNode {
     RenderNode();
     
-    RenderNode(Renderable& renderable, RenderNode* parent);
+    RenderNode(Drawable& drawable, RenderNode* parent);
     
     void update();
     
@@ -47,22 +48,41 @@ struct RenderNode {
     
     void changeZIndex(int zIndex);
     
-    void addEventHandler(EventType type, EventHandler eventHandler);
-    
-    void handleEvent(Event& event);
+    template <EventType E, typename F>
+    void addEventHandler(F&& f);
+
+    void dispatch(const Event& event);
     
     RenderNode* parent;
     
     std::vector<std::unique_ptr<RenderNode>> children;
     
-    std::unique_ptr<Renderable> renderable;
+    std::unique_ptr<Drawable> drawable;
     
     int zIndex;
     
-    int insertionId;
+    uint64_t insertionId;
     
-    std::unordered_map<EventType, EventHandler> handlerMap;
+    std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
+
+template <EventType E, typename F>
+void RenderNode::addEventHandler(F&& f)
+{
+    EventHandler wrapper = [fn = std::forward<F>(f)](RenderNode& self, const Event& event){
+        if constexpr (E == EventType::Click) {
+            auto& mousePayload = std::get<MousePayload>(event.payload);
+            
+            if (!self.drawable->contains({mousePayload.x, mousePayload.y}))
+                return;
+        }
+        
+        
+        fn(self, std::get<event_payload_t<E>>(event.payload));
+    };
+    
+    handlers[E].push_back(std::move(wrapper));
+}
 
 struct RenderTree {
     RenderTree();
@@ -70,18 +90,16 @@ struct RenderTree {
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
     
-    RenderNode* insertNode(std::unique_ptr<Renderable> renderable, RenderNode* parent);
+    RenderNode* insertNode(std::unique_ptr<Drawable> drawable, RenderNode* parent);
     void deleteNode(RenderNode* node);
     
     void reparent(RenderNode* node, RenderNode* newParent);
     
-    void handleEvent(Event& event);
+    void dispatch(const Event& event);
     
     std::unique_ptr<RenderNode> root;
-    std::unordered_map<int, RenderNode*> nodeMap;
+    std::unordered_map<uint64_t, RenderNode*> nodeMap;
     
-    int nodes;
-    int nextInsertionId;
+    size_t nodes;
+    uint64_t nextInsertionId;
 };
-
-
