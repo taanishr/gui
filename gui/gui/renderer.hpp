@@ -37,6 +37,9 @@ public:
     
     std::chrono::high_resolution_clock clock {};
     
+    long long numSamples = 0;
+    long long totalMicros;
+    
     
 private:
     MTL::CommandQueue* commandQueue;

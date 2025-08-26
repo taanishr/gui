@@ -41,12 +41,14 @@ public:
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
-    virtual void changeZIndex(int zIndex) = 0;
+    virtual void setZIndex(int zIndex) = 0;
     virtual void dispatch(const Event& event) = 0;
     
     RenderNodeBase* parent;
     std::vector<std::unique_ptr<RenderNodeBase>> children;
-    int zIndex;
+//    int zIndex;
+    int localZIndex;
+    int globalZIndex;
     uint64_t insertionId;
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
@@ -60,7 +62,7 @@ public:
         if (drawable)
             drawable->update();
     
-        std::sort(children.begin(), children.end(), RenderNodeComparator{});
+//        std::sort(children.begin(), children.end(), RenderNodeComparator{});
         for (const auto& child: children)
             child->update();
     }
@@ -77,8 +79,9 @@ public:
             child->render(encoder);
     }
 
-    void changeZIndex(int zIndex) {
-        this->zIndex = this->parent->zIndex + zIndex;
+    void setZIndex(int zIndex) {
+//        this->zIndex = this->parent->zIndex + zIndex;
+        this->localZIndex = zIndex;
     }
 
     template <EventType E, typename F>
@@ -115,6 +118,7 @@ class RenderTree {
 public:
     RenderTree();
 
+    void flatten(RenderNodeBase* node, int parentZ);
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
 
@@ -123,7 +127,8 @@ public:
     {
         auto newNode = std::make_unique<RenderNode<DrawableType>>();
         newNode->parent = parent;
-        newNode->zIndex = parent->zIndex;
+        newNode->localZIndex = 0;
+        newNode->globalZIndex = parent->globalZIndex;
         newNode->drawable = std::move(drawable);
         newNode->insertionId = nextInsertionId;
         
@@ -146,11 +151,10 @@ public:
 
     std::unique_ptr<RenderNode<RootDrawable>> root;
     std::unordered_map<uint64_t, RenderNodeBase*> nodeMap;
-    
+    std::vector<RenderNodeBase*> drawList;
     
     // to do
     // - flatten render node base; sorted by global z index (so we don't have cousin drift)
-    // - metal depth buffering
     // - only resort when children z changes (dirty flag)
     // - secondary sort (same z buffer) -> do it by render pipeline key
     
@@ -160,8 +164,6 @@ public:
     // - map pipeline keys somehow
     // - have encode just run through the draw list
     
-    
-//    std::vector<RenderNodeBase*> flattened;
 
     size_t nodes;
     uint64_t nextInsertionId;

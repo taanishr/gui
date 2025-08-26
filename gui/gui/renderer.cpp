@@ -70,12 +70,15 @@ void Renderer::makeResources()
             drawable->addChar(payload.ch);
         }
     });
+    
+//    textBlock->drawable.get()->setText("This is a prerendered scene");
 
     s1->addEventHandler<EventType::Click>([](auto& self, const auto& payload) {
         auto drawable = self.drawable.get();
     
         drawable->color = simd_float4{0,0.5,0,0.5};
     });
+
     
 }
 
@@ -89,15 +92,33 @@ void Renderer::draw() {
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
     
+//    auto ts1 = clock.now();
+//    
+//    renderTree.update();
+//    renderTree.render(renderCommandEncoder);
+//    
+//    auto ts2 = clock.now();
+//    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
+//    
+
+////    std::println("Update+Render: {} us", micros);
+
     auto ts1 = clock.now();
-    
+
     renderTree.update();
     renderTree.render(renderCommandEncoder);
-    
+
     auto ts2 = clock.now();
-    auto dur = ts2 - ts1;
-    auto fps = 1.0 / std::chrono::duration<double>(dur).count();
-    std::println("FPS: {:.1f}", fps);
+    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
+
+    ++numSamples;
+    totalMicros += micros;  // running sum in µs
+
+    if (numSamples % 100 == 0) {
+        double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
+        std::cout << "Average time over " << numSamples << " samples: "
+                  << avgMs << " ms\n";
+    }
     
     renderCommandEncoder->endEncoding();
     
