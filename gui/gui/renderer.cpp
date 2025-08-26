@@ -40,11 +40,13 @@ void Renderer::makeResources() {
     auto root = renderTree.root.get();
     
     auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 16.0), root);
+    
     auto textBlock = renderTree.insertNode(std::make_unique<Text>(*this, 10.0, 25.0, 24.0, simd_float3{1,1,1}), root);
+    
     renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5}), root);
     
-    textBlock->addEventHandler<EventType::KeyboardDown>([](RenderNode& self, KeyboardPayload payload){
-        auto drawable = dynamic_cast<Text*>(self.drawable.get());
+    textBlock->addEventHandler<EventType::KeyboardDown>([](auto& self, auto payload){
+        auto drawable = self.drawable.get();
     
         if (payload.ch == '\x7F') {
             drawable->removeChar();
@@ -53,8 +55,8 @@ void Renderer::makeResources() {
         }
     });
 
-    s1->addEventHandler<EventType::Click>([](RenderNode& self, MousePayload payload) {
-        auto drawable = dynamic_cast<Shell*>(self.drawable.get());
+    s1->addEventHandler<EventType::Click>([](auto& self, auto payload) {
+        auto drawable = self.drawable.get();
     
         drawable->color = simd_float4{0,0.5,0,0.5};
     });

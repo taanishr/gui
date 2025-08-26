@@ -37,5 +37,4 @@ private:
     MTL::CommandQueue* commandQueue;
     MTL::RenderPipelineState* renderPipelineState;
     std::counting_semaphore<MaxOutstandingFrameCount> frameSemaphore;
-    std::vector<std::unique_ptr<Drawable>> drawables;
 };

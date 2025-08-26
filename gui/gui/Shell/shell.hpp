@@ -9,6 +9,7 @@
 #include "metal_imports.hpp"
 #include "printers.hpp"
 #include "drawable.hpp"
+#include "sdf_helpers.hpp"
 #include <print>
 #include "frame_info.hpp"
 

@@ -23,64 +23,98 @@
 #include <functional>
 #include "events.hpp"
 #include "sdf_helpers.hpp"
+#include "ui.hpp"
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
 
-struct RenderNode;
+struct RenderNodeBase;
 
-using EventHandler = std::function<void(RenderNode&, const Event&)>;
+using EventHandler = std::function<void(RenderNodeBase&, const Event&)>;
 
 struct RenderNodeComparator {
-    bool operator()(const std::unique_ptr<RenderNode>& a, const std::unique_ptr<RenderNode>& b) const;
+    bool operator()(const std::unique_ptr<RenderNodeBase>& a, const std::unique_ptr<RenderNodeBase>& b) const;
 };
 
-struct RenderNode {
-    RenderNode();
+struct RenderNodeBase {
+    virtual void update() = 0;
+    virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
+    virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
+    virtual void changeZIndex(int zIndex) = 0;
+    virtual void dispatch(const Event& event) = 0;
     
-    RenderNode(Drawable& drawable, RenderNode* parent);
-    
-    void update();
-    
-    void encode(MTL::RenderCommandEncoder* encoder) const;
-    
-    void render(MTL::RenderCommandEncoder* encoder) const;
-    
-    void changeZIndex(int zIndex);
-    
-    template <EventType E, typename F>
-    void addEventHandler(F&& f);
+    RenderNodeBase* parent;
 
-    void dispatch(const Event& event);
-    
-    RenderNode* parent;
-    
-    std::vector<std::unique_ptr<RenderNode>> children;
-    
-    std::unique_ptr<Drawable> drawable;
+    std::vector<std::unique_ptr<RenderNodeBase>> children;
     
     int zIndex;
-    
+
     uint64_t insertionId;
-    
+
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
+template <typename DrawableType>
+struct RenderNode : RenderNodeBase {
+    RenderNode() {};
+
+    void update() {
+        if (drawable)
+            drawable->update();
+    
+        std::sort(children.begin(), children.end(), RenderNodeComparator{});
+        for (const auto& child: children)
+            child->update();
+    }
+
+    void encode(MTL::RenderCommandEncoder* encoder) const {
+        if (drawable)
+            drawable->encode(encoder);
+    }
+
+    void render(MTL::RenderCommandEncoder* encoder) const {
+        encode(encoder);
+    
+        for (const auto& child: children)
+            child->render(encoder);
+    }
+
+    void changeZIndex(int zIndex) {
+        this->zIndex = this->parent->zIndex + zIndex;
+    }
+
+    template <EventType E, typename F>
+    void addEventHandler(F&& f);
+
+    void dispatch(const Event& event) {
+        auto it = handlers.find(event.type);
+    
+        if (it != handlers.end())
+            for (auto& h : it->second) h(*this, event);
+    
+        for (auto& child : children) child->dispatch(event);
+    }
+
+    std::unique_ptr<DrawableType> drawable;
+};
+
+template <typename DrawableType>
 template <EventType E, typename F>
-void RenderNode::addEventHandler(F&& f)
+void RenderNode<DrawableType>::addEventHandler(F&& f)
 {
-    EventHandler wrapper = [fn = std::forward<F>(f)](RenderNode& self, const Event& event){
+    EventHandler wrapper = [fn = std::forward<F>(f)](RenderNodeBase& self, const Event& event){
+        auto& typedSelf = static_cast<RenderNode<DrawableType>&>(self);
+        
         if constexpr (E == EventType::Click) {
             auto& mousePayload = std::get<MousePayload>(event.payload);
-            
-            if (!self.drawable->contains({mousePayload.x, mousePayload.y}))
+
+            if (!typedSelf.drawable->contains({mousePayload.x, mousePayload.y}))
                 return;
         }
-        
-        
-        fn(self, std::get<event_payload_t<E>>(event.payload));
+
+        fn(typedSelf, std::get<event_payload_t<E>>(event.payload));
     };
-    
+
     handlers[E].push_back(std::move(wrapper));
 }
 
@@ -89,17 +123,41 @@ struct RenderTree {
 
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
-    
-    RenderNode* insertNode(std::unique_ptr<Drawable> drawable, RenderNode* parent);
-    void deleteNode(RenderNode* node);
-    
-    void reparent(RenderNode* node, RenderNode* newParent);
-    
+
+    template <typename DrawableType>
+    RenderNode<DrawableType>* insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent);
+
+    void deleteNode(RenderNodeBase* node);
+
+    void reparent(RenderNodeBase* node, RenderNodeBase* newParent);
+
     void dispatch(const Event& event);
-    
-    std::unique_ptr<RenderNode> root;
-    std::unordered_map<uint64_t, RenderNode*> nodeMap;
-    
+
+    std::unique_ptr<RenderNode<Shell>> root;
+    std::unordered_map<uint64_t, RenderNodeBase*> nodeMap;
+
     size_t nodes;
     uint64_t nextInsertionId;
 };
+
+template <typename DrawableType>
+RenderNode<DrawableType>* RenderTree::insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent)
+{
+    auto newNode = std::make_unique<RenderNode<DrawableType>>();
+    newNode->parent = parent;
+    newNode->zIndex = parent->zIndex;
+    newNode->drawable = std::move(drawable);
+    newNode->insertionId = nextInsertionId;
+    auto nodePtr = newNode.get();
+    
+    parent->children.push_back(std::move(newNode));
+
+    nodeMap[nextInsertionId] = nodePtr;
+
+    ++nodes;
+    ++nextInsertionId;
+
+
+    return nodePtr;
+}
+
