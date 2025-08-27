@@ -10,7 +10,7 @@
 
 using namespace TextRender;
 
-Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float3 color, const std::string& font):
+Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float4 color, const std::string& font):
     renderer{renderer},
     x{x},
     y{y},

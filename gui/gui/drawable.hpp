@@ -23,4 +23,8 @@ concept Drawable = requires(T t, MTL::RenderCommandEncoder* encoder, simd_float2
     
     { t.bounds() } -> std::same_as<const Bounds&>;
     { t.contains(pt) } -> std::same_as<bool>;
+    
+    { t.x } -> std::convertible_to<float>;
+    { t.y } -> std::convertible_to<float>;
+    { t.color } -> std::convertible_to<simd_float4>;
 };

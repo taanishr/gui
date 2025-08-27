@@ -24,5 +24,10 @@ namespace RootRender {
         bool contains(simd_float2 point) const;
         
         static Bounds elementBounds;
+        
+        float x;
+        float y;
+        
+        simd_float4 color;
     };
 }

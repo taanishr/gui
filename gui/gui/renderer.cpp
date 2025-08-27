@@ -68,10 +68,10 @@ void Renderer::makeResources()
         drawable->color = simd_float4{0,0.5,0,0.5};
     };
     
-    div(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0).on<EventType::Click>(onClick)
+    div(*this, 100.0, 100.0, 50).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)
     (
         text(*this, "", 24.0, 10, 25).on<EventType::KeyboardDown>(inputListener),
-        div(*this, 100.0, 100.0, 0, 128.0, simd_float4{0.5,0,0,0.5})
+        div(*this, 100.0, 100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})
     );
     
     

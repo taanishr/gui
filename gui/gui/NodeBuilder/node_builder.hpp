@@ -26,6 +26,21 @@ struct NodeBuilder {
         (..., renderTree.reparent(this->node, children.node));
     }
     
+    NodeBuilder<DrawableType> x(float x) {
+        node->drawable->x = x;
+        return *this;
+    }
+    
+    NodeBuilder<DrawableType> y(float y) {
+        node->drawable->y = y;
+        return *this;
+    }
+    
+    NodeBuilder<DrawableType> color(simd_float4 color) {
+        node->drawable->color = color;
+        return *this;
+    }
+    
     template <EventType E, typename F>
     NodeBuilder<DrawableType> on(F&& f) {
         node->template addEventHandler<E>(f);
@@ -33,6 +48,6 @@ struct NodeBuilder {
     }
 };
 
-NodeBuilder<Shell> div(Renderer& renderer, float w, float h, float x = 0, float y = 0, simd_float4 color = {0,0,0,1}, float cornerRadius = 0);
+NodeBuilder<Shell> div(Renderer& renderer, float w, float h, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
 
 NodeBuilder<Text> text(Renderer& renderer, const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);

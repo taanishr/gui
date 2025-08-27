@@ -15,7 +15,7 @@ struct GlyphMeta {
 };
 
 struct TextUniforms {
-    float3 color;
+    float4 color;
 };
 
 struct TextVertexIn {
@@ -166,11 +166,15 @@ fragment float4 fragment_text(
     
     float px = fwidth(sd);
 
-    float alpha = clamp(0.5 - sd/px, 0.0, 1.0);
+    float coverage = clamp(0.5 - sd/px, 0.0, 1.0);
+    
+    float alpha = coverage * uniforms->color.w;
 
-    float3 rgb = mix(float3{uniforms->color}, float3{uniforms->color}, alpha);
-
-    return float4(rgb*alpha,alpha);
+//    float3 rgb = mix(float3{uniforms->color.rgb}, float3{uniforms->color.xyz}, alpha);
+//
+//    return float4(rgb*alpha,alpha);
+    float3 rgb = uniforms->color.rgb;
+    return float4(rgb * alpha, alpha);
 }
 
 

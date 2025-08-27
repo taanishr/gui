@@ -26,12 +26,12 @@ namespace TextRender {
     };
 
     struct Uniforms {
-        simd_float3 color;
+        simd_float4 color;
     };
 
     class Text {
     public:
-        Text(Renderer& renderer, float x, float y, float fontSize=64.0, simd_float3 color={0,0,0}, const std::string& font = defaultFont.data());
+        Text(Renderer& renderer, float x, float y, float fontSize=64.0, simd_float4 color={0,0,0,1}, const std::string& font = defaultFont.data());
         ~Text();
         
         MTL::RenderPipelineState* getPipeline();
@@ -42,7 +42,7 @@ namespace TextRender {
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
         const Bounds& bounds() const;
-    private:
+        
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         FrameInfo getFrameInfo();
         
@@ -72,7 +72,7 @@ namespace TextRender {
         
         // uniforms
         std::string font;
-        simd_float3 color;
+        simd_float4 color;
         
         // size and positioning
         float fontSize;
