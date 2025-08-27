@@ -150,7 +150,7 @@ public:
     void reparent(RenderNodeBase* node, RenderNodeBase* newParent);
 
     void dispatch(const Event& event);
-
+    
     std::unique_ptr<RenderNode<RootDrawable>> root;
     std::unordered_map<uint64_t, RenderNodeBase*> nodeMap;
     std::vector<RenderNodeBase*> drawList;
@@ -169,5 +169,7 @@ public:
 
     size_t nodes;
     uint64_t nextInsertionId;
+    
+    static RenderTree* current;
 };
 

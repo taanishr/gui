@@ -6,6 +6,9 @@
 //
 
 #include "render_tree.hpp"
+
+RenderTree* RenderTree::current = nullptr;
+
 bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, const std::unique_ptr<RenderNodeBase>& b) const
 {
     if (a->globalZIndex != b->globalZIndex)
@@ -18,8 +21,10 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, 
 RenderTree::RenderTree():
     root{std::make_unique<RenderNode<RootDrawable>>()}
 {
+    
     root->globalZIndex = 0;
     root->localZIndex = 0;
+    
 }
 
 void RenderTree::flatten(RenderNodeBase* node, int parentZ) {
@@ -82,4 +87,3 @@ void RenderTree::dispatch(const Event& event)
 {
     root->dispatch(event);
 }
-

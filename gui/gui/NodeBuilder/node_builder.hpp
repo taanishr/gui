@@ -54,8 +54,9 @@ struct NodeBuilder {
     
     
     template <typename... Children>
-    void operator()(Children&&... children) {
+    NodeBuilder<DrawableType>& operator()(Children&&... children) {
         (..., renderTree.reparent(this->node, children.node));
+        return *this;
     }
     
     NodeBuilder<DrawableType>& x(float x) {
@@ -115,6 +116,6 @@ struct NodeBuilder {
 // solutions? define custom operator
 
 
-NodeBuilder<Shell> div(Renderer& renderer, float w = 0, float h = 0, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
+NodeBuilder<Shell> div(float w = 0, float h = 0, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
 
-NodeBuilder<Text> text(Renderer& renderer, const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
+NodeBuilder<Text> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);

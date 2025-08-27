@@ -8,6 +8,8 @@
 #include "renderer.hpp"
 #include "ui.hpp"
 
+Renderer* Renderer::current = nullptr;
+
 Renderer::Renderer(MTL::Device* device, MTK::View* view):
     device{device},
     view{view},
@@ -50,9 +52,10 @@ MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()
 
 void Renderer::makeResources()
 {
+    makeCurrent();
     FT_Init_FreeType(&(this->ft));
     
-    auto inputListener = [](auto& self, const auto& payload){
+    auto onInput = [](auto& self, const auto& payload){
         auto drawable = self.drawable.get();
 
         if (payload.ch == '\x7F') {
@@ -68,12 +71,11 @@ void Renderer::makeResources()
         drawable->color = simd_float4{0,0.5,0,0.5};
     };
     
-    
-    // current api:
-    div(*this).h(100.0).w(100.0).cornerRadius(50.0).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)
-    (
-        text(*this, "").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(inputListener),
-        div(*this).h(100.0).w(100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})
+    div().h(100.0).w(100.0).cornerRadius(50.0).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)(
+        text("").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(onInput),
+        div().h(100.0).w(100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})(
+             div().h(50.0).w(20.0).y(324.0).x(128.0).color(simd_float4{0.5,0,0.5,1})
+        )
     );
     
     
@@ -182,6 +184,15 @@ FrameInfo Renderer::getFrameInfo() {
     auto frameDimensions = this->view->drawableSize();
 
     return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
+}
+
+void Renderer::makeCurrent() {
+    current = this;
+}
+
+Renderer& Renderer::active()
+{
+    return *current;
 }
 
 

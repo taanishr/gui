@@ -30,6 +30,9 @@ public:
     FrameInfo getFramePixelSize();
     FrameInfo getFrameInfo();
     
+    void makeCurrent();
+    static Renderer& active();
+    
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
@@ -41,7 +44,7 @@ public:
     long long numSamples = 0;
     long long totalMicros;
     
-    
+    static Renderer* current;
 private:
     MTL::CommandQueue* commandQueue;
     std::counting_semaphore<MaxOutstandingFrameCount> frameSemaphore;
