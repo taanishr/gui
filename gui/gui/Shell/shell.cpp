@@ -17,7 +17,9 @@ Shell::Shell(Renderer& renderer, float width, float height, float x, float y, si
     x{x},
     y{y},
     color{color},
-    cornerRadius{cornerRadius}
+    borderColor{color},
+    cornerRadius{cornerRadius},
+    borderRadius{0}
 {
     this->quadPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
     this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms),  MTL::ResourceStorageModeShared);

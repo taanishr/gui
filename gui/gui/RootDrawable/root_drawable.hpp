@@ -27,7 +27,5 @@ namespace RootRender {
         
         float x;
         float y;
-        
-        simd_float4 color;
     };
 }

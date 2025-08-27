@@ -68,11 +68,29 @@ void Renderer::makeResources()
         drawable->color = simd_float4{0,0.5,0,0.5};
     };
     
-    div(*this, 100.0, 100.0, 50).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)
+    
+    // current api:
+    div(*this).h(100.0).w(100.0).cornerRadius(50.0).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)
     (
-        text(*this, "", 24.0, 10, 25).on<EventType::KeyboardDown>(inputListener),
-        div(*this, 100.0, 100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})
+        text(*this, "").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(inputListener),
+        div(*this).h(100.0).w(100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})
     );
+    
+    
+    
+    // api improvements
+    // define root elem which passes renderer to children? or actually, automatically determine if parent node builder has an element
+    // figure out how to go beyond concepts to cutomize elements more? i.e. specific operator to access drawable
+    /*
+    root(
+        div(100.0,100.0,50).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)
+        (
+            text(24.0,10,25).on<EventType::KeyboardDown>(inputListener),
+            div(100.0,100.0).y(128.0).color(simd_float4{})
+        )
+     )
+     
+     */
     
     
 //    auto s1 = renderTree.insertNode(std::make_unique<Shell>(*this, 100.0, 100.0, 256.0, 256.0, simd_float4{0,0,0.5,0.5}, 50.0), root);

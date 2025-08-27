@@ -25,6 +25,8 @@ namespace ShellRender {
         simd_float2 rectCenter;
         simd_float2 halfExtent;
         float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
     };
 
     struct Shell {
@@ -46,11 +48,13 @@ namespace ShellRender {
         
         // uniforms, size and positioning
         simd_float4 color;
+        simd_float4 borderColor;
         float height;
         float width;
         float x;
         float y;
         float cornerRadius = 0.0;
+        float borderRadius = 0.0;
         Bounds elementBounds;
         simd_float2 halfExtent;
         simd_float2 center;

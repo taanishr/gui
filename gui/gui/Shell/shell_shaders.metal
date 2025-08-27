@@ -24,6 +24,8 @@ struct ShellUniforms {
     float2 rectCenter;
     float2 halfExtent;
     float cornerRadius;
+    float borderWidth;
+    float4 borderColor;
 };
 
 vertex ShellVertexOut vertex_shell(
@@ -45,6 +47,9 @@ float rounded_rect_sdf(float2 pt, float2 halfExtent, float r)
     return length(max(q, 0.0)) + min(max(q.x,q.y),0.0) - r;
 }
 
+// outer color
+
+// inner color?
 
 fragment float4 fragment_shell(
     ShellVertexOut in [[stage_in]],
@@ -54,10 +59,18 @@ fragment float4 fragment_shell(
     float2 localPosition = in.worldPosition.xy - uniforms->rectCenter;
     float d = rounded_rect_sdf(localPosition, uniforms->halfExtent, uniforms->cornerRadius);
     
+    
+    // border radius messes with anti aliasing. Figure this out?
+    
+    
+//    simd_float4 rgba = d > -uniforms->borderWidth ? uniforms->borderColor : uniforms->color;
+            
+    simd_float4 rgba = uniforms->color;
+    
     float px = fwidth(d);
 
     float alpha = clamp(0.5 - d/px, 0.0, 1.0);
 
-    float finalAlpha = uniforms->color.a * alpha;
-    return float4(uniforms->color.xyz, finalAlpha);
+    float finalAlpha = rgba.a * alpha;
+    return float4(rgba.xyz, finalAlpha);
 }
