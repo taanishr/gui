@@ -26,23 +26,23 @@ struct NodeBuilder {
         (..., renderTree.reparent(this->node, children.node));
     }
     
-    NodeBuilder<DrawableType> x(float x) {
+    NodeBuilder<DrawableType>& x(float x) {
         node->drawable->x = x;
         return *this;
     }
     
-    NodeBuilder<DrawableType> y(float y) {
+    NodeBuilder<DrawableType>& y(float y) {
         node->drawable->y = y;
         return *this;
     }
     
-    NodeBuilder<DrawableType> color(simd_float4 color) {
+    NodeBuilder<DrawableType>& color(simd_float4 color) {
         node->drawable->color = color;
         return *this;
     }
     
     template <EventType E, typename F>
-    NodeBuilder<DrawableType> on(F&& f) {
+    NodeBuilder<DrawableType>& on(F&& f) {
         node->template addEventHandler<E>(f);
         return *this;
     }
