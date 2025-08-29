@@ -1,4 +1,4 @@
-WIP C++ GUI library with aims of a supporting a wide range of elements and styling attributes and an ergonomic api.*
+WIP C++ gpu-rendered GUI library with aims of a supporting a wide range of elements and styling attributes and an ergonomic api.*
 
 *Example:*
 ```
