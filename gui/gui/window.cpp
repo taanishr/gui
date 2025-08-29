@@ -26,7 +26,6 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     
     char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
     
-    
     hs.keyboardHandler(inputChar);
 }
 

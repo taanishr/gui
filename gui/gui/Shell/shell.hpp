@@ -54,7 +54,7 @@ namespace ShellRender {
         float x;
         float y;
         float cornerRadius = 0.0;
-        float borderRadius = 0.0;
+        float borderWidth = 0.0;
         Bounds elementBounds;
         simd_float2 halfExtent;
         simd_float2 center;

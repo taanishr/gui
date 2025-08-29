@@ -23,3 +23,11 @@ NodeBuilder<Text> text(const std::string& text, float fontSize, float x, float y
     nb.node->drawable->setText(text);
     return nb;
 }
+
+NodeBuilder<ImageDrawable> image(const std::string& path) {
+    auto& renderer = Renderer::active();
+    auto& tree = renderer.renderTree;
+    auto parent = tree.root.get();
+    auto nb = NodeBuilder(tree, parent, std::make_unique<ImageDrawable>(renderer, path));
+    return nb;
+}

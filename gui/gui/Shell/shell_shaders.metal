@@ -58,19 +58,41 @@ fragment float4 fragment_shell(
 {
     float2 localPosition = in.worldPosition.xy - uniforms->rectCenter;
     float d = rounded_rect_sdf(localPosition, uniforms->halfExtent, uniforms->cornerRadius);
-    
-    
-    // border radius messes with anti aliasing. Figure this out?
-    
-    
-//    simd_float4 rgba = d > -uniforms->borderWidth ? uniforms->borderColor : uniforms->color;
-            
-    simd_float4 rgba = uniforms->color;
+
     
     float px = fwidth(d);
 
-    float alpha = clamp(0.5 - d/px, 0.0, 1.0);
+    float outerMask = clamp(0.5 - d/px, 0.0, 1.0);
+    
+    float innerD = d + uniforms->borderWidth;
+    float innerMask = clamp(0.5 - innerD/px, 0.0, 1.0);
+    
+    float borderMask = outerMask - innerMask;
+    float fillMask = innerMask;
+    
+    float4 fillColor = uniforms->color;
+    float4 borderColor = uniforms->borderColor;
+    
+    float3 premulFill = fillColor.rgb * fillColor.a * fillMask;
+    float3 premulBorder = borderColor.rgb * borderColor.a * borderMask;
+    
+    float alpha = borderMask * borderColor.a + fillMask * fillColor.a;
 
-    float finalAlpha = rgba.a * alpha;
-    return float4(rgba.xyz, finalAlpha);
+    float3 rgb = premulFill + premulBorder;
+    
+    if (alpha > 1e-6)
+        rgb /= alpha;
+    
+    return float4(rgb, alpha);
+//    
+// border radius messes with anti aliasing. Figure this out?
+//    
+//    simd_float4 rgba = uniforms->color;
+//
+//    float px = fwidth(d);
+//
+//    float alpha = clamp(0.5 - d/px, 0.0, 1.0);
+//    
+//    float finalAlpha = rgba.a * alpha;
+//    return float4(rgba.xyz, finalAlpha);
 }

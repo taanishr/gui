@@ -19,7 +19,7 @@ Shell::Shell(Renderer& renderer, float width, float height, float x, float y, si
     color{color},
     borderColor{color},
     cornerRadius{cornerRadius},
-    borderRadius{0}
+    borderWidth{0}
 {
     this->quadPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*6, MTL::ResourceStorageModeShared);
     this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms),  MTL::ResourceStorageModeShared);
@@ -49,7 +49,9 @@ void Shell::update() {
     Uniforms uniforms { .color=color,
                         .rectCenter = center,
                         .halfExtent = halfExtent,
-                        .cornerRadius = cornerRadius};
+                        .cornerRadius = cornerRadius,
+                        .borderColor = borderColor,
+                        .borderWidth = borderWidth};
     
 //    std::println("corner radius: {}, halfExtent x: {}, halfExtent y: {}", cornerRadius, width / 2.0f, height / 2.0f);
     

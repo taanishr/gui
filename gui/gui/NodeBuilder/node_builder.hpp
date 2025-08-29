@@ -21,6 +21,11 @@ concept HasBorderColor = requires(T t) {
 };
 
 template <typename T>
+concept HasBorderWidth = requires(T t) {
+    { t.borderWidth } -> std::convertible_to<float>;
+};
+
+template <typename T>
 concept HasWidth = requires(T t) {
     { t.width } -> std::convertible_to<float>;
 };
@@ -89,6 +94,12 @@ struct NodeBuilder {
         return *this;
     }
     
+    
+    NodeBuilder<DrawableType>& borderWidth(float borderWidth) requires HasBorderWidth<DrawableType> {
+        node->drawable->borderWidth = borderWidth;
+        return *this;
+    }
+    
     NodeBuilder<DrawableType>& fontSize(float fontSize) requires HasFontSize<DrawableType> {
         node->drawable->fontSize = fontSize;
         return *this;
@@ -119,3 +130,5 @@ struct NodeBuilder {
 NodeBuilder<Shell> div(float w = 0, float h = 0, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
 
 NodeBuilder<Text> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
+
+NodeBuilder<ImageDrawable> image(const std::string& path);

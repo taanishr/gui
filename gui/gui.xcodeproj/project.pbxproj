@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A5485A002E61648B00CBA95F /* MTK-Extensions in Frameworks */ = {isa = PBXBuildFile; fileRef = A54858BC2E60DE9000CBA95F /* MTK-Extensions */; };
 		A576DD802E565DA900B8CA82 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD7F2E565DA900B8CA82 /* Foundation.framework */; };
 		A576DD822E565DB200B8CA82 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD812E565DB200B8CA82 /* Cocoa.framework */; };
 		A576DD842E565DBA00B8CA82 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD832E565DBA00B8CA82 /* AppKit.framework */; };
@@ -30,6 +31,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A54858BC2E60DE9000CBA95F /* MTK-Extensions */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "MTK-Extensions"; path = "../MTK-Extensions-Library/MTK-Extensions"; sourceTree = "<group>"; };
 		A576DD742E5655F400B8CA82 /* gui */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = gui; sourceTree = BUILT_PRODUCTS_DIR; };
 		A576DD7F2E565DA900B8CA82 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		A576DD812E565DB200B8CA82 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -67,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A5485A002E61648B00CBA95F /* MTK-Extensions in Frameworks */,
 				A576DD8E2E565EB200B8CA82 /* libfreetype.a in Frameworks */,
 				A576DD8C2E565E6700B8CA82 /* AppKit-Extensions in Frameworks */,
 				A576DD842E565DBA00B8CA82 /* AppKit.framework in Frameworks */,
@@ -101,6 +104,7 @@
 		A576DD7E2E565DA900B8CA82 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A54858BC2E60DE9000CBA95F /* MTK-Extensions */,
 				A576DD8D2E565EB200B8CA82 /* libfreetype.a */,
 				A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */,
 				A576DD892E565DCB00B8CA82 /* Metal.framework */,
@@ -240,6 +244,7 @@
 					"/Users/treja/projects/gui/AppKit-Extensions-Library",
 					"/Users/treja/metal-cpp-extensions",
 					"/Users/treja/metal-cpp",
+					"/Users/treja/projects/gui/MTK-Extensions-Library",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
@@ -301,6 +306,7 @@
 					"/Users/treja/projects/gui/AppKit-Extensions-Library",
 					"/Users/treja/metal-cpp-extensions",
 					"/Users/treja/metal-cpp",
+					"/Users/treja/projects/gui/MTK-Extensions-Library",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
