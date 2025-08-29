@@ -5,30 +5,27 @@
 //  Created by Taanish Reja on 8/28/25.
 //
 
+#pragma once
 #include <variant>
+#include "metal_imports.hpp"
+#include <string>
 
 struct RGB {
+    RGB(int r, int g, int b);
     
+    simd_float3 get() const;
     
-    
-    
-    
-    void get();
-    
-    float normalizedR;
-    float normalizedG;
-    float normalizedB;
-}
+    simd_float3 normalized;
+};
 
 struct Hex {
-    Hex(int hexCode);
-    Hex(const std::string& hexCode);
+    Hex(unsigned int hexCode);
     
-    int parser(const std::string& hexCode);
-    
-    void get();
+    simd_float3 get() const;
 
     unsigned int hex;
-}
+    
+    simd_float3 normalized;
+};
 
 using Color = std::variant<RGB, Hex>;

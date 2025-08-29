@@ -127,12 +127,12 @@ void ImageDrawable::update() {
     simd_float2 drawOffset {x, frameInfo.height - y};
     
     std::array<QuadPoint, 6> quadPoints {{
-        {.position={drawOffset.x,drawOffset.y}, .uv={1,1}},
-        {.position={drawOffset.x+width,drawOffset.y}, .uv={0,1}},
-        {.position={drawOffset.x,drawOffset.y+height}, .uv{1,0}},
-        {.position={drawOffset.x,drawOffset.y+height}, .uv{1,0}},
-        {.position={drawOffset.x+width,drawOffset.y}, .uv={0,1}},
-        {.position={drawOffset.x+width,drawOffset.y+height}, .uv={0,0}},
+        {.position={drawOffset.x,drawOffset.y}, .uv={0,0}},
+        {.position={drawOffset.x+width,drawOffset.y}, .uv={1,0}},
+        {.position={drawOffset.x,drawOffset.y+height}, .uv{0,1}},
+        {.position={drawOffset.x,drawOffset.y+height}, .uv{0,1}},
+        {.position={drawOffset.x+width,drawOffset.y}, .uv={1,0}},
+        {.position={drawOffset.x+width,drawOffset.y+height}, .uv={1,1}},
     }};
     
     this->center = {drawOffset.x + width/2.0f, drawOffset.y + height/2.0f};
