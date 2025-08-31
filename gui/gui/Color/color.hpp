@@ -19,11 +19,9 @@ struct RGB {
 };
 
 struct Hex {
-    Hex(unsigned int hexCode);
+    Hex(int hexCode);
     
     simd_float3 get() const;
-
-    unsigned int hex;
     
     simd_float3 normalized;
 };

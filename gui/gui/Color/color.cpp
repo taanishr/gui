@@ -8,9 +8,9 @@
 
 RGB::RGB(int r, int g, int b)
 {
-    r = std::max(r, 255);
-    g = std::max(g, 255);
-    b = std::max(b, 255);
+    r = simd::clamp(r, 0, 255);
+    g = simd::clamp(g, 0, 255);
+    b = simd::clamp(b, 0, 255);
     normalized = simd_float3{r/255.0f, g/255.0f, b/255.0f};
 }
     
@@ -19,10 +19,13 @@ simd_float3 RGB::get() const
     return normalized;
 }
 
-Hex::Hex(unsigned int hexCode)
+Hex::Hex(int hexCode)
 {
-    hexCode = std::max(hexCode, 0xffffff);
-    normalized = simd_float3{(hexCode & 0xff)/255.0f, (hexCode & 0xff00)/255.0f, (hexCode & 0xff0000)/255.0f};
+    int r = simd::clamp((hexCode >> 16) & 0xff, 0, 255);
+    int g = simd::clamp((hexCode >> 8) & 0xff, 0, 255);
+    int b = simd::clamp((hexCode) & 0xff, 0, 255);
+    
+    normalized = simd_float3{r/255.0f, g/255.0f, b/255.0f};
 }
 
 simd_float3 Hex::get() const
