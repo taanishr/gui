@@ -1,0 +1,28 @@
+WIP C++ gpu-rendered GUI library with aims of a supporting a wide range of elements and styling attributes and an ergonomic api.*
+
+*Example:*
+```
+auto onInput = [](auto& self, const auto& payload){
+    auto drawable = self.drawable.get();
+
+    if (payload.ch == '\x7F') {
+        drawable->removeChar();
+    }else {
+        drawable->addChar(payload.ch);
+    }
+};
+
+auto onClick = [](auto& self, const auto& payload) {
+    auto drawable = self.drawable.get();
+
+    drawable->color = simd_float4{0,0.5,0,0.5};
+};
+
+div().h(100.0).w(100.0).cornerRadius(50.0).x(256.0).y(256.0).color({0,0,0.5,0.5}).on<EventType::Click>(onClick)(
+    text("").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(onInput),
+    div().h(100.0).w(100.0).y(128.0).color(simd_float4{0.5,0,0,0.5})(
+         div().h(50.0).w(50.0).y(324.0).x(128.0).cornerRadius(25).color(simd_float4{1,1,1,1}).borderColor(simd_float4{1,0,0,0.5}).borderWidth(2)
+    ),
+    image("image.jpg").x(200).y(500).w(200).h(231.75)
+);
+```
