@@ -9,21 +9,22 @@
 #include <variant>
 #include "metal_imports.hpp"
 #include <string>
+#include <algorithm>
 
 struct RGB {
-    RGB(int r, int g, int b);
+    RGB(int r, int g, int b, float a);
     
-    simd_float3 get() const;
+    simd_float4 get() const;
     
-    simd_float3 normalized;
+    simd_float4 normalized;
 };
 
 struct Hex {
     Hex(int hexCode);
     
-    simd_float3 get() const;
+    simd_float4 get() const;
     
-    simd_float3 normalized;
+    simd_float4 normalized;
 };
 
 using Color = std::variant<RGB, Hex>;
