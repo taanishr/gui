@@ -31,6 +31,7 @@ public:
     FrameInfo getFrameInfo();
     
     void makeCurrent();
+    static bool hasActiveRenderer();
     static Renderer& active();
     
     MTL::Device* device;

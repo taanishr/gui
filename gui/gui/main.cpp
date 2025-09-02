@@ -20,13 +20,16 @@ int main(int argc, const char * argv[]) {
     
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
+    
     AppDelegate appDelegate;
+    
 
     NS::Application* app = NS::Application::sharedApplication();
     
     app->setDelegate(&appDelegate);
     
     app->run();
+    
     
     autoreleasePool->release();
 }

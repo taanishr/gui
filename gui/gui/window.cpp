@@ -9,6 +9,7 @@
 
 #include "window.hpp"
 #include <AppKit_Extensions-Swift.h>
+#include "index.hpp"
 
 // refactor objective c into a cleaner interface? maybe a struct with key funcs?
 HandlerState hs {};
@@ -40,7 +41,9 @@ extern "C" void mouseDown(id self, SEL _cmd, id event) {
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     view{view},
     renderer{new Renderer{device, view}}
-{}
+{
+    renderer->makeCurrent();
+}
 
 void MTKViewDelegate::drawInMTKView(MTK::View* view)
 {
@@ -115,8 +118,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
     
-    viewDelegate = std::unique_ptr<MTKViewDelegate>(new MTKViewDelegate{device, view});
+    viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
     view->setDelegate(viewDelegate.get());
+    index();
     
     
     window->setContentView(view);
