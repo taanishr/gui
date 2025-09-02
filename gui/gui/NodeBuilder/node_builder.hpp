@@ -91,8 +91,9 @@ struct NodeBuilder {
         return *this;
     }
     
-    NodeBuilder<DrawableType>& borderColor(simd_float4 color) requires HasBorderColor<DrawableType> {
-        node->drawable->borderColor = color;
+    template <ColorType Color>
+    NodeBuilder<DrawableType>& borderColor(Color color) requires HasBorderColor<DrawableType> {
+        node->drawable->borderColor = color.get();
         return *this;
     }
     

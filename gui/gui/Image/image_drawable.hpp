@@ -20,6 +20,14 @@ namespace ImageRender {
         simd_float2 uv;
     };
 
+    struct Uniforms {
+        simd_float2 rectCenter;
+        simd_float2 halfExtent;
+        float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
+    };
+
 
     struct ImageDrawable {
         ImageDrawable(Renderer& renderer, const std::string& path);
@@ -47,6 +55,11 @@ namespace ImageRender {
         simd_float2 halfExtent;
         simd_float2 center;
         
+        float cornerRadius;
+        
+        float borderWidth;
+        simd_float4 borderColor;
+        
         ~ImageDrawable();
         
         Bounds elementBounds;
@@ -54,6 +67,7 @@ namespace ImageRender {
         NS::SharedPtr<MTL::Texture> texture;
         MTL::Buffer* quadPointsBuffer;
         MTL::Buffer* frameInfoBuffer;
+        MTL::Buffer* uniformsBuffer;
    
         std::string path;
         Renderer& renderer;

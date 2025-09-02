@@ -74,10 +74,10 @@ void Renderer::makeResources()
     div().h(100.0).w(100.0).cornerRadius(50.0).x(256.0).y(256.0).color(RGB{0,0,128,0.5}).on<EventType::Click>(onClick)(
         text("").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(onInput),
         div().h(100.0).w(100.0).y(128.0).color(RGB{128,0,0,0.5})(
-             div().h(50.0).w(50.0).y(324.0).x(128.0).cornerRadius(25).color(RGB{255,255,255,1}).borderColor(simd_float4{1,0,0,0.5}).borderWidth(2)
+             div().h(50.0).w(50.0).y(324.0).x(128.0).cornerRadius(25).color(RGB{255,255,255,1}).borderColor(RGB{125,0,0,0.5}).borderWidth(2)
         ),
 //        image("/Users/treja/Downloads/lemickey.jpg").x(200).y(500).w(200).h(231.75)
-        image("/Users/treja/build_journal/Screenshot 2025-07-19 at 8.06.55 PM.png").x(200).y(500).w(275).h(100)
+        image("/Users/treja/build_journal/Screenshot 2025-07-19 at 8.06.55 PM.png").x(200).y(500).w(275).h(100).cornerRadius(16).borderWidth(2).borderColor(RGB(50,0,126,1))
     );
     
 //    div().h(200).w(150).cornerRadius(20).x(256-75).y(256+100).color({0,0,0.5,1}).on<EventType::Click>(onClick)(

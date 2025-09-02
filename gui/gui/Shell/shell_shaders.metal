@@ -40,13 +40,6 @@ vertex ShellVertexOut vertex_shell(
     return out;
 }
 
-float rounded_rect_sdf(float2 pt, float2 halfExtent, float r)
-{
-    r = clamp(r, 0.0, min(halfExtent.x, halfExtent.y));
-    float2 q = abs(pt) - halfExtent + r;
-    return length(max(q, 0.0)) + min(max(q.x,q.y),0.0) - r;
-}
-
 // outer color
 
 // inner color?
@@ -84,15 +77,4 @@ fragment float4 fragment_shell(
         rgb /= alpha;
     
     return float4(rgb, alpha);
-//    
-// border radius messes with anti aliasing. Figure this out?
-//    
-//    simd_float4 rgba = uniforms->color;
-//
-//    float px = fwidth(d);
-//
-//    float alpha = clamp(0.5 - d/px, 0.0, 1.0);
-//    
-//    float finalAlpha = rgba.a * alpha;
-//    return float4(rgba.xyz, finalAlpha);
 }

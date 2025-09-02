@@ -21,3 +21,10 @@ inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f
 
     return {ndcX, ndcY};
 }
+
+inline float rounded_rect_sdf(float2 pt, float2 halfExtent, float r)
+{
+    r = clamp(r, 0.0, min(halfExtent.x, halfExtent.y));
+    float2 q = abs(pt) - halfExtent + r;
+    return length(max(q, 0.0)) + min(max(q.x,q.y),0.0) - r;
+}

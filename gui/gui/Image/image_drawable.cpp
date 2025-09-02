@@ -16,7 +16,10 @@ ImageDrawable::ImageDrawable(Renderer& renderer, const std::string& path):
     x{0},
     y{0},
     width{0},
-    height{0}
+    height{0},
+    cornerRadius{0},
+    borderWidth{0},
+    borderColor{simd_float4{0,0,0,1}}
 {
     this->texture = NS::TransferPtr(
         MTKTextures::createTexture(getTextureLoader(), path)
@@ -24,6 +27,7 @@ ImageDrawable::ImageDrawable(Renderer& renderer, const std::string& path):
     
     this->quadPointsBuffer = renderer.device->newBuffer(6*sizeof(QuadPoint), MTL::StorageModeShared);
     this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
+    this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
 }
 
 MTKTextures::MTKTextureLoader& ImageDrawable::getTextureLoader() {
@@ -138,11 +142,18 @@ void ImageDrawable::update() {
     this->center = {drawOffset.x + width/2.0f, drawOffset.y + height/2.0f};
     this->halfExtent = {width / 2.0f, height / 2.0f};
     
+    Uniforms uniforms { .rectCenter = center,
+                        .halfExtent = halfExtent,
+                        .cornerRadius = cornerRadius,
+                        .borderWidth = borderWidth,
+                        .borderColor = borderColor};
+    
     elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
         .bottomRight ={drawOffset.x + width, drawOffset.y + height}};
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(quadPointsBuffer->contents(), quadPoints.data(), sizeof(QuadPoint)*quadPoints.size());
+    std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
 }
 
 void ImageDrawable::encode(MTL::RenderCommandEncoder* encoder)
@@ -156,6 +167,7 @@ void ImageDrawable::encode(MTL::RenderCommandEncoder* encoder)
     encoder->setVertexBuffer(this->quadPointsBuffer, 0, 0);
     encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
     
+    encoder->setFragmentBuffer(this->uniformsBuffer, 0, 0);
     encoder->setFragmentTexture(texture.get(), 0);
     encoder->setFragmentSamplerState(sampler, 0);
     
@@ -174,6 +186,7 @@ bool ImageDrawable::contains(simd_float2 point) const
 }
 
 ImageDrawable::~ImageDrawable() {
+    uniformsBuffer->release();
     frameInfoBuffer->release();
     quadPointsBuffer->release();
 }
