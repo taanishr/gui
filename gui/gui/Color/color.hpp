@@ -9,6 +9,7 @@
 #include <variant>
 #include "metal_imports.hpp"
 #include <string>
+#include <concepts>
 #include <algorithm>
 
 struct RGB {
@@ -27,4 +28,7 @@ struct Hex {
     simd_float4 normalized;
 };
 
-using Color = std::variant<RGB, Hex>;
+template <typename T>
+concept ColorType = requires(T t) {
+    { t.get() } -> std::convertible_to<simd_float4>;
+};

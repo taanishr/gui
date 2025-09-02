@@ -12,6 +12,7 @@
 #include "sdf_helpers.hpp"
 #include <print>
 #include "frame_info.hpp"
+#include "color.hpp"
 
 class Renderer;
 
@@ -46,8 +47,11 @@ namespace ShellRender {
         MTL::Buffer* uniformsBuffer;
         MTL::Buffer* frameInfoBuffer;
         
-        // uniforms, size and positioning
+        
+        
         simd_float4 color;
+        
+        
         simd_float4 borderColor;
         float height;
         float width;

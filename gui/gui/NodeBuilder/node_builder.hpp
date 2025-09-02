@@ -9,6 +9,7 @@
 #include "drawable.hpp"
 #include "renderer.hpp"
 #include "metal_imports.hpp"
+#include "color.hpp"
 
 template <typename T>
 concept HasColor = requires(T t) {
@@ -84,8 +85,9 @@ struct NodeBuilder {
         return *this;
     }
     
-    NodeBuilder<DrawableType>& color(simd_float4 color) requires HasColor<DrawableType> {
-        node->drawable->color = color;
+    template <ColorType Color>
+    NodeBuilder<DrawableType>& color(Color color) requires HasColor<DrawableType> {
+        node->drawable->color = color.get();
         return *this;
     }
     

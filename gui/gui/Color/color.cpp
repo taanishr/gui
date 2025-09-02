@@ -11,7 +11,7 @@ RGB::RGB(int r, int g, int b, float a)
     r = std::clamp(r, 0, 255);
     g = std::clamp(g, 0, 255);
     b = std::clamp(b, 0, 255);
-    normalized = simd_float4{r/255.0f, g/255.0f, b/255.0f, 1};
+    normalized = simd_float4{r/255.0f, g/255.0f, b/255.0f, a};
 }
     
 simd_float4 RGB::get() const
