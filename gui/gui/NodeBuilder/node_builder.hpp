@@ -57,8 +57,7 @@ struct NodeBuilder {
     {
         this->node = renderTree.insertNode(std::move(drawable), parent);
     }
-    
-    
+
     template <typename... Children>
     NodeBuilder<DrawableType>& operator()(Children&&... children) {
         (..., renderTree.reparent(this->node, children.node));
@@ -129,9 +128,10 @@ struct NodeBuilder {
 // problem; doesn't fix attr problem?
 // solutions? define custom operator
 
-
 NodeBuilder<Shell> div(float w = 0, float h = 0, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
 
 NodeBuilder<Text> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
 
 NodeBuilder<ImageDrawable> image(const std::string& path);
+
+using Element = std::variant<NodeBuilder<Shell>,NodeBuilder<Text>,NodeBuilder<ImageDrawable>>;

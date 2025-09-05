@@ -120,9 +120,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
     view->setDelegate(viewDelegate.get());
+    
     index();
-    
-    
+
     window->setContentView(view);
     
     window->setTitle(NS::String::string("window", NS::StringEncoding::UTF8StringEncoding ));
