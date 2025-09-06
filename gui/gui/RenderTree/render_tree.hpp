@@ -24,6 +24,7 @@
 #include "events.hpp"
 #include "sdf_helpers.hpp"
 #include "ui.hpp"
+#include "layout_box.hpp"
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
@@ -61,7 +62,7 @@ public:
 
     void update() {
         if (drawable)
-            drawable->update();
+            drawable->update(layoutBox);
     
 //        std::sort(children.begin(), children.end(), RenderNodeComparator{});
         for (const auto& child: children)
@@ -113,6 +114,7 @@ public:
     }
 
     std::unique_ptr<DrawableType> drawable;
+    LayoutBox layoutBox;
 };
 
 class RenderTree {

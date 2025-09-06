@@ -65,22 +65,26 @@ struct NodeBuilder {
     }
     
     NodeBuilder<DrawableType>& x(float x) {
-        node->drawable->x = x;
+        node->layoutBox.x = x;
+//        node->drawable->x = x;
         return *this;
     }
     
     NodeBuilder<DrawableType>& y(float y) {
-        node->drawable->y = y;
+        node->layoutBox.y = y;
+//        node->drawable->y = y;
         return *this;
     }
     
     NodeBuilder<DrawableType>& w(float width) requires HasWidth<DrawableType> {
-        node->drawable->width = width;
+        node->layoutBox.width = width;
+//        node->drawable->width = width;
         return *this;
     }
     
     NodeBuilder<DrawableType>& h(float height) requires HasHeight<DrawableType> {
-        node->drawable->height = height;
+        node->layoutBox.height = height;
+//        node->drawable->height = height;
         return *this;
     }
     

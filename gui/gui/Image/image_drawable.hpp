@@ -40,25 +40,24 @@ namespace ImageRender {
         void buildSampler(MTL::SamplerState*&);
         MTL::SamplerState* getSampler();
         
-        void update();
+        void update(const LayoutBox& layoutBox);
         void encode(MTL::RenderCommandEncoder* encoder);
         
         const Bounds& bounds() const;
         bool contains(simd_float2 point) const;
         
-        float x;
-        float y;
-        
-        float height;
-        float width;
-        
-        simd_float2 halfExtent;
-        simd_float2 center;
-        
+        // properties
         float cornerRadius;
-        
         float borderWidth;
         simd_float4 borderColor;
+        
+        // layout
+        float x;
+        float y;
+        float height;
+        float width;
+        simd_float2 halfExtent;
+        simd_float2 center;
         
         ~ImageDrawable();
         

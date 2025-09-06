@@ -13,6 +13,7 @@
 #include "drawable.hpp"
 #include "frame_info.hpp"
 #include "buffer_helpers.hpp"
+#include "layout_box.hpp"
 
 class Renderer;
 
@@ -38,7 +39,7 @@ namespace TextRender {
         void setText(const std::string& text);
         void addChar(char ch);
         void removeChar();
-        void update();
+        void update(const LayoutBox& layoutBox);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
         const Bounds& bounds() const;
@@ -70,15 +71,14 @@ namespace TextRender {
         // freetype
         FT_Face face;
         
-        // uniforms
+        // properties
         std::string font;
         simd_float4 color;
-        
-        // size and positioning
         float fontSize;
+        
+        // layout
         float x;
         float y;
-        
         Bounds elementBounds;
         
         std::unordered_map<char,Glyph> glyphMap;

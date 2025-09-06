@@ -8,6 +8,7 @@
 #pragma once
 
 #include "metal_imports.hpp"
+#include "layout_box.hpp"
 
 struct Bounds {
     simd_float2 topLeft;
@@ -15,10 +16,10 @@ struct Bounds {
 };
 
 template <typename T>
-concept Drawable = requires(T t, MTL::RenderCommandEncoder* encoder, simd_float2 pt) {
+concept Drawable = requires(T t, MTL::RenderCommandEncoder* encoder, simd_float2 pt, const LayoutBox& layoutBox) {
     { t.getPipeline() } -> std::same_as<MTL::RenderPipelineState*>;
     
-    { t.update() } -> std::same_as<void>;
+    { t.update(layoutBox) } -> std::same_as<void>;
     { t.encode(encoder) } -> std::same_as<void>;
     
     { t.bounds() } -> std::same_as<const Bounds&>;

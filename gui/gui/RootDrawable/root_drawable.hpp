@@ -12,12 +12,13 @@
 #include "sdf_helpers.hpp"
 #include <print>
 #include "frame_info.hpp"
+#include "layout_box.hpp"
 
 class Renderer;
 
 namespace RootRender {
     struct RootDrawable {
-        void update();
+        void update(const LayoutBox& layoutBox);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
         const Bounds& bounds() const;

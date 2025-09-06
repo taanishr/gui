@@ -7,6 +7,7 @@
 
 #include "render_tree.hpp"
 
+
 RenderTree* RenderTree::current = nullptr;
 
 bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, const std::unique_ptr<RenderNodeBase>& b) const

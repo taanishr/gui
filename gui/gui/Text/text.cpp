@@ -118,7 +118,7 @@ void Text::removeChar() {
         this->text.pop_back();
 }
 
-void Text::update() {
+void Text::update(const LayoutBox& layoutBox) {
     std::vector<QuadPoint> quadPoints;
     std::vector<int> glyphMeta;
     
@@ -127,12 +127,12 @@ void Text::update() {
     
     Uniforms uniforms {.color=this->color};
     auto frameInfo = renderer.getFrameInfo();
-    simd_float2 drawOffset {this->x*64.0f, (frameInfo.height-fontSize-this->y)*64.0f};
+    simd_float2 drawOffset {layoutBox.x*64.0f, (frameInfo.height-fontSize-layoutBox.y)*64.0f};
     
     for (auto ch : text) {
         if (ch == '\r') {
             drawOffset.y -= this->fontSize*64.0f;
-            drawOffset.x = this->x*64.0f;
+            drawOffset.x = layoutBox.x*64.0f;
             continue;
         }
             

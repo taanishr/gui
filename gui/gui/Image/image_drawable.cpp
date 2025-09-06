@@ -125,22 +125,22 @@ MTL::SamplerState* ImageDrawable::getSampler()
     return sampler;
 }
 
-void ImageDrawable::update() {
+void ImageDrawable::update(const LayoutBox& layoutBox) {
     auto frameInfo = renderer.getFrameInfo();
     
-    simd_float2 drawOffset {x, frameInfo.height - y};
+    simd_float2 drawOffset {layoutBox.x, frameInfo.height - layoutBox.y};
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={drawOffset.x,drawOffset.y}, .uv={0,0}},
-        {.position={drawOffset.x+width,drawOffset.y}, .uv={1,0}},
-        {.position={drawOffset.x,drawOffset.y+height}, .uv{0,1}},
-        {.position={drawOffset.x,drawOffset.y+height}, .uv{0,1}},
-        {.position={drawOffset.x+width,drawOffset.y}, .uv={1,0}},
-        {.position={drawOffset.x+width,drawOffset.y+height}, .uv={1,1}},
+        {.position={drawOffset.x+layoutBox.width,drawOffset.y}, .uv={1,0}},
+        {.position={drawOffset.x,drawOffset.y+layoutBox.height}, .uv{0,1}},
+        {.position={drawOffset.x,drawOffset.y+layoutBox.height}, .uv{0,1}},
+        {.position={drawOffset.x+layoutBox.width,drawOffset.y}, .uv={1,0}},
+        {.position={drawOffset.x+layoutBox.width,drawOffset.y+layoutBox.height}, .uv={1,1}},
     }};
     
-    this->center = {drawOffset.x + width/2.0f, drawOffset.y + height/2.0f};
-    this->halfExtent = {width / 2.0f, height / 2.0f};
+    this->center = {drawOffset.x + layoutBox.width/2.0f, drawOffset.y + layoutBox.height/2.0f};
+    this->halfExtent = {layoutBox.width / 2.0f, layoutBox.height / 2.0f};
     
     Uniforms uniforms { .rectCenter = center,
                         .halfExtent = halfExtent,
@@ -149,7 +149,7 @@ void ImageDrawable::update() {
                         .borderColor = borderColor};
     
     elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
-        .bottomRight ={drawOffset.x + width, drawOffset.y + height}};
+        .bottomRight ={drawOffset.x + layoutBox.width, drawOffset.y + layoutBox.height}};
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(quadPointsBuffer->contents(), quadPoints.data(), sizeof(QuadPoint)*quadPoints.size());
