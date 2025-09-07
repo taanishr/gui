@@ -10,12 +10,8 @@
 
 using namespace ShellRender;
 
-Shell::Shell(Renderer& renderer, float width, float height, float x, float y, simd_float4 color, float cornerRadius):
+Shell::Shell(Renderer& renderer, simd_float4 color, float cornerRadius):
     renderer{renderer},
-    width{width},
-    height{height},
-    x{x},
-    y{y},
     color{color},
     borderColor{color},
     cornerRadius{cornerRadius},
@@ -26,38 +22,26 @@ Shell::Shell(Renderer& renderer, float width, float height, float x, float y, si
     this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
 }
 
-void Shell::update(const LayoutBox& layoutBox) {
-    std::println("height: {}", layoutBox.height);
-    
+void Shell::update(const ShellLayout& layout) { // polymorphic layoutbox? Then how do I do this?
     auto frameInfo = renderer.getFrameInfo();
     
-    simd_float2 drawOffset {layoutBox.x, frameInfo.height - layoutBox.y};
+    this->layout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
-        {.position={drawOffset.x,drawOffset.y}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y}},
-        {.position={drawOffset.x,drawOffset.y+layoutBox.height}},
-        {.position={drawOffset.x,drawOffset.y+layoutBox.height}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y+layoutBox.height}},
+        {.position={layout.x,layout.y}},
+        {.position={layout.x+layout.width,layout.y}},
+        {.position={layout.x,layout.y+layout.height}},
+        {.position={layout.x,layout.y+layout.height}},
+        {.position={layout.x+layout.width,layout.y}},
+        {.position={layout.x+layout.width,layout.y+layout.height}},
     }};
     
-    elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
-        .bottomRight ={drawOffset.x + layoutBox.width, drawOffset.y + layoutBox.height}};
-    
-    this->center = {drawOffset.x + layoutBox.width/2.0f, drawOffset.y + layoutBox.height/2.0f};
-    this->halfExtent = {layoutBox.width / 2.0f, layoutBox.height / 2.0f};
-    
     Uniforms uniforms { .color=color,
-                        .rectCenter = center,
-                        .halfExtent = halfExtent,
+                        .rectCenter = layout.center,
+                        .halfExtent = layout.halfExtent,
                         .cornerRadius = cornerRadius,
                         .borderColor = borderColor,
                         .borderWidth = borderWidth};
-    
-//    std::println("corner radius: {}, halfExtent x: {}, halfExtent y: {}", cornerRadius, width / 2.0f, height / 2.0f);
-    
-    
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
@@ -139,13 +123,13 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
 
 const Bounds& Shell::bounds() const
 {
-    return elementBounds;
+    return this->layout->elementBounds;
 }
 
 bool Shell::contains(simd_float2 point) const
 {
-    simd_float2 localPoint {point.x - center.x, point.y - center.y};
-    return rounded_rect_sdf(localPoint, halfExtent, cornerRadius) < 0;
+    simd_float2 localPoint {point.x - layout->center.x, point.y - layout->center.y};
+    return rounded_rect_sdf(localPoint, layout->halfExtent, cornerRadius) < 0;
 }
 
 Shell::~Shell() {

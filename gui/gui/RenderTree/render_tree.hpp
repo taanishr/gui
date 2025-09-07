@@ -55,7 +55,8 @@ public:
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
-template <Drawable DrawableType>
+template <typename DrawableType, typename LayoutType = LayoutBox>
+    requires Drawable<DrawableType, LayoutType>
 class RenderNode : public RenderNodeBase {
 public:
     RenderNode() {}
@@ -89,7 +90,7 @@ public:
     template <EventType E, typename F>
     void addEventHandler(F&& f) {
         EventHandler wrapper = [fn = std::forward<F>(f)](RenderNodeBase& self, const Event& event){
-            auto& typedSelf = static_cast<RenderNode<DrawableType>&>(self);
+            auto& typedSelf = static_cast<RenderNode<DrawableType, LayoutType>&>(self);
             
             if constexpr (E == EventType::Click) {
                 auto& mousePayload = std::get<MousePayload>(event.payload);
@@ -114,7 +115,7 @@ public:
     }
 
     std::unique_ptr<DrawableType> drawable;
-    LayoutBox layoutBox;
+    LayoutType layoutBox;
 };
 
 class RenderTree {
@@ -125,10 +126,10 @@ public:
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
 
-    template <typename DrawableType>
-    RenderNode<DrawableType>* insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent)
+    template <typename DrawableType, typename LayoutType = LayoutBox>
+    RenderNode<DrawableType, LayoutType>* insertNode(std::unique_ptr<DrawableType> drawable, RenderNodeBase* parent)
     {
-        auto newNode = std::make_unique<RenderNode<DrawableType>>();
+        auto newNode = std::make_unique<RenderNode<DrawableType, LayoutType>>();
         newNode->parent = parent;
         newNode->localZIndex = 0;
         newNode->globalZIndex = parent->globalZIndex;

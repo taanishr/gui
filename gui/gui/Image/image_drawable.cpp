@@ -13,10 +13,10 @@ using namespace ImageRender;
 ImageDrawable::ImageDrawable(Renderer& renderer, const std::string& path):
     renderer{renderer},
     path{path},
-    x{0},
-    y{0},
-    width{0},
-    height{0},
+//    x{0},
+//    y{0},
+//    width{0},
+//    height{0},
     cornerRadius{0},
     borderWidth{0},
     borderColor{simd_float4{0,0,0,1}}
@@ -125,32 +125,26 @@ MTL::SamplerState* ImageDrawable::getSampler()
     return sampler;
 }
 
-void ImageDrawable::update(const LayoutBox& layoutBox) {
+void ImageDrawable::update(const ImageLayout& layout) {
     auto frameInfo = renderer.getFrameInfo();
     
-    simd_float2 drawOffset {layoutBox.x, frameInfo.height - layoutBox.y};
+    this->layout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
-        {.position={drawOffset.x,drawOffset.y}, .uv={0,0}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y}, .uv={1,0}},
-        {.position={drawOffset.x,drawOffset.y+layoutBox.height}, .uv{0,1}},
-        {.position={drawOffset.x,drawOffset.y+layoutBox.height}, .uv{0,1}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y}, .uv={1,0}},
-        {.position={drawOffset.x+layoutBox.width,drawOffset.y+layoutBox.height}, .uv={1,1}},
+        {.position={layout.x,layout.y}, .uv={0,0}},
+        {.position={layout.x+layout.width,layout.y}, .uv={1,0}},
+        {.position={layout.x,layout.y+layout.height}, .uv{0,1}},
+        {.position={layout.x,layout.y+layout.height}, .uv{0,1}},
+        {.position={layout.x+layout.width,layout.y}, .uv={1,0}},
+        {.position={layout.x+layout.width,layout.y+layout.height}, .uv={1,1}},
     }};
     
-    this->center = {drawOffset.x + layoutBox.width/2.0f, drawOffset.y + layoutBox.height/2.0f};
-    this->halfExtent = {layoutBox.width / 2.0f, layoutBox.height / 2.0f};
-    
-    Uniforms uniforms { .rectCenter = center,
-                        .halfExtent = halfExtent,
+    Uniforms uniforms { .rectCenter = layout.center,
+                        .halfExtent = layout.halfExtent,
                         .cornerRadius = cornerRadius,
                         .borderWidth = borderWidth,
                         .borderColor = borderColor};
-    
-    elementBounds = {.topLeft = {drawOffset.x, drawOffset.y},
-        .bottomRight ={drawOffset.x + layoutBox.width, drawOffset.y + layoutBox.height}};
-    
+
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(quadPointsBuffer->contents(), quadPoints.data(), sizeof(QuadPoint)*quadPoints.size());
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
@@ -176,13 +170,13 @@ void ImageDrawable::encode(MTL::RenderCommandEncoder* encoder)
 
 const Bounds& ImageDrawable::bounds() const
 {
-    return elementBounds;
+    return layout->elementBounds;
 }
 
 bool ImageDrawable::contains(simd_float2 point) const
 {
-    simd_float2 localPoint {point.x - center.x, point.y - center.y};
-    return rounded_rect_sdf(localPoint, halfExtent, 0) < 0;
+    simd_float2 localPoint {point.x - layout->center.x, point.y - - layout->center.y};
+    return rounded_rect_sdf(localPoint, layout->halfExtent, 0) < 0;
 }
 
 ImageDrawable::~ImageDrawable() {

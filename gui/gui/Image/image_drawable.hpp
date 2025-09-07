@@ -11,6 +11,7 @@
 #include "metal_imports.hpp"
 #include "drawable.hpp"
 #include "MTKTexture_loader.hpp"
+#include "bounds.hpp"
 
 class Renderer;
 
@@ -40,7 +41,7 @@ namespace ImageRender {
         void buildSampler(MTL::SamplerState*&);
         MTL::SamplerState* getSampler();
         
-        void update(const LayoutBox& layoutBox);
+        void update(const ImageLayout& layout);
         void encode(MTL::RenderCommandEncoder* encoder);
         
         const Bounds& bounds() const;
@@ -52,16 +53,9 @@ namespace ImageRender {
         simd_float4 borderColor;
         
         // layout
-        float x;
-        float y;
-        float height;
-        float width;
-        simd_float2 halfExtent;
-        simd_float2 center;
+        const ImageLayout* layout;
         
         ~ImageDrawable();
-        
-        Bounds elementBounds;
     
         NS::SharedPtr<MTL::Texture> texture;
         MTL::Buffer* quadPointsBuffer;

@@ -14,6 +14,7 @@
 #include "frame_info.hpp"
 #include "buffer_helpers.hpp"
 #include "layout_box.hpp"
+#include "bounds.hpp"
 
 class Renderer;
 

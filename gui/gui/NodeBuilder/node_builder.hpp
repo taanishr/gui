@@ -47,78 +47,75 @@ concept HasFontSize = requires(T t) {
 };
 
 
-template <Drawable DrawableType>
+template <typename DrawableType, typename LayoutType = LayoutBox>
+    requires Drawable<DrawableType, LayoutType>
 struct NodeBuilder {
     RenderTree& renderTree;
-    RenderNode<DrawableType>* node;
+    RenderNode<DrawableType, LayoutType>* node;
     
     NodeBuilder(RenderTree& renderTree, RenderNodeBase* parent, std::unique_ptr<DrawableType> drawable):
         renderTree{renderTree}
     {
-        this->node = renderTree.insertNode(std::move(drawable), parent);
+        this->node = renderTree.insertNode<DrawableType, LayoutType>(std::move(drawable), parent);
     }
 
     template <typename... Children>
-    NodeBuilder<DrawableType>& operator()(Children&&... children) {
+    NodeBuilder<DrawableType, LayoutType>& operator()(Children&&... children) {
         (..., renderTree.reparent(this->node, children.node));
         return *this;
     }
     
-    NodeBuilder<DrawableType>& x(float x) {
-        node->layoutBox.x = x;
-//        node->drawable->x = x;
+    NodeBuilder<DrawableType, LayoutType>& x(float x) {
+        node->layoutBox.setX(x);
         return *this;
     }
     
-    NodeBuilder<DrawableType>& y(float y) {
-        node->layoutBox.y = y;
-//        node->drawable->y = y;
+    NodeBuilder<DrawableType, LayoutType>& y(float y) {
+        node->layoutBox.setY(y);
         return *this;
     }
     
-    NodeBuilder<DrawableType>& w(float width) requires HasWidth<DrawableType> {
-        node->layoutBox.width = width;
-//        node->drawable->width = width;
+    NodeBuilder<DrawableType, LayoutType>& w(float width) requires HasWidth<LayoutType> {
+        node->layoutBox.setWidth(width);
         return *this;
     }
     
-    NodeBuilder<DrawableType>& h(float height) requires HasHeight<DrawableType> {
-        node->layoutBox.height = height;
-//        node->drawable->height = height;
+    NodeBuilder<DrawableType, LayoutType>& h(float height) requires HasHeight<LayoutType> {
+        node->layoutBox.setHeight(height);
         return *this;
     }
     
     template <ColorType Color>
-    NodeBuilder<DrawableType>& color(Color color) requires HasColor<DrawableType> {
+    NodeBuilder<DrawableType, LayoutType>& color(Color color) requires HasColor<DrawableType> {
         node->drawable->color = color.get();
         return *this;
     }
     
     template <ColorType Color>
-    NodeBuilder<DrawableType>& borderColor(Color color) requires HasBorderColor<DrawableType> {
+    NodeBuilder<DrawableType, LayoutType>& borderColor(Color color) requires HasBorderColor<DrawableType> {
         node->drawable->borderColor = color.get();
         return *this;
     }
     
     
-    NodeBuilder<DrawableType>& borderWidth(float borderWidth) requires HasBorderWidth<DrawableType> {
+    NodeBuilder<DrawableType, LayoutType>& borderWidth(float borderWidth) requires HasBorderWidth<DrawableType> {
         node->drawable->borderWidth = borderWidth;
         return *this;
     }
     
-    NodeBuilder<DrawableType>& fontSize(float fontSize) requires HasFontSize<DrawableType> {
+    NodeBuilder<DrawableType, LayoutType>& fontSize(float fontSize) requires HasFontSize<DrawableType> {
         node->drawable->fontSize = fontSize;
         return *this;
     }
     
-    NodeBuilder<DrawableType>& cornerRadius(float cornerRadius) requires HasCornerRadius<DrawableType> {
+    NodeBuilder<DrawableType, LayoutType>& cornerRadius(float cornerRadius) requires HasCornerRadius<DrawableType> {
         node->drawable->cornerRadius = cornerRadius;
         return *this;
     }
     
     
     template <EventType E, typename F>
-    NodeBuilder<DrawableType>& on(F&& f) {
+    NodeBuilder<DrawableType, LayoutType>& on(F&& f) {
         node->template addEventHandler<E>(f);
         return *this;
     }
@@ -132,10 +129,10 @@ struct NodeBuilder {
 // problem; doesn't fix attr problem?
 // solutions? define custom operator
 
-NodeBuilder<Shell> div(float w = 0, float h = 0, float cornerRadius = 0, float x = 0, float y = 0, simd_float4 color = {0,0,0,1});
+NodeBuilder<Shell, ShellLayout> div(float cornerRadius = 0, simd_float4 color = {0,0,0,1});
 
 NodeBuilder<Text> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
 
-NodeBuilder<ImageDrawable> image(const std::string& path);
+NodeBuilder<ImageDrawable, ImageLayout> image(const std::string& path);
 
-using Element = std::variant<NodeBuilder<Shell>,NodeBuilder<Text>,NodeBuilder<ImageDrawable>>;
+using Element = std::variant<NodeBuilder<Shell, ShellLayout>,NodeBuilder<Text>,NodeBuilder<ImageDrawable, ImageLayout>>;

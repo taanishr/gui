@@ -8,11 +8,11 @@
 #include "node_builder.hpp"
 
 
-NodeBuilder<Shell> div(float w, float h, float cornerRadius, float x, float y, simd_float4 color) {
+NodeBuilder<Shell, ShellLayout> div(float cornerRadius, simd_float4 color) {
     auto& renderer = Renderer::active();
     auto& tree = renderer.renderTree;
     auto parent = tree.root.get();
-    return NodeBuilder(tree, parent, std::make_unique<Shell>(renderer, w, h, x, y, color, cornerRadius));
+    return NodeBuilder<Shell, ShellLayout>(tree, parent, std::make_unique<Shell>(renderer, color, cornerRadius));
 }
 
 NodeBuilder<Text> text(const std::string& text, float fontSize, float x, float y) {
@@ -24,10 +24,10 @@ NodeBuilder<Text> text(const std::string& text, float fontSize, float x, float y
     return nb;
 }
 
-NodeBuilder<ImageDrawable> image(const std::string& path) {
+NodeBuilder<ImageDrawable, ImageLayout> image(const std::string& path) {
     auto& renderer = Renderer::active();
     auto& tree = renderer.renderTree;
     auto parent = tree.root.get();
-    auto nb = NodeBuilder(tree, parent, std::make_unique<ImageDrawable>(renderer, path));
+    auto nb = NodeBuilder<ImageDrawable, ImageLayout>(tree, parent, std::make_unique<ImageDrawable>(renderer, path));
     return nb;
 }
