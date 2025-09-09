@@ -21,6 +21,13 @@ class Renderer;
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
 namespace TextRender {
+
+    struct TextCache {
+        // need custom hashing funcs for these
+        std::unordered_map<std::pair<std::string_view, char>, Glyph> glyphMap;
+        std::unordered_map<std::pair<std::string_view, char>, int> glyphBezierMap;
+    };
+
     struct QuadPoint {
         simd_float2 position;
         simd_float2 offset;

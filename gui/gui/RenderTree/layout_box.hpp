@@ -64,3 +64,14 @@ struct ImageLayout {
     simd_float2 halfExtent;
     simd_float2 center;
 };
+
+//struct TextLayout {
+//    float width, height;
+//    float x, y;
+//    
+//    void measure();
+//    
+//    void update();
+//    
+//    
+//}
