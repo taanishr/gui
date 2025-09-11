@@ -21,9 +21,7 @@ class Renderer;
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
 namespace TextRender {
-
-    struct TextCache {
-        // need custom hashing funcs for these
+    struct GlyphCache {
         std::unordered_map<std::pair<std::string_view, char>, Glyph> glyphMap;
         std::unordered_map<std::pair<std::string_view, char>, int> glyphBezierMap;
     };
@@ -50,7 +48,10 @@ namespace TextRender {
         void update(const LayoutBox& layoutBox);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
-        const Bounds& bounds() const;
+//        const Bounds& bounds() const;
+        const LayoutBox& layout() const;
+        const DrawableSize& measure() const;
+        
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         FrameInfo getFrameInfo();
@@ -88,6 +89,8 @@ namespace TextRender {
         float x;
         float y;
         Bounds elementBounds;
+        DrawableSize intrinsicSize;
+        const LayoutBox* textLayout;
         
         std::unordered_map<char,Glyph> glyphMap;
         std::unordered_map<char,int> glyphBezierMap;

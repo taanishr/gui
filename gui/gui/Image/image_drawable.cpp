@@ -25,6 +25,8 @@ ImageDrawable::ImageDrawable(Renderer& renderer, const std::string& path):
         MTKTextures::createTexture(getTextureLoader(), path)
     );
     
+    this->intrinsicSize = {(float)texture->width(), (float)texture->height()};
+    
     this->quadPointsBuffer = renderer.device->newBuffer(6*sizeof(QuadPoint), MTL::StorageModeShared);
     this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
     this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
@@ -128,7 +130,7 @@ MTL::SamplerState* ImageDrawable::getSampler()
 void ImageDrawable::update(const ImageLayout& layout) {
     auto frameInfo = renderer.getFrameInfo();
     
-    this->layout = &layout;
+    this->imageLayout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={layout.x,layout.y}, .uv={0,0}},
@@ -168,15 +170,23 @@ void ImageDrawable::encode(MTL::RenderCommandEncoder* encoder)
     encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::Integer(0), 6);
 }
 
-const Bounds& ImageDrawable::bounds() const
-{
-    return layout->elementBounds;
+//const Bounds& ImageDrawable::bounds() const
+//{
+//    return imageLayout->elementBounds;
+//}
+
+const ImageLayout& ImageDrawable::layout() const {
+    return *(this->imageLayout);
+}
+
+const DrawableSize& ImageDrawable::measure() const {
+    return intrinsicSize;
 }
 
 bool ImageDrawable::contains(simd_float2 point) const
 {
-    simd_float2 localPoint {point.x - layout->center.x, point.y - - layout->center.y};
-    return rounded_rect_sdf(localPoint, layout->halfExtent, 0) < 0;
+    simd_float2 localPoint {point.x - imageLayout->center.x, point.y - - imageLayout->center.y};
+    return rounded_rect_sdf(localPoint, imageLayout->halfExtent, 0) < 0;
 }
 
 ImageDrawable::~ImageDrawable() {

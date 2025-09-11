@@ -25,7 +25,7 @@ Shell::Shell(Renderer& renderer, simd_float4 color, float cornerRadius):
 void Shell::update(const ShellLayout& layout) { // polymorphic layoutbox? Then how do I do this?
     auto frameInfo = renderer.getFrameInfo();
     
-    this->layout = &layout;
+    this->shellLayout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={layout.x,layout.y}},
@@ -121,15 +121,26 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
 }
 
 
-const Bounds& Shell::bounds() const
+//const Bounds& Shell::bounds() const
+//{
+//    return this->layout->elementBounds;
+//}
+
+const ShellLayout& Shell::layout() const
 {
-    return this->layout->elementBounds;
+    return *(this->shellLayout);
+}
+
+const DrawableSize& Shell::measure() const
+{
+    static DrawableSize intrinsicSize {0,0};
+    return intrinsicSize;
 }
 
 bool Shell::contains(simd_float2 point) const
 {
-    simd_float2 localPoint {point.x - layout->center.x, point.y - layout->center.y};
-    return rounded_rect_sdf(localPoint, layout->halfExtent, cornerRadius) < 0;
+    simd_float2 localPoint {point.x - shellLayout->center.x, point.y - shellLayout->center.y};
+    return rounded_rect_sdf(localPoint, shellLayout->halfExtent, cornerRadius) < 0;
 }
 
 Shell::~Shell() {

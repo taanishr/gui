@@ -119,6 +119,8 @@ void Text::removeChar() {
 }
 
 void Text::update(const LayoutBox& layoutBox) {
+    this->textLayout = &layoutBox;
+    
     std::vector<QuadPoint> quadPoints;
     std::vector<int> glyphMeta;
     
@@ -236,11 +238,21 @@ void Text::update(const LayoutBox& layoutBox) {
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
 }
 
+//
+//const Bounds& Text::bounds() const
+//{
+//    return elementBounds;
+//}
 
-const Bounds& Text::bounds() const
-{
-    return elementBounds;
+const LayoutBox& Text::layout() const {
+    return *(this->textLayout);
 }
+
+const DrawableSize& Text::measure() const {
+    return intrinsicSize;
+}
+
+
 
 bool Text::contains(simd_float2 point) const
 {

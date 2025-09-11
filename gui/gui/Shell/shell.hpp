@@ -40,7 +40,10 @@ namespace ShellRender {
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
-        const Bounds& bounds() const;
+//        const Bounds& bounds() const;
+        const ShellLayout& layout() const;
+        const DrawableSize& measure() const;
+        
         bool contains(simd_float2 point) const;
         ~Shell();
         
@@ -57,7 +60,7 @@ namespace ShellRender {
         float borderWidth = 0.0;
         
         // layout
-        const ShellLayout* layout;
+        const ShellLayout* shellLayout;
     };
 
 }

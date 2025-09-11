@@ -44,7 +44,10 @@ namespace ImageRender {
         void update(const ImageLayout& layout);
         void encode(MTL::RenderCommandEncoder* encoder);
         
-        const Bounds& bounds() const;
+//        const Bounds& bounds() const;
+        const ImageLayout& layout() const;
+        const DrawableSize& measure() const;
+        
         bool contains(simd_float2 point) const;
         
         // properties
@@ -53,7 +56,7 @@ namespace ImageRender {
         simd_float4 borderColor;
         
         // layout
-        const ImageLayout* layout;
+        const ImageLayout* imageLayout;
         
         ~ImageDrawable();
     
@@ -61,6 +64,8 @@ namespace ImageRender {
         MTL::Buffer* quadPointsBuffer;
         MTL::Buffer* frameInfoBuffer;
         MTL::Buffer* uniformsBuffer;
+        
+        DrawableSize intrinsicSize;
    
         std::string path;
         Renderer& renderer;

@@ -22,12 +22,16 @@ namespace RootRender {
         void update(const LayoutBox& layoutBox);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
-        const Bounds& bounds() const;
+//        const Bounds& bounds() const;
         bool contains(simd_float2 point) const;
         
-        static Bounds elementBounds;
+        const DrawableSize& measure() const;
+        const LayoutBox& layout() const;
+        
+//        static Bounds elementBounds;
         
         float x;
         float y;
+        const LayoutBox* rootLayout;
     };
 }

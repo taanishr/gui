@@ -18,7 +18,9 @@ concept Drawable = Layout<L> && requires(T t, MTL::RenderCommandEncoder* encoder
     { t.update(layout) } -> std::same_as<void>;
     { t.encode(encoder) } -> std::same_as<void>;
     
-    { t.bounds() } -> std::same_as<const Bounds&>;
+    { t.measure() } -> std::same_as<const DrawableSize&>;
+    { t.layout() } -> std::same_as<const L&>;
+
     { t.contains(pt) } -> std::same_as<bool>;
 };
 

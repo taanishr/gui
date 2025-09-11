@@ -9,11 +9,18 @@
 
 using namespace RootRender;
 
-Bounds RootDrawable::elementBounds = {.topLeft = {0,0}, .bottomRight = {0,0}};
+//Bounds RootDrawable::elementBounds = {.topLeft = {0,0}, .bottomRight = {0,0}};
 
 void RootDrawable::update(const LayoutBox& layoutBox) {};
 MTL::RenderPipelineState* RootDrawable::getPipeline() { return nullptr; }
 void RootDrawable::encode(MTL::RenderCommandEncoder* encoder) {};
-const Bounds& RootDrawable::bounds() const { return elementBounds; };
+//const Bounds& RootDrawable::bounds() const { return elementBounds; };
+
+const DrawableSize& RootDrawable::measure() const {
+    static DrawableSize intrinsicSize {0,0};
+    return intrinsicSize;
+}
+
+const LayoutBox& RootDrawable::layout() const { return *(this->rootLayout); }
 bool RootDrawable::contains(simd_float2 point) const { return false; };
 
