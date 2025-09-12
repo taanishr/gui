@@ -31,7 +31,6 @@ std::size_t GlyphCacheHash::operator()(const std::tuple<FontName, FontSize, char
     return hv;
 }
 
-
 GlyphCache::GlyphCache(FT_Library ft):
     ft{ft}
 {}
@@ -58,6 +57,9 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
         }
         
         auto fontFace = fontFaces[{font, fontSize}];
+
+        FT_Load_Char(fontFace, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
+
         auto outline = &fontFace->glyph->outline;
 
         auto processedGlyph = processContours(outline, 0);
