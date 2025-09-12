@@ -10,6 +10,28 @@
 
 using namespace TextRender;
 
+std::size_t GlyphFaceHash::operator()(const std::pair<FontName, FontSize>& cacheKey) const
+{
+    std::size_t hv = 0;
+    
+    hash_combine(hv, cacheKey.first);
+    hash_combine(hv, cacheKey.second);
+    
+    return hv;
+}
+
+std::size_t GlyphCacheHash::operator()(const std::tuple<FontName, FontSize, char>& fontKey) const
+{
+    std::size_t hv = 0;
+    
+    hash_combine(hv, std::get<0>(fontKey));
+    hash_combine(hv, std::get<1>(fontKey));
+    hash_combine(hv, std::get<2>(fontKey));
+    
+    return hv;
+}
+
+
 GlyphCache::GlyphCache(FT_Library ft):
     ft{ft}
 {}
@@ -28,10 +50,11 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
         bool faceCached = fontFaces.find({font, fontSize}) == fontFaces.end();
         
         if (!faceCached) {
-            auto [newFaceIt, _] = fontFaces.emplace(FT_Face{});
-            auto newFace = newFaceIt->second;
+            FT_Face newFace = nullptr;
             FT_New_Face(this->ft, font.c_str(), 0, &newFace);
             FT_Set_Pixel_Sizes(newFace, 0, fontSize);
+            
+            fontFaces[{font, fontSize}] = newFace;
         }
         
         auto fontFace = fontFaces[{font, fontSize}];

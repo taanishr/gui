@@ -15,6 +15,7 @@
 #include "buffer_helpers.hpp"
 #include "layout_box.hpp"
 #include "bounds.hpp"
+#include "hash_combine.hpp"
 
 class Renderer;
 
@@ -24,16 +25,12 @@ namespace TextRender {
     using FontSize = int;
     using FontName = std::string;
 
-    struct GlyphCacheHash {
-        int operator()(const std::pair<FontName, FontSize>& cacheKey) {
-            return 0;
-        }
+    struct GlyphFaceHash {
+        std::size_t operator()(const std::pair<FontName, FontSize>& cacheKey) const;
     };
 
-    struct GlyphFaceHash {
-        int operator()(const std::tuple<FontName, FontSize, char>& fontKey) {
-            return 0;
-        }
+    struct GlyphCacheHash {
+        std::size_t operator()(const std::tuple<FontName, FontSize, char>& fontKey) const;
     };
 
 
@@ -45,8 +42,8 @@ namespace TextRender {
         const Glyph& retrieve(const FontName& font, FontSize fontSize, char ch);
         
         FT_Library ft;
-        std::unordered_map<std::pair<FontName, FontSize>, FT_Face> fontFaces;
-        std::unordered_map<std::tuple<FontName, FontSize, char>, Glyph> cache;
+        std::unordered_map<std::pair<FontName, FontSize>, FT_Face, GlyphFaceHash> fontFaces;
+        std::unordered_map<std::tuple<FontName, FontSize, char>, Glyph, GlyphCacheHash> cache;
     };
 
 
