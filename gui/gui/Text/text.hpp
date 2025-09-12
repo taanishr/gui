@@ -21,10 +21,34 @@ class Renderer;
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
 namespace TextRender {
-    struct GlyphCache {
-        std::unordered_map<std::pair<std::string_view, char>, Glyph> glyphMap;
-        std::unordered_map<std::pair<std::string_view, char>, int> glyphBezierMap;
+    using FontSize = int;
+    using FontName = std::string;
+
+    struct GlyphCacheHash {
+        int operator()(const std::pair<FontName, FontSize>& cacheKey) {
+            return 0;
+        }
     };
+
+    struct GlyphFaceHash {
+        int operator()(const std::tuple<FontName, FontSize, char>& fontKey) {
+            return 0;
+        }
+    };
+
+
+    struct GlyphCache {
+        GlyphCache(FT_Library ft);
+        
+        ~GlyphCache();
+        
+        const Glyph& retrieve(const FontName& font, FontSize fontSize, char ch);
+        
+        FT_Library ft;
+        std::unordered_map<std::pair<FontName, FontSize>, FT_Face> fontFaces;
+        std::unordered_map<std::tuple<FontName, FontSize, char>, Glyph> cache;
+    };
+
 
     struct QuadPoint {
         simd_float2 position;

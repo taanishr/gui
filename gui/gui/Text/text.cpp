@@ -10,6 +10,43 @@
 
 using namespace TextRender;
 
+GlyphCache::GlyphCache(FT_Library ft):
+    ft{ft}
+{}
+
+
+GlyphCache::~GlyphCache() {
+    for (auto& pair : fontFaces)
+        FT_Done_Face(pair.second);
+}
+
+const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
+{
+    bool glyphCached = cache.find({font,fontSize,ch}) == cache.end();
+
+    if (!glyphCached) {
+        bool faceCached = fontFaces.find({font, fontSize}) == fontFaces.end();
+        
+        if (!faceCached) {
+            auto [newFaceIt, _] = fontFaces.emplace(FT_Face{});
+            auto newFace = newFaceIt->second;
+            FT_New_Face(this->ft, font.c_str(), 0, &newFace);
+            FT_Set_Pixel_Sizes(newFace, 0, fontSize);
+        }
+        
+        auto fontFace = fontFaces[{font, fontSize}];
+        auto outline = &fontFace->glyph->outline;
+
+        auto processedGlyph = processContours(outline, 0);
+    
+        cache[{font, fontSize, ch}] = processedGlyph;
+    }
+
+    auto glyphIt = cache.find({font,fontSize,ch});
+
+    return glyphIt->second;
+}
+
 Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float4 color, const std::string& font):
     renderer{renderer},
     x{x},
