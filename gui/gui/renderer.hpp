@@ -16,6 +16,7 @@
 #include "events.hpp"
 #include <chrono>
 #include "node_builder.hpp"
+#include "glyphCache.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 
@@ -34,6 +35,8 @@ public:
     static bool hasActiveRenderer();
     static Renderer& active();
     
+    GlyphCache& glyphCache();
+    
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
@@ -44,6 +47,7 @@ public:
     
     long long numSamples = 0;
     long long totalMicros;
+    
     
     static Renderer* current;
 private:

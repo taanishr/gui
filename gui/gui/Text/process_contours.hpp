@@ -27,7 +27,6 @@ struct Quad {
 struct Contour {
     Quad quad;
     std::vector<simd_float2> points;
-    std::vector<int> offsets;
 };
 
 struct Glyph {
@@ -35,8 +34,8 @@ struct Glyph {
     std::vector<simd_float2> points;
     int numContours;
     std::vector<int> contourSizes;
-    std::vector<int> contourOffsets;
+    FT_Glyph_Metrics metrics;
 };
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, int offset = 0);
-Glyph processContours(FT_Outline* outlinePtr, int offset);
+Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end);
+Glyph processContours(FT_Outline* outlinePtr);

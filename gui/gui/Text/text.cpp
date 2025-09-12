@@ -10,70 +10,9 @@
 
 using namespace TextRender;
 
-std::size_t GlyphFaceHash::operator()(const std::pair<FontName, FontSize>& cacheKey) const
-{
-    std::size_t hv = 0;
-    
-    hash_combine(hv, cacheKey.first);
-    hash_combine(hv, cacheKey.second);
-    
-    return hv;
-}
-
-std::size_t GlyphCacheHash::operator()(const std::tuple<FontName, FontSize, char>& fontKey) const
-{
-    std::size_t hv = 0;
-    
-    hash_combine(hv, std::get<0>(fontKey));
-    hash_combine(hv, std::get<1>(fontKey));
-    hash_combine(hv, std::get<2>(fontKey));
-    
-    return hv;
-}
-
-GlyphCache::GlyphCache(FT_Library ft):
-    ft{ft}
-{}
-
-
-GlyphCache::~GlyphCache() {
-    for (auto& pair : fontFaces)
-        FT_Done_Face(pair.second);
-}
-
-const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
-{
-    bool glyphCached = cache.find({font,fontSize,ch}) == cache.end();
-
-    if (!glyphCached) {
-        bool faceCached = fontFaces.find({font, fontSize}) == fontFaces.end();
-        
-        if (!faceCached) {
-            FT_Face newFace = nullptr;
-            FT_New_Face(this->ft, font.c_str(), 0, &newFace);
-            FT_Set_Pixel_Sizes(newFace, 0, fontSize);
-            
-            fontFaces[{font, fontSize}] = newFace;
-        }
-        
-        auto fontFace = fontFaces[{font, fontSize}];
-
-        FT_Load_Char(fontFace, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
-
-        auto outline = &fontFace->glyph->outline;
-
-        auto processedGlyph = processContours(outline, 0);
-    
-        cache[{font, fontSize, ch}] = processedGlyph;
-    }
-
-    auto glyphIt = cache.find({font,fontSize,ch});
-
-    return glyphIt->second;
-}
-
 Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float4 color, const std::string& font):
     renderer{renderer},
+    glyphCache{renderer.glyphCache()},
     x{x},
     y{y},
     fontSize{fontSize},
@@ -193,39 +132,41 @@ void Text::update(const LayoutBox& layoutBox) {
     auto frameInfo = renderer.getFrameInfo();
     simd_float2 drawOffset {layoutBox.x*64.0f, (frameInfo.height-fontSize-layoutBox.y)*64.0f};
     
+    simd_float2 elementTopLeft {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+    simd_float2 elementBottomRight {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+    
     for (auto ch : text) {
         if (ch == '\r') {
             drawOffset.y -= this->fontSize*64.0f;
             drawOffset.x = layoutBox.x*64.0f;
             continue;
         }
-            
-        FT_Load_Char(this->face, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
-        
-        auto glyph = this->face->glyph;
-        auto outline = &this->face->glyph->outline;
         
         bool contoursCached = glyphBezierMap.find(ch) != glyphBezierMap.end();
         
         if (!contoursCached) {
-            auto processedGlyph = processContours(outline, bezierIndex);
+            auto glyph = glyphCache.retrieve(font, fontSize, ch);
             
             // cache points metadata and glyph
             glyphBezierMap[ch] = bezierIndex;
-            glyphMap[ch] = processedGlyph;
+            glyphMap[ch] = glyph;
     
             // inset points
-            bezierPoints.insert(bezierPoints.end(), processedGlyph.points.begin(), processedGlyph.points.end());
+            bezierPoints.insert(bezierPoints.end(), glyph.points.begin(), glyph.points.end());
             
             // increment counter
-            lastBezierPoint = bezierIndex + processedGlyph.points.size();
+            lastBezierPoint = bezierIndex + glyph.points.size();
         }
         
         bezierIndex = glyphBezierMap[ch];
-        auto& processedGlyph = glyphMap[ch];
+        auto& glyph = glyphMap[ch];
         
         // handle quad
-        auto quad = processedGlyph.quad;
+        auto quad = glyph.quad;
+        
+        elementTopLeft = {std::min(elementTopLeft.x, glyph.quad.topLeft.x + drawOffset.x), std::min(elementTopLeft.y, glyph.quad.topLeft.y + drawOffset.y)};
+        
+        elementBottomRight = {std::max(elementBottomRight.x, glyph.quad.bottomRight.x + drawOffset.x), std::max(elementBottomRight.y, glyph.quad.bottomRight.y + drawOffset.y)};
     
         quadPoints.push_back({
             .position = quad.topLeft,
@@ -267,21 +208,23 @@ void Text::update(const LayoutBox& layoutBox) {
         
         // handle metadata
         glyphMeta.push_back(bezierIndex); // bezier index; pull from map
-        glyphMeta.push_back(processedGlyph.numContours); // numContours
-        for (int contourSize : processedGlyph.contourSizes) // num points per contour
+        glyphMeta.push_back(glyph.numContours); // numContours
+        for (int contourSize : glyph.contourSizes) // num points per contour
             glyphMeta.push_back(contourSize);
         
-        metadataIndex += 2 + processedGlyph.contourSizes.size();
+        metadataIndex += 2 + glyph.contourSizes.size();
     
         
-        drawOffset.x += glyph->metrics.horiAdvance;
+        drawOffset.x += glyph.metrics.horiAdvance;
         bezierIndex = lastBezierPoint;
     }
     
     this->numQuadPoints = quadPoints.size();
     
     if (this->numQuadPoints > 0)
-        this->elementBounds = {.topLeft = quadPoints.front().position, .bottomRight = quadPoints.back().position};
+        this->elementBounds = {.topLeft = elementTopLeft, .bottomRight = elementBottomRight};
+    
+    this->intrinsicSize = {.width = elementBottomRight.x - elementTopLeft.x, .height = elementBottomRight.y - elementTopLeft.y };
     
     // copy uniforms buffer
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
@@ -300,12 +243,6 @@ void Text::update(const LayoutBox& layoutBox) {
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
 }
 
-//
-//const Bounds& Text::bounds() const
-//{
-//    return elementBounds;
-//}
-
 const LayoutBox& Text::layout() const {
     return *(this->textLayout);
 }
@@ -313,8 +250,6 @@ const LayoutBox& Text::layout() const {
 const DrawableSize& Text::measure() const {
     return intrinsicSize;
 }
-
-
 
 bool Text::contains(simd_float2 point) const
 {

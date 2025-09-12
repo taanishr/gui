@@ -14,7 +14,7 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
 }
 
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, int offset) {
+Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end) {
     Quad quad {.topLeft = {0,0}, .bottomRight = {0,0}};
     std::vector<int> offsets {};
     std::vector<simd_float2> points {};
@@ -71,8 +71,6 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
                         pointsBuffer.push_back(currentPoint);
                         points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
                         pointsBuffer.clear();
-                    }else {
-                        offsets.push_back(offset+p);
                     }
                     
                     pointsBuffer.push_back(currentPoint);
@@ -95,10 +93,10 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
         pointsBuffer.clear();
     }
 
-    return {.quad = quad, .points = points, .offsets = offsets};
+    return {.quad = quad, .points = points};
 }
 
-Glyph processContours(FT_Outline* outlinePtr, int offset)
+Glyph processContours(FT_Outline* outlinePtr)
 {
     // FT metadata
     FT_Outline outline = *outlinePtr;
@@ -115,11 +113,10 @@ Glyph processContours(FT_Outline* outlinePtr, int offset)
     std::vector<simd_float2> points;
     
     int contourStart = 0;
-    std::vector<int> contourOffsets;
     std::vector<int> contourSizes;
     
     for (int c = 0; c < numContours; ++c) {
-        Contour contour = processContour(rawPoints, tags, contourStart, contours[c], offset);
+        Contour contour = processContour(rawPoints, tags, contourStart, contours[c]);
         
         // handle quad
         if (contour.quad.topLeft.x < quad.topLeft.x)
@@ -137,9 +134,6 @@ Glyph processContours(FT_Outline* outlinePtr, int offset)
         
         // flatten points
         points.insert(points.end(), contour.points.begin(), contour.points.end());
-
-        // process offsets
-        contourOffsets.push_back(offset + contourStart);
         
         // process sizes
         contourSizes.push_back(contour.points.size());
@@ -148,6 +142,6 @@ Glyph processContours(FT_Outline* outlinePtr, int offset)
     }
     
 
-    return {.quad = quad, .points = points, .numContours = numContours, .contourOffsets = contourOffsets, .contourSizes = contourSizes};
+    return {.quad = quad, .points = points, .numContours = numContours, .contourSizes = contourSizes};
 }
 

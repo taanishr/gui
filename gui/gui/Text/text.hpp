@@ -15,38 +15,13 @@
 #include "buffer_helpers.hpp"
 #include "layout_box.hpp"
 #include "bounds.hpp"
-#include "hash_combine.hpp"
+#include "glyphCache.hpp"
 
 class Renderer;
 
 constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Arial.ttf"};
 
 namespace TextRender {
-    using FontSize = int;
-    using FontName = std::string;
-
-    struct GlyphFaceHash {
-        std::size_t operator()(const std::pair<FontName, FontSize>& cacheKey) const;
-    };
-
-    struct GlyphCacheHash {
-        std::size_t operator()(const std::tuple<FontName, FontSize, char>& fontKey) const;
-    };
-
-
-    struct GlyphCache {
-        GlyphCache(FT_Library ft);
-        
-        ~GlyphCache();
-        
-        const Glyph& retrieve(const FontName& font, FontSize fontSize, char ch);
-        
-        FT_Library ft;
-        std::unordered_map<std::pair<FontName, FontSize>, FT_Face, GlyphFaceHash> fontFaces;
-        std::unordered_map<std::tuple<FontName, FontSize, char>, Glyph, GlyphCacheHash> cache;
-    };
-
-
     struct QuadPoint {
         simd_float2 position;
         simd_float2 offset;
@@ -113,6 +88,7 @@ namespace TextRender {
         DrawableSize intrinsicSize;
         const LayoutBox* textLayout;
         
+        GlyphCache& glyphCache;
         std::unordered_map<char,Glyph> glyphMap;
         std::unordered_map<char,int> glyphBezierMap;
     };
