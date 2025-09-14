@@ -69,6 +69,8 @@ void Renderer::draw() {
 
     auto ts1 = clock.now();
 
+    auto frameInfo = getFrameInfo();
+    renderTree.layout(frameInfo);
     renderTree.update();
     renderTree.render(renderCommandEncoder);
 
@@ -80,8 +82,7 @@ void Renderer::draw() {
 
     if (numSamples % 100 == 0) {
         double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
-        std::cout << "Average time over " << numSamples << " samples: "
-                  << avgMs << " ms\n";
+        std::println("Average time over {} samples: {} ms", numSamples, avgMs);
     }
     
     renderCommandEncoder->endEncoding();

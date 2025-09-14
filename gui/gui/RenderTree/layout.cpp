@@ -33,6 +33,9 @@ void DefaultLayout::setHeight(float h)
     this->height = h;
 }
 
+void DefaultLayout::sync()
+{}
+
 
 void ShellLayout::update()
 {
@@ -77,6 +80,14 @@ void ShellLayout::setFlex() {
     this->display = Flex{};
 }
 
+void ShellLayout::sync()
+{
+    elementBounds = {.topLeft = {computedX, computedX},
+        .bottomRight ={computedX + computedWidth, computedX + computedHeight}};
+    
+    this->center = {computedX + computedWidth/2.0f, computedY + computedHeight/2.0f};
+    this->halfExtent = {computedWidth / 2.0f, computedHeight / 2.0f};
+}
 
 void ImageLayout::update()
 {
@@ -112,6 +123,9 @@ void ImageLayout::setHeight(float h)
     this->height = h;
     update();
 }
+
+void ImageLayout::sync()
+{}
     
 void TextLayout::update()
 {
@@ -138,3 +152,5 @@ void TextLayout::setHeight(float h)
 {
     this->height = h;
 }
+
+void TextLayout::sync() {}

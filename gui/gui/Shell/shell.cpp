@@ -27,13 +27,16 @@ void Shell::update(const ShellLayout& layout) {
     
     this->shellLayout = &layout;
     
+    
+    std::println("computedX: {} computedY: {}", layout.computedX, layout.computedY);
+    
     std::array<QuadPoint, 6> quadPoints {{
-        {.position={layout.x,layout.y}},
-        {.position={layout.x+layout.computedWidth,layout.y}},
-        {.position={layout.x,layout.y+layout.computedHeight}},
-        {.position={layout.x,layout.y+layout.computedHeight}},
-        {.position={layout.x+layout.computedWidth,layout.y}},
-        {.position={layout.x+layout.computedWidth,layout.y+layout.computedHeight}},
+        {.position={layout.computedX,layout.computedY}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY}},
+        {.position={layout.computedX,layout.computedY+layout.computedHeight}},
+        {.position={layout.computedX,layout.computedY+layout.computedHeight}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY+layout.computedHeight}},
     }};
     
     Uniforms uniforms { .color=color,

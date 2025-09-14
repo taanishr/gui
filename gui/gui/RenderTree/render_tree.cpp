@@ -17,14 +17,6 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, 
     return a->insertionId < b->insertionId;
 }
 
-inline float resolveDimension(float explicitDim, float intrinsicDim) {
-    if (explicitDim > 0)
-        return explicitDim;
-
-    return intrinsicDim;
-}
-
-
 RenderTree::RenderTree():
     root{std::make_unique<RenderNode<RootDrawable>>()}
 {
@@ -43,12 +35,17 @@ void RenderTree::flatten(RenderNodeBase* node, int parentZ) {
         flatten(child.get(), node->globalZIndex);
 }
 
-void RenderTree::layout() {
-    root->layout();
+void RenderTree::layout(const FrameInfo& frameInfo) {
+    LayoutContext rootCtx {};
+    
+    rootCtx.x = 0;
+    rootCtx.y = 0.0;
+    rootCtx.width = frameInfo.width;
+    rootCtx.height = frameInfo.height;
+    root->layout(rootCtx);
 }
 
 void RenderTree::update() {
-    root->layout();
     root->update();
     
     drawList.clear();

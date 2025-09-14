@@ -84,7 +84,6 @@ namespace TextRender {
         // layout
         float x;
         float y;
-        Bounds elementBounds;
         DrawableSize intrinsicSize;
         const TextLayout* textLayout;
         

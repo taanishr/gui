@@ -132,9 +132,6 @@ void Text::update(const TextLayout& layoutBox) {
     auto frameInfo = renderer.getFrameInfo();
     simd_float2 drawOffset {layoutBox.x*FT_PIXEL_CF, (layoutBox.y-fontSize)*FT_PIXEL_CF};
     
-    simd_float2 elementTopLeft {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
-    simd_float2 elementBottomRight {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
-    
     for (auto ch : text) {
         if (ch == '\r') {
             drawOffset.y -= this->fontSize*FT_PIXEL_CF;
@@ -154,7 +151,7 @@ void Text::update(const TextLayout& layoutBox) {
             // inset points
             bezierPoints.insert(bezierPoints.end(), glyph.points.begin(), glyph.points.end());
             
-            // increment counter
+            // increment counter (change this to be unsigned long/size type so it doesn't run into weird bugs in the future)
             lastBezierPoint = bezierIndex + glyph.points.size();
         }
         
@@ -163,11 +160,7 @@ void Text::update(const TextLayout& layoutBox) {
         
         // handle quad
         auto quad = glyph.quad;
-        
-        elementTopLeft = {std::min(elementTopLeft.x, glyph.quad.topLeft.x + drawOffset.x), std::min(elementTopLeft.y, glyph.quad.topLeft.y + drawOffset.y)};
-        
-        elementBottomRight = {std::max(elementBottomRight.x, glyph.quad.bottomRight.x + drawOffset.x), std::max(elementBottomRight.y, glyph.quad.bottomRight.y + drawOffset.y)};
-    
+
         quadPoints.push_back({
             .position = quad.topLeft,
             .offset = drawOffset,
@@ -221,9 +214,6 @@ void Text::update(const TextLayout& layoutBox) {
     
     this->numQuadPoints = quadPoints.size();
     
-    if (this->numQuadPoints > 0)
-        this->elementBounds = {.topLeft = elementTopLeft, .bottomRight = elementBottomRight};
-    
     // copy uniforms buffer
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
     
@@ -267,15 +257,16 @@ const DrawableSize& Text::measure()
     intrinsicSize.width = maxW;
     intrinsicSize.height = maxH;
     
-    std::println("width: {}, height: {}", intrinsicSize.width, intrinsicSize.height);
-    
     return intrinsicSize;
 }
 
 bool Text::contains(simd_float2 point) const
 {
-    return point.x < elementBounds.topLeft.x || point.x > elementBounds.bottomRight.x ||
-    point.y < elementBounds.topLeft.y || point.y > elementBounds.bottomRight.y;
+    simd_float2 topLeft {this->textLayout->x, this->textLayout->y};
+    simd_float2 bottomRight {this->textLayout->x + this->textLayout->computedWidth, this->textLayout->y + this->textLayout->computedHeight};
+    
+    return !(point.x < topLeft.x || point.x > bottomRight.x ||
+             point.y < topLeft.y || point.y > bottomRight.y);
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {

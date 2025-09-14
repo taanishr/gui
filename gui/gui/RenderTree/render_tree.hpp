@@ -39,7 +39,7 @@ struct RenderNodeComparator {
 
 class RenderNodeBase {
 public:
-    virtual void layout() = 0;
+    virtual void layout(const LayoutContext& parentCtx) = 0;
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
@@ -56,7 +56,12 @@ public:
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
-inline float resolveDimension(float explicitDim, float intrinsicDim);
+inline float resolveDimension(float explicitDim, float intrinsicDim) {
+    if (explicitDim > 0)
+        return explicitDim;
+
+    return intrinsicDim;
+}
 
 template <typename DrawableType, typename LayoutType = DefaultLayout>
     requires Drawable<DrawableType, LayoutType>
@@ -64,16 +69,24 @@ class RenderNode : public RenderNodeBase {
 public:
     RenderNode() {}
     
-    void layout() {
+    void layout(const LayoutContext& parentCtx) {
         auto intrinsicSize = drawable->measure();
         
         this->layoutBox.computedWidth = resolveDimension(this->layoutBox.width, intrinsicSize.width);
         this->layoutBox.computedHeight = resolveDimension(this->layoutBox.height, intrinsicSize.height);
+        this->layoutBox.computedX = parentCtx.x + this->layoutBox.x;
+        this->layoutBox.computedY = parentCtx.y + this->layoutBox.y;
+        this->layoutBox.sync();
+        
+        LayoutContext ctx {};
+        ctx.x = this->layoutBox.computedX;
+        ctx.y = this->layoutBox.computedY;
+        ctx.width = this->layoutBox.computedWidth;
+        ctx.height = this->layoutBox.computedHeight;
         
         for (const auto& child : children)
-            child->layout();
+            child->layout(ctx);
     }
-    
     
 
     void update() {
@@ -139,7 +152,7 @@ public:
 
     void flatten(RenderNodeBase* node, int parentZ);
     
-    void layout();
+    void layout(const FrameInfo& frameSize);
     void update();
     void render(MTL::RenderCommandEncoder* encoder) const;
 

@@ -11,4 +11,3 @@ struct FrameInfo {
     float width;
     float height;
 };
-

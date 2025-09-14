@@ -13,10 +13,6 @@ using namespace ImageRender;
 ImageDrawable::ImageDrawable(Renderer& renderer, const std::string& path):
     renderer{renderer},
     path{path},
-//    x{0},
-//    y{0},
-//    width{0},
-//    height{0},
     cornerRadius{0},
     borderWidth{0},
     borderColor{simd_float4{0,0,0,1}}
@@ -134,11 +130,11 @@ void ImageDrawable::update(const ImageLayout& layout) {
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={layout.x,layout.y}, .uv={0,0}},
-        {.position={layout.x+layout.width,layout.y}, .uv={1,0}},
-        {.position={layout.x,layout.y+layout.height}, .uv{0,1}},
-        {.position={layout.x,layout.y+layout.height}, .uv{0,1}},
-        {.position={layout.x+layout.width,layout.y}, .uv={1,0}},
-        {.position={layout.x+layout.width,layout.y+layout.height}, .uv={1,1}},
+        {.position={layout.x+layout.computedWidth,layout.y}, .uv={1,0}},
+        {.position={layout.x,layout.y+layout.computedHeight}, .uv{0,1}},
+        {.position={layout.x,layout.y+layout.computedHeight}, .uv{0,1}},
+        {.position={layout.x+layout.computedWidth,layout.y}, .uv={1,0}},
+        {.position={layout.x+layout.computedWidth,layout.y+layout.computedHeight}, .uv={1,1}},
     }};
     
     Uniforms uniforms { .rectCenter = layout.center,

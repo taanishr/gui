@@ -19,11 +19,21 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.computedHeight } -> std::convertible_to<float>;
     { t.x }-> std::convertible_to<float>;
     { t.y } -> std::convertible_to<float>;
+    { t.computedX } -> std::convertible_to<float>;
+    { t.computedY } -> std::convertible_to<float>;
     
     { t.setX(x) } -> std::same_as<void>;
     { t.setY(y) } -> std::same_as<void>;
     { t.setWidth(w) } -> std::same_as<void>;
     { t.setHeight(h) } -> std::same_as<void>;
+    { t.sync() } -> std::same_as<void>;
+};
+
+struct LayoutContext {
+    float x;
+    float y;
+    float height;
+    float width;
 };
 
 enum class FlexDirection {
@@ -53,17 +63,20 @@ struct DefaultLayout {
     float width, height;
     float computedWidth, computedHeight;
     float x, y;
+    float computedX, computedY;
     
     void setX(float x);
     void setY(float y);
     void setWidth(float w);
     void setHeight(float h);
+    void sync();
 };
 
 struct ShellLayout {
     float width, height;
     float computedWidth, computedHeight;
     float x, y;
+    float computedX, computedY;
     
     void update();
     
@@ -73,6 +86,7 @@ struct ShellLayout {
     void setHeight(float h);
     void setFlex();
     void setBlock();
+    void sync();
     
     Bounds elementBounds;
     simd_float2 halfExtent;
@@ -86,6 +100,7 @@ struct ImageLayout {
     float width, height;
     float computedWidth, computedHeight;
     float x, y;
+    float computedX, computedY;
     
     void update();
     
@@ -93,6 +108,7 @@ struct ImageLayout {
     void setY(float y);
     void setWidth(float w);
     void setHeight(float h);
+    void sync();
     
     Bounds elementBounds;
     simd_float2 halfExtent;
@@ -103,7 +119,7 @@ struct TextLayout {
     float width, height;
     float computedWidth, computedHeight;
     float x, y;
-    
+    float computedX, computedY;
     
     void update();
     
@@ -111,6 +127,7 @@ struct TextLayout {
     void setY(float y);
     void setWidth(float w);
     void setHeight(float h);
+    void sync();
     
     Bounds elementBounds;
 };
