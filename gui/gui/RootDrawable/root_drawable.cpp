@@ -11,7 +11,7 @@ using namespace RootRender;
 
 //Bounds RootDrawable::elementBounds = {.topLeft = {0,0}, .bottomRight = {0,0}};
 
-void RootDrawable::update(const LayoutBox& layoutBox) {};
+void RootDrawable::update(const DefaultLayout& layoutBox) {};
 MTL::RenderPipelineState* RootDrawable::getPipeline() { return nullptr; }
 void RootDrawable::encode(MTL::RenderCommandEncoder* encoder) {};
 //const Bounds& RootDrawable::bounds() const { return elementBounds; };
@@ -21,6 +21,6 @@ const DrawableSize& RootDrawable::measure() const {
     return intrinsicSize;
 }
 
-const LayoutBox& RootDrawable::layout() const { return *(this->rootLayout); }
+const DefaultLayout& RootDrawable::layout() const { return *(this->rootLayout); }
 bool RootDrawable::contains(simd_float2 point) const { return false; };
 

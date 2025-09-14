@@ -119,7 +119,7 @@ void Text::removeChar() {
         this->text.pop_back();
 }
 
-void Text::update(const LayoutBox& layoutBox) {
+void Text::update(const TextLayout& layoutBox) {
     this->textLayout = &layoutBox;
     
     std::vector<QuadPoint> quadPoints;
@@ -130,15 +130,15 @@ void Text::update(const LayoutBox& layoutBox) {
     
     Uniforms uniforms {.color=this->color};
     auto frameInfo = renderer.getFrameInfo();
-    simd_float2 drawOffset {layoutBox.x*64.0f, (frameInfo.height-fontSize-layoutBox.y)*64.0f};
+    simd_float2 drawOffset {layoutBox.x*FT_PIXEL_CF, (layoutBox.y-fontSize)*FT_PIXEL_CF};
     
     simd_float2 elementTopLeft {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
     simd_float2 elementBottomRight {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
     
     for (auto ch : text) {
         if (ch == '\r') {
-            drawOffset.y -= this->fontSize*64.0f;
-            drawOffset.x = layoutBox.x*64.0f;
+            drawOffset.y -= this->fontSize*FT_PIXEL_CF;
+            drawOffset.x = layoutBox.x*FT_PIXEL_CF;
             continue;
         }
         
@@ -224,8 +224,6 @@ void Text::update(const LayoutBox& layoutBox) {
     if (this->numQuadPoints > 0)
         this->elementBounds = {.topLeft = elementTopLeft, .bottomRight = elementBottomRight};
     
-    this->intrinsicSize = {.width = elementBottomRight.x - elementTopLeft.x, .height = elementBottomRight.y - elementTopLeft.y };
-    
     // copy uniforms buffer
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
     
@@ -243,11 +241,34 @@ void Text::update(const LayoutBox& layoutBox) {
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
 }
 
-const LayoutBox& Text::layout() const {
+const TextLayout& Text::layout() const
+{
     return *(this->textLayout);
 }
 
-const DrawableSize& Text::measure() const {
+const DrawableSize& Text::measure()
+// lazily update this
+{
+    float currW = 0, maxW = 0, maxH = this->fontSize;
+    
+    for (auto ch : text) {
+        if (ch == '\r') {
+            maxH += this->fontSize;
+            currW = 0;
+            continue;
+        }
+        
+        auto glyph = glyphCache.retrieve(font, fontSize, ch);
+        
+        currW += glyph.metrics.horiAdvance / FT_PIXEL_CF;
+        maxW = std::max(maxW, currW);
+    }
+    
+    intrinsicSize.width = maxW;
+    intrinsicSize.height = maxH;
+    
+    std::println("width: {}, height: {}", intrinsicSize.width, intrinsicSize.height);
+    
     return intrinsicSize;
 }
 

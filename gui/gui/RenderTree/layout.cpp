@@ -5,25 +5,30 @@
 //  Created by Taanish Reja on 9/4/25.
 //
 
-#include "layout_box.hpp"
+#include "layout.hpp"
 #include "renderer.hpp"
 
-void LayoutBox::setX(float x)
+Flex::Flex():
+    direction{FlexDirection::Row},
+    growth{FlexGrowth::None}
+{}
+
+void DefaultLayout::setX(float x)
 {
     this->x = x;
 }
 
-void LayoutBox::setY(float y)
+void DefaultLayout::setY(float y)
 {
     this->y = y;
 }
 
-void LayoutBox::setWidth(float w)
+void DefaultLayout::setWidth(float w)
 {
     this->width = w;
 }
 
-void LayoutBox::setHeight(float h)
+void DefaultLayout::setHeight(float h)
 {
     this->height = h;
 }
@@ -64,6 +69,14 @@ void ShellLayout::setHeight(float h)
     update();
 }
 
+void ShellLayout::setBlock() {
+    this->display = Block{};
+}
+
+void ShellLayout::setFlex() {
+    this->display = Flex{};
+}
+
 
 void ImageLayout::update()
 {
@@ -99,4 +112,29 @@ void ImageLayout::setHeight(float h)
     this->height = h;
     update();
 }
+    
+void TextLayout::update()
+{
+}
+    
+void TextLayout::setX(float x)
+{
+    this->x = x;
+    
+}
 
+void TextLayout::setY(float y)
+{
+    auto frameInfo = Renderer::active().getFrameInfo();
+    this->y = frameInfo.height - y;
+}
+
+void TextLayout::setWidth(float w)
+{
+    this->width = w;
+}
+
+void TextLayout::setHeight(float h)
+{
+    this->height = h;
+}

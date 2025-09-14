@@ -12,26 +12,26 @@
 #include "sdf_helpers.hpp"
 #include <print>
 #include "frame_info.hpp"
-#include "layout_box.hpp"
+#include "layout.hpp"
 #include "bounds.hpp"
 
 class Renderer;
 
 namespace RootRender {
     struct RootDrawable {
-        void update(const LayoutBox& layoutBox);
+        void update(const DefaultLayout& layoutBox);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
 //        const Bounds& bounds() const;
         bool contains(simd_float2 point) const;
         
         const DrawableSize& measure() const;
-        const LayoutBox& layout() const;
+        const DefaultLayout& layout() const;
         
 //        static Bounds elementBounds;
         
         float x;
         float y;
-        const LayoutBox* rootLayout;
+        const DefaultLayout* rootLayout;
     };
 }

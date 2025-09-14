@@ -22,18 +22,18 @@ Shell::Shell(Renderer& renderer, simd_float4 color, float cornerRadius):
     this->frameInfoBuffer = renderer.device->newBuffer(sizeof(FrameInfo), MTL::ResourceStorageModeShared);
 }
 
-void Shell::update(const ShellLayout& layout) { // polymorphic layoutbox? Then how do I do this?
+void Shell::update(const ShellLayout& layout) {
     auto frameInfo = renderer.getFrameInfo();
     
     this->shellLayout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={layout.x,layout.y}},
-        {.position={layout.x+layout.width,layout.y}},
-        {.position={layout.x,layout.y+layout.height}},
-        {.position={layout.x,layout.y+layout.height}},
-        {.position={layout.x+layout.width,layout.y}},
-        {.position={layout.x+layout.width,layout.y+layout.height}},
+        {.position={layout.x+layout.computedWidth,layout.y}},
+        {.position={layout.x,layout.y+layout.computedHeight}},
+        {.position={layout.x,layout.y+layout.computedHeight}},
+        {.position={layout.x+layout.computedWidth,layout.y}},
+        {.position={layout.x+layout.computedWidth,layout.y+layout.computedHeight}},
     }};
     
     Uniforms uniforms { .color=color,

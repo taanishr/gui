@@ -13,7 +13,7 @@
 #include "drawable.hpp"
 #include "frame_info.hpp"
 #include "buffer_helpers.hpp"
-#include "layout_box.hpp"
+#include "layout.hpp"
 #include "bounds.hpp"
 #include "glyphCache.hpp"
 
@@ -41,12 +41,12 @@ namespace TextRender {
         void setText(const std::string& text);
         void addChar(char ch);
         void removeChar();
-        void update(const LayoutBox& layoutBox);
+        void update(const TextLayout& layoutBox);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
 //        const Bounds& bounds() const;
-        const LayoutBox& layout() const;
-        const DrawableSize& measure() const;
+        const TextLayout& layout() const;
+        const DrawableSize& measure();
         
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
@@ -86,7 +86,7 @@ namespace TextRender {
         float y;
         Bounds elementBounds;
         DrawableSize intrinsicSize;
-        const LayoutBox* textLayout;
+        const TextLayout* textLayout;
         
         GlyphCache& glyphCache;
         std::unordered_map<char,Glyph> glyphMap;

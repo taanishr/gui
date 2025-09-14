@@ -78,12 +78,12 @@ void Renderer::draw() {
     ++numSamples;
     totalMicros += micros;  // running sum in µs
 
-//    if (numSamples % 100 == 0) {
-//        double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
-//        std::cout << "Average time over " << numSamples << " samples: "
-//                  << avgMs << " ms\n";
-//    }
-//    
+    if (numSamples % 100 == 0) {
+        double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
+        std::cout << "Average time over " << numSamples << " samples: "
+                  << avgMs << " ms\n";
+    }
+    
     renderCommandEncoder->endEncoding();
     
     

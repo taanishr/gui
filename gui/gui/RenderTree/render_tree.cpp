@@ -7,7 +7,6 @@
 
 #include "render_tree.hpp"
 
-
 RenderTree* RenderTree::current = nullptr;
 
 bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, const std::unique_ptr<RenderNodeBase>& b) const
@@ -16,6 +15,13 @@ bool RenderNodeComparator::operator()(const std::unique_ptr<RenderNodeBase>& a, 
         return a->globalZIndex < b->globalZIndex;
 
     return a->insertionId < b->insertionId;
+}
+
+inline float resolveDimension(float explicitDim, float intrinsicDim) {
+    if (explicitDim > 0)
+        return explicitDim;
+
+    return intrinsicDim;
 }
 
 
@@ -37,7 +43,12 @@ void RenderTree::flatten(RenderNodeBase* node, int parentZ) {
         flatten(child.get(), node->globalZIndex);
 }
 
+void RenderTree::layout() {
+    root->layout();
+}
+
 void RenderTree::update() {
+    root->layout();
     root->update();
     
     drawList.clear();

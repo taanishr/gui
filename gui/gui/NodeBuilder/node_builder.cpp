@@ -15,11 +15,11 @@ NodeBuilder<Shell, ShellLayout> div(float cornerRadius, simd_float4 color) {
     return NodeBuilder<Shell, ShellLayout>(tree, parent, std::make_unique<Shell>(renderer, color, cornerRadius));
 }
 
-NodeBuilder<Text> text(const std::string& text, float fontSize, float x, float y) {
+NodeBuilder<Text, TextLayout> text(const std::string& text, float fontSize, float x, float y) {
     auto& renderer = Renderer::active();
     auto& tree = renderer.renderTree;
     auto parent = tree.root.get();
-    auto nb = NodeBuilder(tree, parent, std::make_unique<Text>(renderer, x, y, fontSize, simd_float4{1,1,1,1}));
+    auto nb = NodeBuilder<Text, TextLayout>(tree, parent, std::make_unique<Text>(renderer, x, y, fontSize, simd_float4{1,1,1,1}));
     nb.node->drawable->setText(text);
     return nb;
 }

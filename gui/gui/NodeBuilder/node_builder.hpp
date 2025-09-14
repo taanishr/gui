@@ -46,8 +46,13 @@ concept HasFontSize = requires(T t) {
     { t.fontSize } -> std::convertible_to<float>;
 };
 
+template <typename T>
+concept HasDisplay = requires(T t) {
+    { t.display } -> std::convertible_to<Display>;
+};
 
-template <typename DrawableType, typename LayoutType = LayoutBox>
+
+template <typename DrawableType, typename LayoutType = DefaultLayout>
     requires Drawable<DrawableType, LayoutType>
 struct NodeBuilder {
     RenderTree& renderTree;
@@ -113,6 +118,16 @@ struct NodeBuilder {
         return *this;
     }
     
+    NodeBuilder<DrawableType, LayoutType>& flex() requires HasDisplay<LayoutType> {
+        node->layoutBox.display = Flex{};
+        return *this;
+    }
+    
+    NodeBuilder<DrawableType, LayoutType>& block() requires HasDisplay<LayoutType> {
+        node->layoutBox.display = Block{};
+        return *this;
+    }
+    
     
     template <EventType E, typename F>
     NodeBuilder<DrawableType, LayoutType>& on(F&& f) {
@@ -131,8 +146,8 @@ struct NodeBuilder {
 
 NodeBuilder<Shell, ShellLayout> div(float cornerRadius = 0, simd_float4 color = {0,0,0,1});
 
-NodeBuilder<Text> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
+NodeBuilder<Text, TextLayout> text(const std::string& text, float fontSize = 24.0, float x = 0, float y = 0);
 
 NodeBuilder<ImageDrawable, ImageLayout> image(const std::string& path);
 
-using Element = std::variant<NodeBuilder<Shell, ShellLayout>,NodeBuilder<Text>,NodeBuilder<ImageDrawable, ImageLayout>>;
+using Element = std::variant<NodeBuilder<Shell, ShellLayout>,NodeBuilder<Text, TextLayout>,NodeBuilder<ImageDrawable, ImageLayout>>;

@@ -13,7 +13,7 @@
 #include <print>
 #include "frame_info.hpp"
 #include "color.hpp"
-#include "layout_box.hpp"
+#include "layout.hpp"
 #include "bounds.hpp"
 
 class Renderer;
@@ -61,6 +61,7 @@ namespace ShellRender {
         
         // layout
         const ShellLayout* shellLayout;
+        DrawableSize intrinsicSize;
     };
 
 }
