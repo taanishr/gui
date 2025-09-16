@@ -78,8 +78,6 @@ struct ShellLayout {
     float x, y;
     float computedX, computedY;
     
-    void update();
-    
     void setX(float x);
     void setY(float y);
     void setWidth(float w);
@@ -101,8 +99,6 @@ struct ImageLayout {
     float computedWidth, computedHeight;
     float x, y;
     float computedX, computedY;
-    
-    void update();
     
     void setX(float x);
     void setY(float y);

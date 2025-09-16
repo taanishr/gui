@@ -48,7 +48,6 @@ public:
     
     RenderNodeBase* parent;
     std::vector<std::unique_ptr<RenderNodeBase>> children;
-//    int zIndex;
     int localZIndex;
     int globalZIndex;
     uint64_t insertionId;
@@ -71,19 +70,21 @@ public:
     
     void layout(const LayoutContext& parentCtx) {
         auto intrinsicSize = drawable->measure();
+
         
         this->layoutBox.computedWidth = resolveDimension(this->layoutBox.width, intrinsicSize.width);
         this->layoutBox.computedHeight = resolveDimension(this->layoutBox.height, intrinsicSize.height);
         this->layoutBox.computedX = parentCtx.x + this->layoutBox.x;
-        this->layoutBox.computedY = parentCtx.y + this->layoutBox.y;
+        this->layoutBox.computedY = parentCtx.y - this->layoutBox.y - this->layoutBox.height;
         this->layoutBox.sync();
+
         
         LayoutContext ctx {};
         ctx.x = this->layoutBox.computedX;
         ctx.y = this->layoutBox.computedY;
         ctx.width = this->layoutBox.computedWidth;
         ctx.height = this->layoutBox.computedHeight;
-        
+
         for (const auto& child : children)
             child->layout(ctx);
     }

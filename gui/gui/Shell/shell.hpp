@@ -40,7 +40,6 @@ namespace ShellRender {
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         MTL::RenderPipelineState* getPipeline();
         void encode(MTL::RenderCommandEncoder* encoder);
-//        const Bounds& bounds() const;
         const ShellLayout& layout() const;
         const DrawableSize& measure() const;
         

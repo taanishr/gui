@@ -55,17 +55,6 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
-    
-//    auto ts1 = clock.now();
-//    
-//    renderTree.update();
-//    renderTree.render(renderCommandEncoder);
-//    
-//    auto ts2 = clock.now();
-//    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
-//    
-
-////    std::println("Update+Render: {} us", micros);
 
     auto ts1 = clock.now();
 
@@ -80,10 +69,10 @@ void Renderer::draw() {
     ++numSamples;
     totalMicros += micros;  // running sum in µs
 
-    if (numSamples % 100 == 0) {
-        double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
-        std::println("Average time over {} samples: {} ms", numSamples, avgMs);
-    }
+//    if (numSamples % 100 == 0) {
+//        double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
+//        std::println("Average time over {} samples: {} ms", numSamples, avgMs);
+//    }
     
     renderCommandEncoder->endEncoding();
     

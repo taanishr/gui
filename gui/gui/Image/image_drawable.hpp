@@ -44,7 +44,6 @@ namespace ImageRender {
         void update(const ImageLayout& layout);
         void encode(MTL::RenderCommandEncoder* encoder);
         
-//        const Bounds& bounds() const;
         const ImageLayout& layout() const;
         const DrawableSize& measure() const;
         

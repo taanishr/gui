@@ -129,12 +129,12 @@ void ImageDrawable::update(const ImageLayout& layout) {
     this->imageLayout = &layout;
     
     std::array<QuadPoint, 6> quadPoints {{
-        {.position={layout.x,layout.y}, .uv={0,0}},
-        {.position={layout.x+layout.computedWidth,layout.y}, .uv={1,0}},
-        {.position={layout.x,layout.y+layout.computedHeight}, .uv{0,1}},
-        {.position={layout.x,layout.y+layout.computedHeight}, .uv{0,1}},
-        {.position={layout.x+layout.computedWidth,layout.y}, .uv={1,0}},
-        {.position={layout.x+layout.computedWidth,layout.y+layout.computedHeight}, .uv={1,1}},
+        {.position={layout.computedX,layout.computedY}, .uv={0,0}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY}, .uv={1,0}},
+        {.position={layout.computedX,layout.computedY+layout.computedHeight}, .uv{0,1}},
+        {.position={layout.computedX,layout.computedY+layout.computedHeight}, .uv{0,1}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY}, .uv={1,0}},
+        {.position={layout.computedX+layout.computedWidth,layout.computedY+layout.computedHeight}, .uv={1,1}},
     }};
     
     Uniforms uniforms { .rectCenter = layout.center,
@@ -165,11 +165,6 @@ void ImageDrawable::encode(MTL::RenderCommandEncoder* encoder)
     
     encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::Integer(0), 6);
 }
-
-//const Bounds& ImageDrawable::bounds() const
-//{
-//    return imageLayout->elementBounds;
-//}
 
 const ImageLayout& ImageDrawable::layout() const {
     return *(this->imageLayout);

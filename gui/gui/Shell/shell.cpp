@@ -28,7 +28,16 @@ void Shell::update(const ShellLayout& layout) {
     this->shellLayout = &layout;
     
     
-    std::println("computedX: {} computedY: {}", layout.computedX, layout.computedY);
+//    std::println("computedX: {} computedY: {}", layout.x, layout.y);
+    
+//    std::array<QuadPoint, 6> quadPoints {{
+//        {.position={layout.x,layout.y}},
+//        {.position={layout.x+layout.computedWidth,layout.y}},
+//        {.position={layout.x,layout.y+layout.computedHeight}},
+//        {.position={layout.x,layout.y+layout.computedHeight}},
+//        {.position={layout.x+layout.computedWidth,layout.y}},
+//        {.position={layout.x+layout.computedWidth,layout.y+layout.computedHeight}},
+//    }};
     
     std::array<QuadPoint, 6> quadPoints {{
         {.position={layout.computedX,layout.computedY}},
@@ -45,6 +54,8 @@ void Shell::update(const ShellLayout& layout) {
                         .cornerRadius = cornerRadius,
                         .borderColor = borderColor,
                         .borderWidth = borderWidth};
+
+    
     
     std::memcpy(this->frameInfoBuffer->contents(), &frameInfo, sizeof(FrameInfo));
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
@@ -122,12 +133,6 @@ void Shell::encode(MTL::RenderCommandEncoder* encoder) {
     
     encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
 }
-
-
-//const Bounds& Shell::bounds() const
-//{
-//    return this->layout->elementBounds;
-//}
 
 const ShellLayout& Shell::layout() const
 {

@@ -66,7 +66,7 @@ struct NodeBuilder {
 
     template <typename... Children>
     NodeBuilder<DrawableType, LayoutType>& operator()(Children&&... children) {
-        (..., renderTree.reparent(this->node, children.node));
+        (..., renderTree.reparent(children.node, this->node));
         return *this;
     }
     

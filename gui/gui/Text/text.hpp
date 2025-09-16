@@ -44,7 +44,6 @@ namespace TextRender {
         void update(const TextLayout& layoutBox);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
-//        const Bounds& bounds() const;
         const TextLayout& layout() const;
         const DrawableSize& measure();
         
