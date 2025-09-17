@@ -42,6 +42,7 @@ void RenderTree::layout(const FrameInfo& frameInfo) {
     rootCtx.y = frameInfo.height;
     rootCtx.width = frameInfo.width;
     rootCtx.height = frameInfo.height;
+    
     root->layout(rootCtx);
 }
 

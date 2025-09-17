@@ -25,6 +25,7 @@
 #include "sdf_helpers.hpp"
 #include "ui.hpp"
 #include "layout.hpp"
+#include "overloaded.hpp"
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
@@ -39,7 +40,7 @@ struct RenderNodeComparator {
 
 class RenderNodeBase {
 public:
-    virtual void layout(const LayoutContext& parentCtx) = 0;
+    virtual simd_float2 layout(const LayoutContext& parentCtx) = 0;
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
@@ -55,38 +56,76 @@ public:
     std::unordered_map<EventType, std::vector<EventHandler>> handlers;
 };
 
-inline float resolveDimension(float explicitDim, float intrinsicDim) {
-    if (explicitDim > 0)
-        return explicitDim;
-
-    return intrinsicDim;
-}
-
 template <typename DrawableType, typename LayoutType = DefaultLayout>
     requires Drawable<DrawableType, LayoutType>
 class RenderNode : public RenderNodeBase {
 public:
     RenderNode() {}
     
-    void layout(const LayoutContext& parentCtx) {
+    simd_float2 layout(const LayoutContext& parentCtx) {
         auto intrinsicSize = drawable->measure();
+        this->layoutBox.intrinsicWidth, this->layoutBox.intrinsicHeight = intrinsicSize.width, intrinsicSize.height;
+        
+        
+        auto finalCursor = std::visit(Overloaded{
+            [&](const Block& block){
+                LayoutContext ctx {};
+                
+                ctx.x = parentCtx.x;
+                ctx.y = parentCtx.y;
+                
+                this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
+                ctx.width = this->layoutBox.computedWidth;
+                
+
+//                std::println("current drawable ptr: {}, parentCtx.y: {}", reinterpret_cast<void*>(this->drawable.get()), parentCtx.y);
+                
+                float childrenHeight = 0;
+                
+                for (const auto& child : children) {
+                    auto cursor = child->layout(ctx);
+                    ctx.y -= cursor.y;
+                }
+                
+                std::println("current drawable ptr: {}, ctx.y {}", reinterpret_cast<void*>(this->drawable.get()), ctx.y);
+                
+                
+                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : parentCtx.y - ctx.y;
+                
+                ctx.height = this->layoutBox.computedHeight;
+                
+                this->layoutBox.computedX = parentCtx.x;
+                this->layoutBox.computedY = ctx.y - this->layoutBox.computedHeight;
+            
+
+                this->layoutBox.sync();
+                
+                return simd_float2{this->layoutBox.computedX, this->layoutBox.computedY};
+            },
+        }, this->layoutBox.display);
 
         
-        this->layoutBox.computedWidth = resolveDimension(this->layoutBox.width, intrinsicSize.width);
-        this->layoutBox.computedHeight = resolveDimension(this->layoutBox.height, intrinsicSize.height);
-        this->layoutBox.computedX = parentCtx.x + this->layoutBox.x;
-        this->layoutBox.computedY = parentCtx.y - this->layoutBox.y - this->layoutBox.height;
-        this->layoutBox.sync();
+        return finalCursor;
 
         
-        LayoutContext ctx {};
-        ctx.x = this->layoutBox.computedX;
-        ctx.y = this->layoutBox.computedY;
-        ctx.width = this->layoutBox.computedWidth;
-        ctx.height = this->layoutBox.computedHeight;
-
-        for (const auto& child : children)
-            child->layout(ctx);
+        //                this->layoutBox.computedWidth = resolveDimension(this->layoutBox.width, intrinsicSize.width);
+        //                this->layoutBox.computedHeight = resolveDimension(this->layoutBox.height, intrinsicSize.height)
+        
+//        this->layoutBox.computedX = parentCtx.x + this->layoutBox.x;
+//        this->layoutBox.computedY = parentCtx.y - this->layoutBox.y - this->layoutBox.height;
+//        this->layoutBox.sync();
+//
+//        
+//        LayoutContext ctx {};
+//        ctx.x = this->layoutBox.computedX;
+//        ctx.y = this->layoutBox.computedY;
+//        ctx.width = this->layoutBox.computedWidth;
+//        ctx.height = this->layoutBox.computedHeight;
+//
+//        
+//        // need to fix this and modify positioning/layout to work based on the display mode foremost, not relative/absolute defaults
+//        for (const auto& child : children)
+//            child->layout(ctx);
     }
     
 

@@ -11,31 +11,6 @@
 #include "bounds.hpp"
 #include <variant>
 
-template <typename T>
-concept Layout = requires(T t, float x, float y, float w, float h) {
-    { t.width } -> std::convertible_to<float>;
-    { t.height } -> std::convertible_to<float>;
-    { t.computedWidth } -> std::convertible_to<float>;
-    { t.computedHeight } -> std::convertible_to<float>;
-    { t.x }-> std::convertible_to<float>;
-    { t.y } -> std::convertible_to<float>;
-    { t.computedX } -> std::convertible_to<float>;
-    { t.computedY } -> std::convertible_to<float>;
-    
-    { t.setX(x) } -> std::same_as<void>;
-    { t.setY(y) } -> std::same_as<void>;
-    { t.setWidth(w) } -> std::same_as<void>;
-    { t.setHeight(h) } -> std::same_as<void>;
-    { t.sync() } -> std::same_as<void>;
-};
-
-struct LayoutContext {
-    float x;
-    float y;
-    float height;
-    float width;
-};
-
 enum class FlexDirection {
     Row,
     Column
@@ -57,13 +32,43 @@ struct Flex {
 
 struct Block {};
 
-using Display = std::variant<Flex, Block>;
+using Display = std::variant<Block>;
+
+template <typename T>
+concept Layout = requires(T t, float x, float y, float w, float h) {
+    { t.width } -> std::convertible_to<float>;
+    { t.height } -> std::convertible_to<float>;
+    { t.intrinsicWidth } -> std::convertible_to<float>;
+    { t.intrinsicHeight } -> std::convertible_to<float>;
+    { t.computedWidth } -> std::convertible_to<float>;
+    { t.computedHeight } -> std::convertible_to<float>;
+    { t.x }-> std::convertible_to<float>;
+    { t.y } -> std::convertible_to<float>;
+    { t.computedX } -> std::convertible_to<float>;
+    { t.computedY } -> std::convertible_to<float>;
+    { t.display } -> std::convertible_to<Display>;
+    
+    { t.setX(x) } -> std::same_as<void>;
+    { t.setY(y) } -> std::same_as<void>;
+    { t.setWidth(w) } -> std::same_as<void>;
+    { t.setHeight(h) } -> std::same_as<void>;
+    { t.sync() } -> std::same_as<void>;
+};
+
+struct LayoutContext {
+    float x;
+    float y;
+    float height;
+    float width;
+};
 
 struct DefaultLayout {
     float width, height;
+    float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
     float computedX, computedY;
+    Display display;
     
     void setX(float x);
     void setY(float y);
@@ -74,15 +79,16 @@ struct DefaultLayout {
 
 struct ShellLayout {
     float width, height;
+    float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
     float computedX, computedY;
+    Display display;
     
     void setX(float x);
     void setY(float y);
     void setWidth(float w);
     void setHeight(float h);
-    void setFlex();
     void setBlock();
     void sync();
     
@@ -90,15 +96,15 @@ struct ShellLayout {
     simd_float2 halfExtent;
     simd_float2 center;
     
-    Display display;
-    
 };
 
 struct ImageLayout {
     float width, height;
+    float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
     float computedX, computedY;
+    Display display;
     
     void setX(float x);
     void setY(float y);
@@ -113,9 +119,11 @@ struct ImageLayout {
 
 struct TextLayout {
     float width, height;
+    float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
     float computedX, computedY;
+    Display display;
     
     void update();
     

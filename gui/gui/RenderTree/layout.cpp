@@ -60,9 +60,9 @@ void ShellLayout::setBlock() {
     this->display = Block{};
 }
 
-void ShellLayout::setFlex() {
-    this->display = Flex{};
-}
+//void ShellLayout::setFlex() {
+//    this->display = Flex{};
+//}
 
 void ShellLayout::sync()
 {

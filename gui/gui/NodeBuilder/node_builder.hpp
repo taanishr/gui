@@ -118,11 +118,11 @@ struct NodeBuilder {
         return *this;
     }
     
-    NodeBuilder<DrawableType, LayoutType>& flex() requires HasDisplay<LayoutType> {
-        node->layoutBox.display = Flex{};
-        return *this;
-    }
-    
+//    NodeBuilder<DrawableType, LayoutType>& flex() requires HasDisplay<LayoutType> {
+//        node->layoutBox.display = Flex{};
+//        return *this;
+//    }
+//    
     NodeBuilder<DrawableType, LayoutType>& block() requires HasDisplay<LayoutType> {
         node->layoutBox.display = Block{};
         return *this;

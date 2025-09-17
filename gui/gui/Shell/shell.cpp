@@ -23,6 +23,8 @@ Shell::Shell(Renderer& renderer, simd_float4 color, float cornerRadius):
 }
 
 void Shell::update(const ShellLayout& layout) {
+    static int debugCtr = 0;
+    
     auto frameInfo = renderer.getFrameInfo();
     
     this->shellLayout = &layout;
@@ -61,6 +63,8 @@ void Shell::update(const ShellLayout& layout) {
     std::memcpy(this->uniformsBuffer->contents(), &uniforms, sizeof(Uniforms));
                 
     std::memcpy(this->quadPointsBuffer->contents(), quadPoints.data(), 6*sizeof(QuadPoint));
+    
+    debugCtr += 1;
 }
 
 void Shell::buildPipeline(MTL::RenderPipelineState*& pipeline) {
