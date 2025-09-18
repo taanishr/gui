@@ -78,29 +78,31 @@ public:
                     ctx.y = childCursor.y;
                 }
                 
-                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : parentCtx.y - ctx.y;
+                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.y - parentCtx.y;
                 
                 this->layoutBox.computedX = parentCtx.x;
-                this->layoutBox.computedY = parentCtx.y - this->layoutBox.computedHeight;
+                this->layoutBox.computedY = parentCtx.y;
+            
+                ctx.y += this->layoutBox.computedHeight;
                 
-                return simd_float2{this->layoutBox.computedX, this->layoutBox.computedY};
+                return simd_float2{ctx.x, ctx.y};
             },
         }, this->layoutBox.display);
-        
-//        static int debugCtr = 0;
+    
         
         switch (this->layoutBox.position) {
             case Position::Static:
                 break;
             case Position::Relative:
                 this->layoutBox.computedX += this->layoutBox.x;
-                this->layoutBox.computedY -= this->layoutBox.y;
+                this->layoutBox.computedY += this->layoutBox.y;
                 break;
-            // case Position::Fixed:
-            // (absolute is fixed in world space, fixed is fixed in display space; I dont think my absolute will be fixed in world space)
+            case Position::Fixed:
+                this->layoutBox.computedX = this->layoutBox.x;
+                this->layoutBox.computedY = this->layoutBox.y;
+                cursor = {parentCtx.x, parentCtx.y};
+                break;
             case Position::Absolute:
-    
-                // add positioning part of absolute
                 auto ancestor = static_cast<RenderNode*>(parent);
                 while (ancestor->parent and ancestor->layoutBox.position == Position::Static) {
                     ancestor = static_cast<RenderNode*>(ancestor->parent);
@@ -108,23 +110,8 @@ public:
                 
                 this->layoutBox.computedX = ancestor->layoutBox.computedX + this->layoutBox.x;
                 this->layoutBox.computedY = this->layoutBox.y;
-                
-//                if (debugCtr < 1) {
-//                    std::println("ancestor h: {}", ancestor->layoutBox.height);
-//                    std::println("ancestor x: {} ancestor y: {}", ancestor->layoutBox.x, ancestor->layoutBox.y);
-//                    std::println("ancestor cx: {} ancestor cy: {}", ancestor->layoutBox.computedX, ancestor->layoutBox.computedY);
-//                    std::println("cx: {} cy: {}", this->layoutBox.computedX, this->layoutBox.computedY);
-//                    std::println("ancestor ptr: {}", reinterpret_cast<void*>(ancestor));
-//                    std::println("absolute elem ptr: {}", reinterpret_cast<void*>(this));
-//                }
-//                
-//                debugCtr += 1;
-            
-//                std::println("border radius: {} compX: {} compY: {}", this->drawable->borderRadius, this->layoutBox.computedX, this->layoutBox.computedY);
-                
-                this->layoutBox.sync();
-                
-                return {parentCtx.x, parentCtx.y};
+                    
+                cursor = {parentCtx.x, parentCtx.y};
         }
         
         this->layoutBox.sync();

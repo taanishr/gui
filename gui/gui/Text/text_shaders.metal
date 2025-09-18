@@ -49,13 +49,10 @@ vertex TextVertexOut vertex_text(
 
 int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY) {
     float eps = 1e-6;
-    // bezier quadratic: (P_0-2P_1+P_2)t^2+(P_1-P_2)t+P_0
     
     float minY = min(min(p0.y, p1.y), p2.y);
     float maxY = max(max(p0.y, p1.y), p2.y);
     if (fragY < minY || fragY >= maxY) return 0;
-    
-    // (-b +- sqrt(b^2-4ac))/2a
     
     float a = p0.y-2.0f*p1.y+p2.y;
     float b = 2.0f*(p1.y-p0.y);

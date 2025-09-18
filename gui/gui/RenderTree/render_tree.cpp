@@ -40,12 +40,12 @@ void RenderTree::layout(const FrameInfo& frameInfo) {
     LayoutContext rootCtx {};
     
     rootCtx.x = 0;
-    rootCtx.y = frameInfo.height;
+    rootCtx.y = 0;
     rootCtx.width = frameInfo.width;
     rootCtx.height = frameInfo.height;
-
-    root->layoutBox.width = frameInfo.width;
-    root->layoutBox.height = frameInfo.height;
+//
+//    root->layoutBox.width = frameInfo.width;
+//    root->layoutBox.height = frameInfo.height;
     
     root->layout(rootCtx);
 }

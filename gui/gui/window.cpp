@@ -17,6 +17,7 @@ HandlerState hs {};
 using KeyDownFunc = NS::String*(*)(id, SEL);
 using MouseDownFunc = CGPoint(*)(id, SEL);
 
+
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
@@ -79,7 +80,20 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     device = MTL::CreateSystemDefaultDevice();
 
     view = MTK::View::alloc()->init(frame, device);
+    
 
+    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
+        view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
+    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
+    
+    view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);
+//    view->setClearColor(MTL::ClearColor::Make(0,0,0,1));
+    view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
+    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
+    
+    viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
+    view->setDelegate(viewDelegate.get());
+    
     // adding input!!!
     id objcInstance = reinterpret_cast<id>(view);
     Class cls = object_getClass(objcInstance);
@@ -98,7 +112,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         e.type = EventType::Click;
         e.payload = MousePayload{
             .x = x,
-            .y = y
+            .y = viewDelegate->renderer->getFrameInfo().height - y
         };
         this->viewDelegate->renderer->renderTree.dispatch(e);
     };
@@ -107,19 +121,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
-    
-
-    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.28,0.78,0.3));
-        view->setClearColor(MTL::ClearColor::Make(0,0,0,0.3));
-    //    view->setClearColor(MTL::ClearColor::Make(0.33,0.33,0.33,0.33));
-    
-    view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);
-//    view->setClearColor(MTL::ClearColor::Make(0,0,0,1));
-    view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
-    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
-    
-    viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
-    view->setDelegate(viewDelegate.get());
     
     index();
 

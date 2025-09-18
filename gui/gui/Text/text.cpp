@@ -130,11 +130,11 @@ void Text::update(const TextLayout& layoutBox) {
     
     Uniforms uniforms {.color=this->color};
     auto frameInfo = renderer.getFrameInfo();
-    simd_float2 drawOffset {layoutBox.computedX*FT_PIXEL_CF, (layoutBox.computedY-fontSize)*FT_PIXEL_CF};
+    simd_float2 drawOffset {layoutBox.computedX*FT_PIXEL_CF, (layoutBox.computedY+fontSize)*FT_PIXEL_CF};
     
     for (auto ch : text) {
         if (ch == '\r') {
-            drawOffset.y -= this->fontSize*FT_PIXEL_CF;
+            drawOffset.y += this->fontSize*FT_PIXEL_CF;
             drawOffset.x = layoutBox.computedX*FT_PIXEL_CF;
             continue;
         }

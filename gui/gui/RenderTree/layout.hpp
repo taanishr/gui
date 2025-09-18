@@ -37,6 +37,7 @@ using Display = std::variant<Block>;
 enum class Position {
     Static,
     Relative,
+    Fixed,
     Absolute
 };
 

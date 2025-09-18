@@ -117,6 +117,11 @@ struct NodeBuilder {
         return *this;
     }
     
+    NodeBuilder<DrawableType, LayoutType>& fixedPos() {
+        node->layoutBox.position = Position::Fixed;
+        return *this;
+    }
+    
     NodeBuilder<DrawableType, LayoutType>& absolutePos() {
         node->layoutBox.position = Position::Absolute;
         return *this;

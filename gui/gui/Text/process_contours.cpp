@@ -23,7 +23,7 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
     Segment currentSegmentType = Segment::Line;
     
     for (int p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)rawPoints[p].x, (float)rawPoints[p].y};
+        simd_float2 currentPoint {(float)rawPoints[p].x, -(float)rawPoints[p].y};
         
         // quad handling
         if (currentPoint.x < quad.topLeft.x)
