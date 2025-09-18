@@ -63,11 +63,7 @@ public:
     RenderNode() {}
     
     simd_float2 layout(const LayoutContext& parentCtx) {
-        auto intrinsicSize = drawable->measure();
-        this->layoutBox.intrinsicWidth, this->layoutBox.intrinsicHeight = intrinsicSize.width, intrinsicSize.height;
-        
-        
-        auto finalCursor = std::visit(Overloaded{
+        auto cursor = std::visit(Overloaded{
             [&](const Block& block){
                 LayoutContext ctx {};
                 
@@ -77,55 +73,63 @@ public:
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
                 ctx.width = this->layoutBox.computedWidth;
                 
-
-//                std::println("current drawable ptr: {}, parentCtx.y: {}", reinterpret_cast<void*>(this->drawable.get()), parentCtx.y);
-                
-                float childrenHeight = 0;
-                
-                for (const auto& child : children) {
-                    auto cursor = child->layout(ctx);
-                    ctx.y -= cursor.y;
+                for (const auto& child: children) {
+                    auto childCursor = child->layout(ctx);
+                    ctx.y = childCursor.y;
                 }
-                
-                std::println("current drawable ptr: {}, ctx.y {}", reinterpret_cast<void*>(this->drawable.get()), ctx.y);
-                
                 
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : parentCtx.y - ctx.y;
                 
-                ctx.height = this->layoutBox.computedHeight;
-                
                 this->layoutBox.computedX = parentCtx.x;
-                this->layoutBox.computedY = ctx.y - this->layoutBox.computedHeight;
-            
-
-                this->layoutBox.sync();
+                this->layoutBox.computedY = parentCtx.y - this->layoutBox.computedHeight;
                 
                 return simd_float2{this->layoutBox.computedX, this->layoutBox.computedY};
             },
         }, this->layoutBox.display);
-
         
-        return finalCursor;
-
+//        static int debugCtr = 0;
         
-        //                this->layoutBox.computedWidth = resolveDimension(this->layoutBox.width, intrinsicSize.width);
-        //                this->layoutBox.computedHeight = resolveDimension(this->layoutBox.height, intrinsicSize.height)
+        switch (this->layoutBox.position) {
+            case Position::Static:
+                break;
+            case Position::Relative:
+                this->layoutBox.computedX += this->layoutBox.x;
+                this->layoutBox.computedY -= this->layoutBox.y;
+                break;
+            // case Position::Fixed:
+            // (absolute is fixed in world space, fixed is fixed in display space; I dont think my absolute will be fixed in world space)
+            case Position::Absolute:
+    
+                // add positioning part of absolute
+                auto ancestor = static_cast<RenderNode*>(parent);
+                while (ancestor->parent and ancestor->layoutBox.position == Position::Static) {
+                    ancestor = static_cast<RenderNode*>(ancestor->parent);
+                }
+                
+                this->layoutBox.computedX = ancestor->layoutBox.computedX + this->layoutBox.x;
+                this->layoutBox.computedY = this->layoutBox.y;
+                
+//                if (debugCtr < 1) {
+//                    std::println("ancestor h: {}", ancestor->layoutBox.height);
+//                    std::println("ancestor x: {} ancestor y: {}", ancestor->layoutBox.x, ancestor->layoutBox.y);
+//                    std::println("ancestor cx: {} ancestor cy: {}", ancestor->layoutBox.computedX, ancestor->layoutBox.computedY);
+//                    std::println("cx: {} cy: {}", this->layoutBox.computedX, this->layoutBox.computedY);
+//                    std::println("ancestor ptr: {}", reinterpret_cast<void*>(ancestor));
+//                    std::println("absolute elem ptr: {}", reinterpret_cast<void*>(this));
+//                }
+//                
+//                debugCtr += 1;
+            
+//                std::println("border radius: {} compX: {} compY: {}", this->drawable->borderRadius, this->layoutBox.computedX, this->layoutBox.computedY);
+                
+                this->layoutBox.sync();
+                
+                return {parentCtx.x, parentCtx.y};
+        }
         
-//        this->layoutBox.computedX = parentCtx.x + this->layoutBox.x;
-//        this->layoutBox.computedY = parentCtx.y - this->layoutBox.y - this->layoutBox.height;
-//        this->layoutBox.sync();
-//
-//        
-//        LayoutContext ctx {};
-//        ctx.x = this->layoutBox.computedX;
-//        ctx.y = this->layoutBox.computedY;
-//        ctx.width = this->layoutBox.computedWidth;
-//        ctx.height = this->layoutBox.computedHeight;
-//
-//        
-//        // need to fix this and modify positioning/layout to work based on the display mode foremost, not relative/absolute defaults
-//        for (const auto& child : children)
-//            child->layout(ctx);
+        this->layoutBox.sync();
+        
+        return cursor;
     }
     
 

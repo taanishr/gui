@@ -34,6 +34,12 @@ struct Block {};
 
 using Display = std::variant<Block>;
 
+enum class Position {
+    Static,
+    Relative,
+    Absolute
+};
+
 template <typename T>
 concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.width } -> std::convertible_to<float>;
@@ -47,6 +53,7 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.computedX } -> std::convertible_to<float>;
     { t.computedY } -> std::convertible_to<float>;
     { t.display } -> std::convertible_to<Display>;
+    { t.position } -> std::convertible_to<Position>;
     
     { t.setX(x) } -> std::same_as<void>;
     { t.setY(y) } -> std::same_as<void>;
@@ -69,6 +76,7 @@ struct DefaultLayout {
     float x, y;
     float computedX, computedY;
     Display display;
+    Position position;
     
     void setX(float x);
     void setY(float y);
@@ -84,6 +92,7 @@ struct ShellLayout {
     float x, y;
     float computedX, computedY;
     Display display;
+    Position position;
     
     void setX(float x);
     void setY(float y);
@@ -105,6 +114,7 @@ struct ImageLayout {
     float x, y;
     float computedX, computedY;
     Display display;
+    Position position;
     
     void setX(float x);
     void setY(float y);
@@ -124,6 +134,7 @@ struct TextLayout {
     float x, y;
     float computedX, computedY;
     Display display;
+    Position position;
     
     void update();
     

@@ -29,9 +29,6 @@ namespace RootRender {
         const DefaultLayout& layout() const;
         
 //        static Bounds elementBounds;
-        
-        float x;
-        float y;
         const DefaultLayout* rootLayout;
     };
 }

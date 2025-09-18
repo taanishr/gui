@@ -23,6 +23,7 @@ RenderTree::RenderTree():
     
     root->globalZIndex = 0;
     root->localZIndex = 0;
+
     
 }
 
@@ -42,6 +43,9 @@ void RenderTree::layout(const FrameInfo& frameInfo) {
     rootCtx.y = frameInfo.height;
     rootCtx.width = frameInfo.width;
     rootCtx.height = frameInfo.height;
+
+    root->layoutBox.width = frameInfo.width;
+    root->layoutBox.height = frameInfo.height;
     
     root->layout(rootCtx);
 }

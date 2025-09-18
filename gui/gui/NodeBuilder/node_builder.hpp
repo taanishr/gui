@@ -27,16 +27,6 @@ concept HasBorderWidth = requires(T t) {
 };
 
 template <typename T>
-concept HasWidth = requires(T t) {
-    { t.width } -> std::convertible_to<float>;
-};
-
-template <typename T>
-concept HasHeight = requires(T t) {
-    { t.height } -> std::convertible_to<float>;
-};
-
-template <typename T>
 concept HasCornerRadius = requires(T t) {
     { t.cornerRadius } -> std::convertible_to<float>;
 };
@@ -45,12 +35,6 @@ template <typename T>
 concept HasFontSize = requires(T t) {
     { t.fontSize } -> std::convertible_to<float>;
 };
-
-template <typename T>
-concept HasDisplay = requires(T t) {
-    { t.display } -> std::convertible_to<Display>;
-};
-
 
 template <typename DrawableType, typename LayoutType = DefaultLayout>
     requires Drawable<DrawableType, LayoutType>
@@ -80,12 +64,12 @@ struct NodeBuilder {
         return *this;
     }
     
-    NodeBuilder<DrawableType, LayoutType>& w(float width) requires HasWidth<LayoutType> {
+    NodeBuilder<DrawableType, LayoutType>& w(float width) {
         node->layoutBox.setWidth(width);
         return *this;
     }
     
-    NodeBuilder<DrawableType, LayoutType>& h(float height) requires HasHeight<LayoutType> {
+    NodeBuilder<DrawableType, LayoutType>& h(float height) {
         node->layoutBox.setHeight(height);
         return *this;
     }
@@ -118,15 +102,26 @@ struct NodeBuilder {
         return *this;
     }
     
-//    NodeBuilder<DrawableType, LayoutType>& flex() requires HasDisplay<LayoutType> {
-//        node->layoutBox.display = Flex{};
-//        return *this;
-//    }
-//    
-    NodeBuilder<DrawableType, LayoutType>& block() requires HasDisplay<LayoutType> {
+    NodeBuilder<DrawableType, LayoutType>& block() {
         node->layoutBox.display = Block{};
         return *this;
     }
+    
+    NodeBuilder<DrawableType, LayoutType>& staticPos() {
+        node->layoutBox.position = Position::Static;
+        return *this;
+    }
+    
+    NodeBuilder<DrawableType, LayoutType>& relativePos() {
+        node->layoutBox.position = Position::Relative;
+        return *this;
+    }
+    
+    NodeBuilder<DrawableType, LayoutType>& absolutePos() {
+        node->layoutBox.position = Position::Absolute;
+        return *this;
+    }
+    
     
     
     template <EventType E, typename F>
