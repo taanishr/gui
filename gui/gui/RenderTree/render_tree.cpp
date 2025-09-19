@@ -5,6 +5,7 @@
 //  Created by Taanish Reja on 8/21/25.
 //
 
+#include <vector>
 #include "render_tree.hpp"
 
 RenderTree* RenderTree::current = nullptr;

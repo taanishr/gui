@@ -8,10 +8,10 @@
 #include "layout.hpp"
 #include "renderer.hpp"
 
-Flex::Flex():
-    direction{FlexDirection::Row},
-    growth{FlexGrowth::None}
-{}
+//Flex::Flex():
+//    direction{FlexDirection::Row},
+//    growth{FlexGrowth::None}
+//{}
 
 void DefaultLayout::setX(float x)
 {
@@ -101,6 +101,10 @@ void ImageLayout::sync()
     this->center = {computedX + computedWidth/2.0f, computedY + computedHeight/2.0f};
     this->halfExtent = {computedWidth / 2.0f, computedHeight / 2.0f};
 }
+
+TextLayout::TextLayout():
+    display{Inline{}}
+{}
     
 void TextLayout::setX(float x)
 {

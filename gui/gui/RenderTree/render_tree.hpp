@@ -68,7 +68,8 @@ public:
                 LayoutContext ctx {};
                 
                 ctx.x = parentCtx.x;
-                ctx.y = parentCtx.y;
+                ctx.y = parentCtx.y + ctx.lineHeight;
+                ctx.lineHeight = 0;
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
                 ctx.width = this->layoutBox.computedWidth;
@@ -87,6 +88,36 @@ public:
                 
                 return simd_float2{ctx.x, ctx.y};
             },
+            [&](const Inline& in) {
+                LayoutContext ctx {};
+                
+                ctx.x = parentCtx.x;
+                ctx.y = parentCtx.y;
+                
+                auto intrinsicSize = this->drawable->measure();
+                
+                this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : intrinsicSize.width;
+                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : intrinsicSize.height;
+                
+                ctx.lineHeight = this->layoutBox.computedHeight;
+                
+                ctx.x += this->layoutBox.computedWidth;
+                
+                for (const auto& child: children) {
+                    auto childSize = static_cast<RenderNode*>(child.get())->drawable->measure();
+                    auto childCursor = child->layout(ctx);
+                    ctx.x = childCursor.x;
+                    ctx.lineHeight = std::max(ctx.lineHeight, childSize.height);
+                }
+                
+                
+                std::println("parentCtx.x: {} ctx.x: {} computedWidth: {}", parentCtx.x, ctx.x, this->layoutBox.computedWidth);
+                
+                this->layoutBox.computedX = parentCtx.x;
+                this->layoutBox.computedY = parentCtx.y;
+                
+                return simd_float2{ctx.x, ctx.y};
+            }
         }, this->layoutBox.display);
     
         

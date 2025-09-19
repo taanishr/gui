@@ -11,28 +11,29 @@
 #include "bounds.hpp"
 #include <variant>
 
-enum class FlexDirection {
-    Row,
-    Column
-};
+//enum class FlexDirection {
+//    Row,
+//    Column
+//};
 
-
-enum class FlexGrowth {
-    None,
-    Shrink,
-    Grow
-};
-
-struct Flex {
-    Flex();
-    
-    FlexDirection direction;
-    FlexGrowth growth;
-};
+//enum class FlexGrowth {
+//    None,
+//    Shrink,
+//    Grow
+//};
+//
+//struct Flex {
+//    Flex();
+//    
+//    FlexDirection direction;
+//    FlexGrowth growth;
+//};
 
 struct Block {};
 
-using Display = std::variant<Block>;
+struct Inline {};
+
+using Display = std::variant<Block, Inline>;
 
 enum class Position {
     Static,
@@ -68,6 +69,8 @@ struct LayoutContext {
     float y;
     float height;
     float width;
+    float lineHeight;
+    float lineWidth;
 };
 
 struct DefaultLayout {
@@ -129,6 +132,8 @@ struct ImageLayout {
 };
 
 struct TextLayout {
+    TextLayout();
+    
     float width, height;
     float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
