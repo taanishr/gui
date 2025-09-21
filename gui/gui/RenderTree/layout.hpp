@@ -64,13 +64,28 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.sync() } -> std::same_as<void>;
 };
 
-struct LayoutContext {
+struct BlockLayoutContext {
     float x;
     float y;
+};
+
+struct InlineLayoutContext {
+    float x;
+    float y;
+    float lineWidth;
+    float lineHeight;
+};
+
+struct LayoutContext {
     float height;
     float width;
-    float lineHeight;
-    float lineWidth;
+    BlockLayoutContext blockContext;
+    InlineLayoutContext inlineContext;
+};
+
+struct LayoutResult {
+    float width;
+    float height;
 };
 
 struct DefaultLayout {

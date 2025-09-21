@@ -40,7 +40,7 @@ struct RenderNodeComparator {
 
 class RenderNodeBase {
 public:
-    virtual simd_float2 layout(const LayoutContext& parentCtx) = 0;
+    virtual LayoutResult layout(const LayoutContext& parentCtx) = 0;
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
@@ -62,61 +62,56 @@ class RenderNode : public RenderNodeBase {
 public:
     RenderNode() {}
     
-    simd_float2 layout(const LayoutContext& parentCtx) {
-        auto cursor = std::visit(Overloaded{
+    LayoutResult layout(const LayoutContext& parentCtx) {
+        auto lyr = std::visit(Overloaded{
             [&](const Block& block){
                 LayoutContext ctx {};
                 
-                ctx.x = parentCtx.x;
-                ctx.y = parentCtx.y + ctx.lineHeight;
-                ctx.lineHeight = 0;
+                ctx.blockContext = parentCtx.blockContext;
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
                 ctx.width = this->layoutBox.computedWidth;
                 
                 for (const auto& child: children) {
-                    auto childCursor = child->layout(ctx);
-                    ctx.y = childCursor.y;
+                    auto clyr = child->layout(ctx);
+                    ctx.blockContext.y += clyr.height;
                 }
                 
-                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.y - parentCtx.y;
+                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.blockContext.y - parentCtx.blockContext.y;
                 
-                this->layoutBox.computedX = parentCtx.x;
-                this->layoutBox.computedY = parentCtx.y;
+                this->layoutBox.computedX = parentCtx.blockContext.x;
+                this->layoutBox.computedY = parentCtx.blockContext.y;
             
-                ctx.y += this->layoutBox.computedHeight;
-                
-                return simd_float2{ctx.x, ctx.y};
+                ctx.blockContext.y += this->layoutBox.computedHeight;
+            
+                return LayoutResult{.width = this->layoutBox.computedWidth, .height = this->layoutBox.computedHeight};
             },
             [&](const Inline& in) {
                 LayoutContext ctx {};
                 
-                ctx.x = parentCtx.x;
-                ctx.y = parentCtx.y;
+                ctx.inlineContext = parentCtx.inlineContext;
                 
                 auto intrinsicSize = this->drawable->measure();
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : intrinsicSize.width;
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : intrinsicSize.height;
                 
-                ctx.lineHeight = this->layoutBox.computedHeight;
+                ctx.inlineContext.lineHeight = this->layoutBox.computedHeight;
                 
-                ctx.x += this->layoutBox.computedWidth;
+                ctx.inlineContext.x += this->layoutBox.computedWidth;
                 
                 for (const auto& child: children) {
-                    auto childSize = static_cast<RenderNode*>(child.get())->drawable->measure();
-                    auto childCursor = child->layout(ctx);
-                    ctx.x = childCursor.x;
-                    ctx.lineHeight = std::max(ctx.lineHeight, childSize.height);
+                    auto clyr = child->layout(ctx);
+                    ctx.inlineContext.x += clyr.width;
+                    ctx.inlineContext.lineHeight = std::max(ctx.inlineContext.lineHeight, clyr.height);
                 }
                 
+                std::println("ctx.inlineContext.x: {}", ctx.inlineContext.x);
                 
-                std::println("parentCtx.x: {} ctx.x: {} computedWidth: {}", parentCtx.x, ctx.x, this->layoutBox.computedWidth);
+                this->layoutBox.computedX = parentCtx.inlineContext.x;
+                this->layoutBox.computedY = parentCtx.inlineContext.y;
                 
-                this->layoutBox.computedX = parentCtx.x;
-                this->layoutBox.computedY = parentCtx.y;
-                
-                return simd_float2{ctx.x, ctx.y};
+                return LayoutResult{.width = this->layoutBox.computedWidth, .height = this->layoutBox.computedHeight};
             }
         }, this->layoutBox.display);
     
@@ -131,7 +126,8 @@ public:
             case Position::Fixed:
                 this->layoutBox.computedX = this->layoutBox.x;
                 this->layoutBox.computedY = this->layoutBox.y;
-                cursor = {parentCtx.x, parentCtx.y};
+                lyr.width = 0;
+                lyr.height = 0;
                 break;
             case Position::Absolute:
                 auto ancestor = static_cast<RenderNode*>(parent);
@@ -142,12 +138,13 @@ public:
                 this->layoutBox.computedX = ancestor->layoutBox.computedX + this->layoutBox.x;
                 this->layoutBox.computedY = this->layoutBox.y;
                     
-                cursor = {parentCtx.x, parentCtx.y};
+                lyr.width = 0;
+                lyr.height = 0;
         }
         
         this->layoutBox.sync();
         
-        return cursor;
+        return lyr;
     }
     
 
