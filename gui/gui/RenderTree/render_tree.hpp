@@ -40,7 +40,7 @@ struct RenderNodeComparator {
 
 class RenderNodeBase {
 public:
-    virtual LayoutResult layout(const LayoutContext& parentCtx) = 0;
+    virtual LayoutResult layout(LayoutContext& parentCtx) = 0;
     virtual void update() = 0;
     virtual void encode(MTL::RenderCommandEncoder* encoder) const = 0;
     virtual void render(MTL::RenderCommandEncoder* encoder) const = 0;
@@ -62,56 +62,57 @@ class RenderNode : public RenderNodeBase {
 public:
     RenderNode() {}
     
-    LayoutResult layout(const LayoutContext& parentCtx) {
-        auto lyr = std::visit(Overloaded{
+    LayoutResult layout(LayoutContext& parentCtx) {
+        auto layoutR = std::visit(Overloaded{
             [&](const Block& block){
                 LayoutContext ctx {};
-                
-                ctx.blockContext = parentCtx.blockContext;
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
                 ctx.width = this->layoutBox.computedWidth;
                 
                 for (const auto& child: children) {
-                    auto clyr = child->layout(ctx);
-                    ctx.blockContext.y += clyr.height;
+                    auto chLayoutR = child->layout(ctx);
+                    ctx.y = chLayoutR.y;
                 }
                 
-                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.blockContext.y - parentCtx.blockContext.y;
+                this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.y - parentCtx.y;
+                ctx.height = this->layoutBox.computedHeight;
                 
-                this->layoutBox.computedX = parentCtx.blockContext.x;
-                this->layoutBox.computedY = parentCtx.blockContext.y;
+                this->layoutBox.computedX = parentCtx.x;
+                this->layoutBox.computedY = parentCtx.y;
             
-                ctx.blockContext.y += this->layoutBox.computedHeight;
-            
-                return LayoutResult{.width = this->layoutBox.computedWidth, .height = this->layoutBox.computedHeight};
+                return LayoutResult{.x = parentCtx.x, .y = parentCtx.y + this->layoutBox.computedHeight, .isInline = false};
+                
             },
             [&](const Inline& in) {
                 LayoutContext ctx {};
-                
-                ctx.inlineContext = parentCtx.inlineContext;
                 
                 auto intrinsicSize = this->drawable->measure();
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : intrinsicSize.width;
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : intrinsicSize.height;
                 
-                ctx.inlineContext.lineHeight = this->layoutBox.computedHeight;
+//                for (const auto& child: children) {
+//                    auto chLayoutR = child->layout(ctx);
+//                    ctx.y = chLayoutR.y;
+//                }
                 
-                ctx.inlineContext.x += this->layoutBox.computedWidth;
-                
-                for (const auto& child: children) {
-                    auto clyr = child->layout(ctx);
-                    ctx.inlineContext.x += clyr.width;
-                    ctx.inlineContext.lineHeight = std::max(ctx.inlineContext.lineHeight, clyr.height);
+                if (!parentCtx.lastChildInline) {
+                    InlineRun newRun {.x = parentCtx.x, .y = parentCtx.y, .lineHeight = 0, .lineWidth = 0};
+                    parentCtx.inlineRuns.push(newRun);
                 }
                 
-                std::println("ctx.inlineContext.x: {}", ctx.inlineContext.x);
+                auto& lastRun = parentCtx.inlineRuns.top();
+                this->layoutBox.computedX = lastRun.x;
+                lastRun.x += this->layoutBox.computedWidth;
+//                lastRun.y = std::max(lastRun.y,
                 
-                this->layoutBox.computedX = parentCtx.inlineContext.x;
-                this->layoutBox.computedY = parentCtx.inlineContext.y;
+                lastRun.lineHeight = std::max(this->layoutBox.computedHeight, lastRun.lineHeight);
+                lastRun.lineWidth += this->layoutBox.computedWidth;
                 
-                return LayoutResult{.width = this->layoutBox.computedWidth, .height = this->layoutBox.computedHeight};
+                this->layoutBox.computedX = parentCtx.x;
+                
+                return LayoutResult{.x = parentCtx.x, .y = parentCtx.y + lastRun.lineHeight, .isInline = true};
             }
         }, this->layoutBox.display);
     
@@ -126,8 +127,8 @@ public:
             case Position::Fixed:
                 this->layoutBox.computedX = this->layoutBox.x;
                 this->layoutBox.computedY = this->layoutBox.y;
-                lyr.width = 0;
-                lyr.height = 0;
+                layoutR.x = parentCtx.x;
+                layoutR.y = parentCtx.y;
                 break;
             case Position::Absolute:
                 auto ancestor = static_cast<RenderNode*>(parent);
@@ -138,13 +139,13 @@ public:
                 this->layoutBox.computedX = ancestor->layoutBox.computedX + this->layoutBox.x;
                 this->layoutBox.computedY = this->layoutBox.y;
                     
-                lyr.width = 0;
-                lyr.height = 0;
+                layoutR.x = parentCtx.x;
+                layoutR.y = parentCtx.y;
         }
         
         this->layoutBox.sync();
         
-        return lyr;
+        return layoutR;
     }
     
 

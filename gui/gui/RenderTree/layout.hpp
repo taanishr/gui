@@ -10,6 +10,7 @@
 #include "metal_imports.hpp"
 #include "bounds.hpp"
 #include <variant>
+#include <stack>
 
 //enum class FlexDirection {
 //    Row,
@@ -64,28 +65,26 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.sync() } -> std::same_as<void>;
 };
 
-struct BlockLayoutContext {
+struct InlineRun {
     float x;
     float y;
-};
-
-struct InlineLayoutContext {
-    float x;
-    float y;
-    float lineWidth;
     float lineHeight;
+    float lineWidth;
 };
 
 struct LayoutContext {
-    float height;
+    float x;
+    float y;
     float width;
-    BlockLayoutContext blockContext;
-    InlineLayoutContext inlineContext;
+    float height;
+    bool lastChildInline;
+    std::stack<InlineRun> inlineRuns;
 };
 
 struct LayoutResult {
-    float width;
-    float height;
+    float x;
+    float y;
+    bool isInline;
 };
 
 struct DefaultLayout {

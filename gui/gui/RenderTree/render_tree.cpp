@@ -40,8 +40,8 @@ void RenderTree::flatten(RenderNodeBase* node, int parentZ) {
 void RenderTree::layout(const FrameInfo& frameInfo) {
     LayoutContext rootCtx {};
     
-    rootCtx.blockContext = {.x = 0, .y = 0};
-    rootCtx.inlineContext = {.x = 0, .y = 0, .lineWidth = 0, .lineHeight = 0};
+    rootCtx.x = 0;
+    rootCtx.y = 0;
     rootCtx.width = frameInfo.width;
     rootCtx.height = frameInfo.height;
 //
