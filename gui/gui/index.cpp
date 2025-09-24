@@ -20,27 +20,27 @@ auto index() -> Element
         drawable->color = simd_float4{0,0.5,0,1};
     };
     
-    return
-        div()(
-            div().h(50).color(RGB{0,128,128,1}).relativePos().x(60).y(20),
-            div().h(100).cornerRadius(50.0).color(RGB{0,0,128,0.5}),
-            div().h(60).w(60).cornerRadius(30).color(RGB{255,255,255,1}).borderWidth(2).borderColor(RGB({256,0,0,1})).absolutePos().x(200).y(200)
-        );
+//    return
+//        div()(
+//            div().h(50).color(RGB{0,128,128,1}).relativePos().x(60).y(20),
+//            div().h(100).cornerRadius(50.0).color(RGB{0,0,128,0.5}),
+//            div().h(60).w(60).cornerRadius(30).color(RGB{255,255,255,1}).borderWidth(2).borderColor(RGB({256,0,0,1})).absolutePos().x(200).y(200)
+//        );
 
     
-//    return div().h(512).w(512).color(RGB{240,240,240,1}) (
-//        div().h(400).w(400).x(20).y(50).color(RGB{144,238,144,1}).relativePos() (
-//            text("Inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1}),
-//            text("Inline element 2").fontSize(16.0).color(RGB{173,216,230,1}),
-//            div().h(60).w(60).cornerRadius(30)
-//                .color(RGB{0,0,255,1})
+    return div().h(512).w(512).color(RGB{240,240,240,1}) (
+        div().h(400).w(400).x(20).y(50).color(RGB{144,238,144,1}).relativePos()(
+            text("Inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1}),
+            text("Inline element 2").fontSize(16.0).color(RGB{173,216,230,1}),
+            div().h(60).w(60).cornerRadius(30)
+                .color(RGB{0,0,255,1})
 //                .absolutePos().x(50).y(100)
-//        ),
-//
-//        div().h(60).w(60).cornerRadius(30)
-//            .color(RGB{255,0,0,1})
-//            .fixedPos().x(432).y(432)
-//    );
+        ),
+
+        div().h(60).w(60).cornerRadius(30)
+            .color(RGB{255,0,0,1})
+            .fixedPos().x(432).y(432)
+    );
 
     
 //    return div().h(512).w(512).color(RGB{220,220,220,1}) ( // outer window (gray)

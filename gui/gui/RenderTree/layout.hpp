@@ -73,6 +73,8 @@ struct InlineRun {
 };
 
 struct LayoutContext {
+    float paintY;
+    float paintX;
     float x;
     float y;
     float width;

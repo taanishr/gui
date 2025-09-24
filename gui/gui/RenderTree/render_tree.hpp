@@ -63,9 +63,12 @@ public:
     RenderNode() {}
     
     LayoutResult layout(LayoutContext& parentCtx) {
+        LayoutContext ctx {};
         auto layoutR = std::visit(Overloaded{
             [&](const Block& block){
-                LayoutContext ctx {};
+                
+                ctx.x = parentCtx.x;
+                ctx.y = parentCtx.y;
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
                 ctx.width = this->layoutBox.computedWidth;
@@ -73,6 +76,7 @@ public:
                 for (const auto& child: children) {
                     auto chLayoutR = child->layout(ctx);
                     ctx.y = chLayoutR.y;
+                    ctx.lastChildInline = chLayoutR.isInline;
                 }
                 
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.y - parentCtx.y;
@@ -92,10 +96,10 @@ public:
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : intrinsicSize.width;
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : intrinsicSize.height;
                 
-//                for (const auto& child: children) {
-//                    auto chLayoutR = child->layout(ctx);
-//                    ctx.y = chLayoutR.y;
-//                }
+                for (const auto& child: children) {
+                    auto chLayoutR = child->layout(ctx);
+                    ctx.x = chLayoutR.x;
+                }
                 
                 if (!parentCtx.lastChildInline) {
                     InlineRun newRun {.x = parentCtx.x, .y = parentCtx.y, .lineHeight = 0, .lineWidth = 0};
@@ -103,16 +107,13 @@ public:
                 }
                 
                 auto& lastRun = parentCtx.inlineRuns.top();
+                
                 this->layoutBox.computedX = lastRun.x;
                 lastRun.x += this->layoutBox.computedWidth;
-//                lastRun.y = std::max(lastRun.y,
-                
                 lastRun.lineHeight = std::max(this->layoutBox.computedHeight, lastRun.lineHeight);
                 lastRun.lineWidth += this->layoutBox.computedWidth;
                 
-                this->layoutBox.computedX = parentCtx.x;
-                
-                return LayoutResult{.x = parentCtx.x, .y = parentCtx.y + lastRun.lineHeight, .isInline = true};
+                return LayoutResult{.x = parentCtx.x, .y = lastRun.y + lastRun.lineHeight, .isInline = true};
             }
         }, this->layoutBox.display);
     
