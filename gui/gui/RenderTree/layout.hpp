@@ -53,6 +53,8 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
     { t.computedHeight } -> std::convertible_to<float>;
     { t.x }-> std::convertible_to<float>;
     { t.y } -> std::convertible_to<float>;
+    { t.flowX } -> std::convertible_to<float>;
+    { t.flowY } -> std::convertible_to<float>;
     { t.computedX } -> std::convertible_to<float>;
     { t.computedY } -> std::convertible_to<float>;
     { t.display } -> std::convertible_to<Display>;
@@ -66,17 +68,15 @@ concept Layout = requires(T t, float x, float y, float w, float h) {
 };
 
 struct InlineRun {
-    float x;
-    float y;
+    float flowX;
+    float flowY;
     float lineHeight;
     float lineWidth;
 };
 
 struct LayoutContext {
-    float paintY;
-    float paintX;
-    float x;
-    float y;
+    float flowX;
+    float flowY;
     float width;
     float height;
     bool lastChildInline;
@@ -84,9 +84,14 @@ struct LayoutContext {
 };
 
 struct LayoutResult {
-    float x;
-    float y;
+    float flowX;
+    float flowY;
     bool isInline;
+};
+
+struct PositionContext {
+    float drawX;
+    float drawY;
 };
 
 struct DefaultLayout {
@@ -94,6 +99,7 @@ struct DefaultLayout {
     float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
+    float flowX, flowY;
     float computedX, computedY;
     Display display;
     Position position;
@@ -110,6 +116,7 @@ struct ShellLayout {
     float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
+    float flowX, flowY;
     float computedX, computedY;
     Display display;
     Position position;
@@ -132,6 +139,7 @@ struct ImageLayout {
     float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
+    float flowX, flowY;
     float computedX, computedY;
     Display display;
     Position position;
@@ -154,6 +162,7 @@ struct TextLayout {
     float intrinsicWidth, intrinsicHeight;
     float computedWidth, computedHeight;
     float x, y;
+    float flowX, flowY;
     float computedX, computedY;
     Display display;
     Position position;

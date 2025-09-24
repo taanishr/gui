@@ -34,7 +34,7 @@ auto index() -> Element
             text("Inline element 2").fontSize(16.0).color(RGB{173,216,230,1}),
             div().h(60).w(60).cornerRadius(30)
                 .color(RGB{0,0,255,1})
-//                .absolutePos().x(50).y(100)
+                .absolutePos().x(50).y(100)
         ),
 
         div().h(60).w(60).cornerRadius(30)

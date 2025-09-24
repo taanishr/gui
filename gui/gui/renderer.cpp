@@ -60,6 +60,7 @@ void Renderer::draw() {
 
     auto frameInfo = getFrameInfo();
     renderTree.layout(frameInfo);
+    renderTree.position();
     renderTree.update();
     renderTree.render(renderCommandEncoder);
 

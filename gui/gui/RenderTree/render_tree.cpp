@@ -37,18 +37,26 @@ void RenderTree::flatten(RenderNodeBase* node, int parentZ) {
         flatten(child.get(), node->globalZIndex);
 }
 
-void RenderTree::layout(const FrameInfo& frameInfo) {
+void RenderTree::layout(const FrameInfo& frameInfo)
+{
     LayoutContext rootCtx {};
     
-    rootCtx.x = 0;
-    rootCtx.y = 0;
+    rootCtx.flowX = 0;
+    rootCtx.flowY = 0;
     rootCtx.width = frameInfo.width;
     rootCtx.height = frameInfo.height;
-//
-//    root->layoutBox.width = frameInfo.width;
-//    root->layoutBox.height = frameInfo.height;
     
     root->layout(rootCtx);
+}
+
+void RenderTree::position()
+{
+    PositionContext rootCtx {};
+    
+    rootCtx.drawX = 0;
+    rootCtx.drawY = 0;
+    
+    root->position(rootCtx);
 }
 
 void RenderTree::update() {
