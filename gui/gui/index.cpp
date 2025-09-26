@@ -32,6 +32,7 @@ auto index() -> Element
         div().h(400).w(400).x(20).y(50).color(RGB{144,238,144,1}).relativePos()(
             text("Inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1})(
                 text("Nested inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1}),
+                text("Nested inline element 2").fontSize(16.0).color(RGB{255,200,200,1}),
                 div().h(10).w(60).color(RGB{28,51,16,1})
 
             ),

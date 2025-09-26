@@ -137,12 +137,27 @@ public:
                 
                 auto& lastRun = parentCtx.inlineRuns.top();
                 
-                this->layoutBox.flowX = lastRun.flowX;
-                this->layoutBox.flowY = lastRun.flowY;
-                
-                lastRun.flowX += this->layoutBox.computedWidth;
-                lastRun.lineHeight = std::max(this->layoutBox.computedHeight, lastRun.lineHeight);
-                lastRun.lineWidth += this->layoutBox.computedWidth;
+                if (lastRun.flowX + this->layoutBox.computedWidth > parentCtx.width) {
+                    lastRun.flowY += this->layoutBox.computedHeight;
+                    
+                    std::println("computed H: {}", this->layoutBox.computedHeight);
+                    
+                    this->layoutBox.flowX = parentCtx.flowX;
+                    this->layoutBox.flowY = lastRun.flowY;
+                    
+                    lastRun.flowX += this->layoutBox.computedWidth;
+                    
+                    lastRun.lineHeight += this->layoutBox.computedHeight;
+                    lastRun.lineWidth = this->layoutBox.computedWidth;
+                }else {
+                    this->layoutBox.flowX = lastRun.flowX;
+                    this->layoutBox.flowY = lastRun.flowY;
+                    
+                    lastRun.flowX += this->layoutBox.computedWidth;
+                    
+                    lastRun.lineHeight = std::max(this->layoutBox.computedHeight, lastRun.lineHeight);
+                    lastRun.lineWidth += this->layoutBox.computedWidth;
+                }
 
                 return LayoutResult{.flowX = parentCtx.flowX, .flowY = lastRun.flowY + lastRun.lineHeight, .isInline = true};
             }
