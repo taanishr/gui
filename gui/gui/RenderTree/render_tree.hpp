@@ -26,6 +26,8 @@
 #include "ui.hpp"
 #include "layout.hpp"
 #include "overloaded.hpp"
+#include <ranges>
+#include <numeric>
 
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
@@ -81,12 +83,16 @@ public:
                 this->layoutBox.flowY = parentCtx.flowY;
                 
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : parentCtx.width;
+                
                 ctx.width = this->layoutBox.computedWidth;
                 
-                for (auto& child : this->children) {
+                int ci = 0;
+                while (ci < children.size()) {
+                    auto& child = children[ci];
                     auto childLayoutRes = child->layout(ctx);
                     ctx.flowY = childLayoutRes.flowY;
                     ctx.lastChildInline = childLayoutRes.isInline;
+                    ci += 1;
                 }
                 
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : ctx.flowY - parentCtx.flowY;
@@ -102,14 +108,30 @@ public:
                 this->layoutBox.computedWidth = this->layoutBox.width > 0 ? this->layoutBox.width : intrinsicSize.width;
                 this->layoutBox.computedHeight = this->layoutBox.height > 0 ? this->layoutBox.height : intrinsicSize.height;
                 
+                ctx.width = this->layoutBox.computedWidth;
+                ctx.height = this->layoutBox.computedHeight;
                 
-                for (const auto& child: children) {
-                    auto chLayoutR = child->layout(ctx);
-                    ctx.flowX = chLayoutR.flowX;
+                ctx.isInline = true;
+                
+                auto blockAncestor = static_cast<RenderNode*>(parent);
+                
+                auto it = std::find_if(blockAncestor->children.begin(), blockAncestor->children.end(), [&](auto& u_cptr){ return u_cptr.get() == this; });
+
+                if (it != blockAncestor->children.end()) {
+                    blockAncestor->children.insert(std::next(it), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
+                }else {
+                    blockAncestor->children.insert(blockAncestor->children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                 }
                 
+                children.clear();
+
                 if (!parentCtx.lastChildInline) {
-                    InlineRun newRun {.flowX = parentCtx.flowX, .flowY = parentCtx.flowY, .lineHeight = 0, .lineWidth = 0};
+                    float runFlowX = parentCtx.flowX;
+                    
+                    if (parentCtx.isInline)
+                        runFlowX += parentCtx.width;
+                        
+                    InlineRun newRun {.flowX = runFlowX, .flowY = parentCtx.flowY, .lineHeight = 0, .lineWidth = 0};
                     parentCtx.inlineRuns.push(newRun);
                 }
                 
@@ -161,6 +183,7 @@ public:
         for (auto& child : this->children) {
             child->position(ctx);
         }
+
         
         this->layoutBox.sync();
     }

@@ -80,6 +80,7 @@ struct LayoutContext {
     float width;
     float height;
     bool lastChildInline;
+    bool isInline;
     std::stack<InlineRun> inlineRuns;
 };
 

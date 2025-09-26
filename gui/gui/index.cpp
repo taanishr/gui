@@ -30,7 +30,11 @@ auto index() -> Element
     
     return div().h(512).w(512).color(RGB{240,240,240,1}) (
         div().h(400).w(400).x(20).y(50).color(RGB{144,238,144,1}).relativePos()(
-            text("Inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1}),
+            text("Inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1})(
+                text("Nested inline element 1 ").fontSize(16.0).color(RGB{255,200,200,1}),
+                div().h(10).w(60).color(RGB{28,51,16,1})
+
+            ),
             text("Inline element 2").fontSize(16.0).color(RGB{173,216,230,1}),
             div().h(60).w(60).cornerRadius(30)
                 .color(RGB{0,0,255,1})
