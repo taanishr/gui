@@ -136,11 +136,9 @@ public:
                 }
                 
                 auto& lastRun = parentCtx.inlineRuns.top();
-                
+
                 if (lastRun.flowX + this->layoutBox.computedWidth > parentCtx.width) {
-                    lastRun.flowY += this->layoutBox.computedHeight;
-                    
-                    std::println("computed H: {}", this->layoutBox.computedHeight);
+                    lastRun.flowY += lastRun.lineHeight;
                     
                     this->layoutBox.flowX = parentCtx.flowX;
                     this->layoutBox.flowY = lastRun.flowY;
@@ -159,7 +157,7 @@ public:
                     lastRun.lineWidth += this->layoutBox.computedWidth;
                 }
 
-                return LayoutResult{.flowX = parentCtx.flowX, .flowY = lastRun.flowY + lastRun.lineHeight, .isInline = true};
+                return LayoutResult{.flowX = parentCtx.flowX, .flowY = lastRun.lineHeight, .isInline = true};
             }
         }, this->layoutBox.display);
         
