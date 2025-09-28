@@ -143,6 +143,7 @@ public:
                     this->layoutBox.flowX = parentCtx.flowX;
                     this->layoutBox.flowY = lastRun.flowY;
                     
+                    
                     lastRun.flowX += this->layoutBox.computedWidth;
                     
                     lastRun.lineHeight += this->layoutBox.computedHeight;

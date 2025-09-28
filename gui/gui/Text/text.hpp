@@ -42,10 +42,12 @@ namespace TextRender {
         void addChar(char ch);
         void removeChar();
         void update(const TextLayout& layoutBox);
+        void encodeFragment(MTL::RenderCommandEncoder* encoder, int start, int end);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
         const TextLayout& layout() const;
         const DrawableSize& measure();
+        const DrawableSize& measureSubstring(size_t len);
         
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline);

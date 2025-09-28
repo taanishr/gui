@@ -237,7 +237,6 @@ const TextLayout& Text::layout() const
 }
 
 const DrawableSize& Text::measure()
-// lazily update this
 {
     float currW = 0, maxW = 0, maxH = this->fontSize;
     
@@ -267,6 +266,25 @@ bool Text::contains(simd_float2 point) const
     
     return !(point.x < topLeft.x || point.x > bottomRight.x ||
              point.y < topLeft.y || point.y > bottomRight.y);
+}
+
+void Text::encodeFragment(MTL::RenderCommandEncoder* encoder, int start, int end) {
+    if (start < 0 || end >= text.length())
+        return;
+    
+    int quadBufferOffset = start * 6 + 1;
+    int quadBufferLength = (end-start) * 6;
+    
+    auto pipeline = getPipeline();
+    encoder->setRenderPipelineState(pipeline);
+    encoder->setVertexBuffer(this->quadBuffer, 0, 0);
+    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
+    
+    encoder->setFragmentBuffer(this->bezierPointsBuffer, 0, 0);
+    encoder->setFragmentBuffer(this->glyphMetaBuffer, 0, 1);
+    encoder->setFragmentBuffer(this->uniformsBuffer, 0, 2);
+    
+    encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, quadBufferOffset, quadBufferLength);
 }
 
 void Text::encode(MTL::RenderCommandEncoder* encoder) {
