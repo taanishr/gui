@@ -16,6 +16,8 @@
 #include "layout.hpp"
 #include "bounds.hpp"
 #include "glyphCache.hpp"
+#include "fragment.hpp"
+#include <ranges>
 
 class Renderer;
 
@@ -24,7 +26,8 @@ constexpr std::string_view defaultFont {"/System/Library/Fonts/Supplemental/Aria
 namespace TextRender {
     struct QuadPoint {
         simd_float2 position;
-        simd_float2 offset;
+//        simd_float2 offset;
+        int glyphIndex;
         int metadataIndex;
     };
 
@@ -42,13 +45,10 @@ namespace TextRender {
         void addChar(char ch);
         void removeChar();
         void update(const TextLayout& layoutBox);
-        void encodeFragment(MTL::RenderCommandEncoder* encoder, int start, int end);
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
         const TextLayout& layout() const;
         const DrawableSize& measure();
-        const DrawableSize& measureSubstring(size_t len);
-        
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline);
         FrameInfo getFrameInfo();
@@ -63,6 +63,7 @@ namespace TextRender {
         // buffers
         // vertex
         MTL::Buffer* quadBuffer;
+        MTL::Buffer* quadOffsetBuffer;
         
         // fragment
         std::vector<simd_float2> bezierPoints;
@@ -83,6 +84,11 @@ namespace TextRender {
         float fontSize;
         
         // layout
+        bool fragmented;
+        std::optional<simd_float2> measureFragment(int startingIndex, int endingIndex);
+        void fragment(float flowX, float flowY, float maxWidth, float maxHeight);
+        void defragment();
+        
         float x;
         float y;
         DrawableSize intrinsicSize;

@@ -20,7 +20,8 @@ struct TextUniforms {
 
 struct TextVertexIn {
     float2 position [[attribute(0)]];
-    float2 offset [[attribute(1)]];
+//    float2 offset [[attribute(1)]];
+    int glyphIndex [[attribute(1)]];
     int metadataIndex [[attribute(2)]];
 };
 
@@ -33,12 +34,13 @@ struct TextVertexOut {
 
 vertex TextVertexOut vertex_text(
     TextVertexIn in [[stage_in]],
-    constant FrameInfo* frameInfo [[buffer(1)]]
+    constant float2* offset [[buffer(1)]],
+    constant FrameInfo* frameInfo [[buffer(2)]]
 )
 {
     TextVertexOut out;
     
-    float2 adjustedPos = (in.position+in.offset)/64.0f;
+    float2 adjustedPos = (in.position + offset[in.glyphIndex])/64.0f;
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);

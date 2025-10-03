@@ -64,6 +64,8 @@ auto index() -> Element
 //             .fixedPos().x(400).y(400),
 //          text("").fontSize(24.0).x(10.0).y(25.0).on<EventType::KeyboardDown>(onInput)
 //     );
+//    
+    
 //    return div().h(100.0).w(100.0).cornerRadius(50.0).color(RGB{0,0,128,0.5}).on<EventType::Click>(onClick)
 //        (
 //            div().h(100.0).w(100.0).x(40).y(128.0).color(RGB{128,0,0,0.5})(

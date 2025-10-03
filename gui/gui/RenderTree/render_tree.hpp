@@ -32,6 +32,12 @@
 // goals; tree that starts from null root (the primary view)
 // inserted based on parent node and z that is relative to the parent
 
+template <typename DrawableType>
+concept Fragmentable = requires(DrawableType drawable, float fx, float fy, float mw, float mh) {
+    { drawable.fragment(fx,fy,mw,mh) } -> std::same_as<void>;
+    { drawable.defragment() } -> std::same_as<void>;
+};
+
 struct RenderNodeBase;
 
 using EventHandler = std::function<void(RenderNodeBase&, const Event&)>;
@@ -138,10 +144,19 @@ public:
                 auto& lastRun = parentCtx.inlineRuns.top();
 
                 if (lastRun.flowX + this->layoutBox.computedWidth > parentCtx.width) {
+                    if constexpr (Fragmentable<decltype(*(this->drawable.get()))>) {
+                        std::println("fragmentable, drawable ptr: {}", reinterpret_cast<void*>(this->drawable.get()));
+//                            this->drawable->fragment(parentCtx.flowX, parentCtx.flowY, parentCtx.width, parentCtx.height);
+                    }
+                    
                     lastRun.flowY += lastRun.lineHeight;
                     
                     this->layoutBox.flowX = parentCtx.flowX;
                     this->layoutBox.flowY = lastRun.flowY;
+                    
+                    // call drawable's fragment function
+                    // drawable internally fragments itself based on constraints
+                    // after that all other methods remain the same
                     
                     
                     lastRun.flowX += this->layoutBox.computedWidth;

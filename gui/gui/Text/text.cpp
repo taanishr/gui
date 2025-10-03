@@ -25,6 +25,7 @@ Text::Text(Renderer& renderer, float x, float y, float fontSize, simd_float4 col
     FT_Set_Pixel_Sizes(face, 0, fontSize);
     
     this->quadBuffer = renderer.device->newBuffer(sizeof(QuadPoint)*256, MTL::ResourceStorageModeShared);
+    this->quadOffsetBuffer = renderer.device->newBuffer(sizeof(simd_float2)*256, MTL::ResourceStorageModeShared);
     this->bezierPointsBuffer = renderer.device->newBuffer(sizeof(simd_float2)*112, MTL::ResourceStorageModeShared);
     this->uniformsBuffer = renderer.device->newBuffer(sizeof(Uniforms), MTL::ResourceStorageModeShared);
     this->glyphMetaBuffer = renderer.device->newBuffer(sizeof(int)*256, MTL::ResourceStorageModeShared);
@@ -36,6 +37,7 @@ Text::~Text() {
     this->glyphMetaBuffer->release();
     this->uniformsBuffer->release();
     this->bezierPointsBuffer->release();
+    this->quadOffsetBuffer->release();
     this->quadBuffer->release();
     FT_Done_Face(face);
 }
@@ -50,13 +52,22 @@ void Text::buildPipeline(MTL::RenderPipelineState*& pipeline) {
     vertexDescriptor->attributes()->object(0)->setOffset(0);
     vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
     
-    vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+    vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatInt);
     vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
     vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
     
     vertexDescriptor->attributes()->object(2)->setFormat(MTL::VertexFormat::VertexFormatInt);
-    vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2)*2);
+    vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2) + sizeof(int));
     vertexDescriptor->attributes()->object(2)->setBufferIndex(0);
+    
+//
+//    vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+//    vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
+//    vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
+//    
+//    vertexDescriptor->attributes()->object(2)->setFormat(MTL::VertexFormat::VertexFormatInt);
+//    vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2)*2);
+//    vertexDescriptor->attributes()->object(2)->setBufferIndex(0);
 
     vertexDescriptor->layouts()->object(0)->setStride(sizeof(QuadPoint));
     
@@ -123,6 +134,7 @@ void Text::update(const TextLayout& layoutBox) {
     this->textLayout = &layoutBox;
     
     std::vector<QuadPoint> quadPoints;
+    std::vector<simd_float2> quadOffsets;
     std::vector<int> glyphMeta;
     
     int metadataIndex = 0;
@@ -131,6 +143,8 @@ void Text::update(const TextLayout& layoutBox) {
     Uniforms uniforms {.color=this->color};
     auto frameInfo = renderer.getFrameInfo();
     simd_float2 drawOffset {layoutBox.computedX*FT_PIXEL_CF, (layoutBox.computedY+fontSize)*FT_PIXEL_CF};
+    
+    int ani = 0;
     
     for (auto ch : text) {
         if (ch == '\r') {
@@ -163,41 +177,46 @@ void Text::update(const TextLayout& layoutBox) {
 
         quadPoints.push_back({
             .position = quad.topLeft,
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
         quadPoints.push_back({
             .position = {quad.bottomRight.x, quad.topLeft.y},
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
         quadPoints.push_back({
             .position = {quad.topLeft.x, quad.bottomRight.y},
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
         quadPoints.push_back({
             .position = {quad.topLeft.x, quad.bottomRight.y},
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
         
         quadPoints.push_back({
             .position = {quad.bottomRight.x, quad.topLeft.y},
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
         quadPoints.push_back({
             .position = quad.bottomRight,
-            .offset = drawOffset,
+            .glyphIndex = ani,
             .metadataIndex = metadataIndex
         });
         
+        
+        if (not fragmented)
+            quadOffsets.push_back(drawOffset);
+        
+        ani += 1;
         
         // handle metadata
         glyphMeta.push_back(bezierIndex); // bezier index; pull from map
@@ -223,10 +242,18 @@ void Text::update(const TextLayout& layoutBox) {
     
     // copy resizable buffers
     resizeBuffer(renderer.device, quadBuffer, quadPoints.size()*sizeof(QuadPoint));
+    
+    if (not fragmented)
+        resizeBuffer(renderer.device, quadOffsetBuffer, quadOffsets.size()*sizeof(simd_float2));
+    
     resizeBuffer(renderer.device, bezierPointsBuffer, bezierPoints.size()*sizeof(simd_float2));
     resizeBuffer(renderer.device, glyphMetaBuffer, glyphMeta.size()*sizeof(int));
 
     std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
+    
+    if (not fragmented)
+        std::memcpy(this->quadOffsetBuffer->contents(), quadOffsets.data(), quadOffsets.size()*sizeof(simd_float2));
+
     std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
 }
@@ -268,25 +295,6 @@ bool Text::contains(simd_float2 point) const
              point.y < topLeft.y || point.y > bottomRight.y);
 }
 
-void Text::encodeFragment(MTL::RenderCommandEncoder* encoder, int start, int end) {
-    if (start < 0 || end >= text.length())
-        return;
-    
-    int quadBufferOffset = start * 6 + 1;
-    int quadBufferLength = (end-start) * 6;
-    
-    auto pipeline = getPipeline();
-    encoder->setRenderPipelineState(pipeline);
-    encoder->setVertexBuffer(this->quadBuffer, 0, 0);
-    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
-    
-    encoder->setFragmentBuffer(this->bezierPointsBuffer, 0, 0);
-    encoder->setFragmentBuffer(this->glyphMetaBuffer, 0, 1);
-    encoder->setFragmentBuffer(this->uniformsBuffer, 0, 2);
-    
-    encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, quadBufferOffset, quadBufferLength);
-}
-
 void Text::encode(MTL::RenderCommandEncoder* encoder) {
 //    auto framePixelSize = renderer.getFramePixelSize();
 //    encoder->setScissorRect({0,0, static_cast<unsigned long>(framePixelSize.width), static_cast<unsigned long>(framePixelSize.height)});
@@ -294,7 +302,8 @@ void Text::encode(MTL::RenderCommandEncoder* encoder) {
     auto pipeline = getPipeline();
     encoder->setRenderPipelineState(pipeline);
     encoder->setVertexBuffer(this->quadBuffer, 0, 0);
-    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 1);
+    encoder->setVertexBuffer(this->quadOffsetBuffer, 0, 1);
+    encoder->setVertexBuffer(this->frameInfoBuffer, 0, 2);
 
     encoder->setFragmentBuffer(this->bezierPointsBuffer, 0, 0);
     encoder->setFragmentBuffer(this->glyphMetaBuffer, 0, 1);
@@ -302,3 +311,91 @@ void Text::encode(MTL::RenderCommandEncoder* encoder) {
     
     encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(this->numQuadPoints));
 }
+
+// encodeFragment -> encodes a fragment (start and end offset)
+// what do I want to do?
+// - opt 1: make a fragment data structure
+// - contains vector of pairs (offsets for each fragment)
+// - what does contains do? calls measure
+// - encode... maybe I can overload it to encode fragments?
+// - and maybe I can overload contains to encode fragments?
+// maybe each node can store whether it is fragmented?
+
+// or I can make it so fragments are basically invisible to the render tree?
+// that makes it very easy to transistion (e.g. for dispatch, contains knows what to do)
+// but how does the layout fragment the node?
+
+std::optional<simd_float2> Text::measureFragment(int startingIndex, int endingIndex)
+{
+    if (startingIndex < 0 || endingIndex >= text.size())
+        return std::nullopt;
+    
+    float currW = 0, maxW = 0, maxH = this->fontSize;
+    
+    std::string_view tv {text};
+    
+    auto stv = tv.substr(startingIndex, endingIndex);
+    
+    for (auto ch : stv) {
+        if (ch == '\r') {
+            maxH += this->fontSize;
+            currW = 0;
+            continue;
+        }
+        
+        auto glyph = glyphCache.retrieve(font, fontSize, ch);
+        
+        currW += glyph.metrics.horiAdvance / FT_PIXEL_CF;
+        maxW = std::max(maxW, currW);
+    }
+    
+    return simd_float2{maxW, maxH};
+};
+
+// how will this be used? It needs to be returned a max width and height, a starting flow x and y, then it needs to compute the constraints
+void Text::fragment(float flowX, float flowY, float maxWidth, float maxHeight) {
+    std::vector<simd_float2> quadOffsets;
+    
+    int sInd = 0;
+    int eInd = 1;
+    
+    float currFragmentX = flowX, currFragmentY = flowY;
+    
+    while (eInd < text.size()) {
+        auto fs = measureFragment(sInd, eInd);
+
+        if (not fs.has_value())
+            break;
+
+        if (currFragmentX + fs->x >= maxWidth) {
+            for (auto ch : std::string_view(this->text).substr(sInd, eInd-1)) {
+                if (ch == '\r') {
+                    continue;
+                }
+                
+                quadOffsets.push_back(simd_float2{currFragmentX, currFragmentY});
+                
+                auto glyph = glyphCache.retrieve(font, fontSize, ch);
+                
+                currFragmentX += glyph.metrics.horiAdvance / FT_PIXEL_CF;;
+            }
+        
+            currFragmentX = 0;
+            currFragmentY += fontSize;
+            sInd = eInd;
+        }
+        
+        if (currFragmentY >= maxHeight) {
+            break;
+        }
+        
+        ++eInd;
+    }
+    
+    this->fragmented = true;
+}
+
+void Text::defragment() {
+    this->fragmented = false;
+}
+
