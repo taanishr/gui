@@ -18,6 +18,7 @@
 #include "glyphCache.hpp"
 #include "fragment.hpp"
 #include <ranges>
+#include "render_tree_helpers.hpp"
 
 class Renderer;
 
@@ -48,6 +49,7 @@ namespace TextRender {
         void encode(MTL::RenderCommandEncoder* encoder);
         bool contains(simd_float2 point) const;
         const TextLayout& layout() const;
+        FragmentTemplate& _imeasure(Constraints& constraints); // new measuring method; impl for now
         const DrawableSize& measure();
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline);

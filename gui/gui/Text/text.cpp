@@ -251,8 +251,9 @@ void Text::update(const TextLayout& layoutBox) {
 
     std::memcpy(this->quadBuffer->contents(), quadPoints.data(), quadPoints.size()*sizeof(QuadPoint));
     
-    if (not fragmented)
+    if (not fragmented) {
         std::memcpy(this->quadOffsetBuffer->contents(), quadOffsets.data(), quadOffsets.size()*sizeof(simd_float2));
+    }
 
     std::memcpy(this->bezierPointsBuffer->contents(), bezierPoints.data(), bezierPoints.size()*sizeof(simd_float2));
     std::memcpy(this->glyphMetaBuffer->contents(), glyphMeta.data(), glyphMeta.size()*sizeof(int));
@@ -261,6 +262,24 @@ void Text::update(const TextLayout& layoutBox) {
 const TextLayout& Text::layout() const
 {
     return *(this->textLayout);
+}
+
+FragmentTemplate& _imeasure(Constraints& constraints)
+{
+    // vector<Atom> atoms;
+    // float width;
+    // float height;
+    // loop over characters; for now, we're not handling ligatures. treat every char as an "atom'
+        // if new line
+            // height += line height
+            // continue
+    
+        // retrieve glyph
+        // create atom (h/w of glyph)
+        // width += atom width
+    
+    // instantiate fragment template (atoms, width, height)
+    // return FragmenTemplate
 }
 
 const DrawableSize& Text::measure()
@@ -334,7 +353,9 @@ std::optional<simd_float2> Text::measureFragment(int startingIndex, int endingIn
     
     std::string_view tv {text};
     
-    auto stv = tv.substr(startingIndex, endingIndex);
+    auto stv = tv.substr(startingIndex, endingIndex-startingIndex);
+    
+    std::println("{}", stv);
     
     for (auto ch : stv) {
         if (ch == '\r') {
@@ -352,6 +373,7 @@ std::optional<simd_float2> Text::measureFragment(int startingIndex, int endingIn
     return simd_float2{maxW, maxH};
 };
 
+
 // how will this be used? It needs to be returned a max width and height, a starting flow x and y, then it needs to compute the constraints
 void Text::fragment(float flowX, float flowY, float maxWidth, float maxHeight) {
     std::vector<simd_float2> quadOffsets;
@@ -361,13 +383,23 @@ void Text::fragment(float flowX, float flowY, float maxWidth, float maxHeight) {
     
     float currFragmentX = flowX, currFragmentY = flowY;
     
+
     while (eInd < text.size()) {
         auto fs = measureFragment(sInd, eInd);
 
         if (not fs.has_value())
             break;
+        
+        
+        std::println("eind: {}", eInd);
+        
 
+//        std::println("currFragmentX: {} fs->x: {}, currFragmentX + fs->x: {} mw: {}", currFragmentX, static_cast<float>(fs->x), currFragmentX + fs->x, maxWidth);
+        
         if (currFragmentX + fs->x >= maxWidth) {
+            
+
+            
             for (auto ch : std::string_view(this->text).substr(sInd, eInd-1)) {
                 if (ch == '\r') {
                     continue;
@@ -383,14 +415,19 @@ void Text::fragment(float flowX, float flowY, float maxWidth, float maxHeight) {
             currFragmentX = 0;
             currFragmentY += fontSize;
             sInd = eInd;
+            
         }
         
-        if (currFragmentY >= maxHeight) {
-            break;
-        }
+//        if (currFragmentY >= maxHeight) {
+//            break;
+//        }
         
         ++eInd;
     }
+    
+    
+    resizeBuffer(this->renderer.device, this->quadOffsetBuffer, quadOffsets.size()*sizeof(simd_float2));
+    std::memcpy(this->quadOffsetBuffer->contents(), quadOffsets.data(), quadOffsets.size()*sizeof(simd_float2));
     
     this->fragmented = true;
 }

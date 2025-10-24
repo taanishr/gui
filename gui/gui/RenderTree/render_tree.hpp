@@ -146,7 +146,7 @@ public:
                 if (lastRun.flowX + this->layoutBox.computedWidth > parentCtx.width) {
                     if constexpr (Fragmentable<decltype(*(this->drawable.get()))>) {
                         std::println("fragmentable, drawable ptr: {}", reinterpret_cast<void*>(this->drawable.get()));
-//                            this->drawable->fragment(parentCtx.flowX, parentCtx.flowY, parentCtx.width, parentCtx.height);
+                            this->drawable->fragment(lastRun.flowX, parentCtx.flowY, parentCtx.width, parentCtx.height);
                     }
                     
                     lastRun.flowY += lastRun.lineHeight;
@@ -279,6 +279,18 @@ public:
     RenderTree();
 
     void flatten(RenderNodeBase* node, int parentZ);
+    
+    // void measure()
+        // call measure on drawable
+    
+    // void layout()
+        // switch based on drawable type; then lay out atoms
+    
+    // void fragment()
+        // call fragment engine; assemble atoms into distinct drawables
+    
+    // open questions
+    // how do we inject position information? use constant matrix, multiply per fragment? I think thats my best choice?
     
     void layout(const FrameInfo& frameSize);
     void position();
