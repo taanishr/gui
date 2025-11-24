@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>11</integer>
+	<key>logs</key>
+	<dict>
+		<key>09845DEA-7336-483B-9635-09A7F4AA693B</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>09845DEA-7336-483B-9635-09A7F4AA693B.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>gui project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>gui</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785650251.97030497</real>
+			<key>timeStoppedRecording</key>
+			<real>785650252.28081501</real>
+			<key>title</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>09845DEA-7336-483B-9635-09A7F4AA693B</string>
+		</dict>
+		<key>2559773B-4986-431D-8120-B94601C3978B</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>2559773B-4986-431D-8120-B94601C3978B.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>gui project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>gui</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785650374.90574205</real>
+			<key>timeStoppedRecording</key>
+			<real>785650375.17907798</real>
+			<key>title</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>2559773B-4986-431D-8120-B94601C3978B</string>
+		</dict>
+		<key>3A2068D8-2C6C-4283-827F-1E89D1304102</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>3A2068D8-2C6C-4283-827F-1E89D1304102.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>gui project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>gui</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785649996.77652001</real>
+			<key>timeStoppedRecording</key>
+			<real>785649997.03293204</real>
+			<key>title</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>3A2068D8-2C6C-4283-827F-1E89D1304102</string>
+		</dict>
+		<key>F3E7BD72-61AB-425F-B627-367583C160B4</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>F3E7BD72-61AB-425F-B627-367583C160B4.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>gui project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>gui</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>785650564.49526298</real>
+			<key>timeStoppedRecording</key>
+			<real>785650564.76583505</real>
+			<key>title</key>
+			<string>Cleaning project gui with scheme gui and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>F3E7BD72-61AB-425F-B627-367583C160B4</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

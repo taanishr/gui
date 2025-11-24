@@ -48,7 +48,7 @@
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = A576DD702E5655F400B8CA82 /* Sources */;
 			membershipExceptions = (
-				RenderTree/render_tree.hpp,
+				render_tree.hpp,
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
@@ -153,7 +153,7 @@
 				TargetAttributes = {
 					A576DD732E5655F400B8CA82 = {
 						CreatedOnToolsVersion = 16.4;
-						LastSwiftMigration = 1640;
+						LastSwiftMigration = 2610;
 					};
 				};
 			};
