@@ -264,23 +264,23 @@ const TextLayout& Text::layout() const
     return *(this->textLayout);
 }
 
-FragmentTemplate& _imeasure(Constraints& constraints)
-{
-    // vector<Atom> atoms;
-    // float width;
-    // float height;
-    // loop over characters; for now, we're not handling ligatures. treat every char as an "atom'
-        // if new line
-            // height += line height
-            // continue
-    
-        // retrieve glyph
-        // create atom (h/w of glyph)
-        // width += atom width
-    
-    // instantiate fragment template (atoms, width, height)
-    // return FragmenTemplate
-}
+//FragmentTemplate& _imeasure(Constraints& constraints)
+//{
+//     vector<Atom> atoms;
+//     float width;
+//     float height;
+//     loop over characters; for now, we're not handling ligatures. treat every char as an "atom'
+//         if new line
+//             height += line height
+//             continue
+//    
+//         retrieve glyph
+//         create atom (h/w of glyph)
+//         width += atom width
+//    
+//     instantiate fragment template (atoms, width, height)
+//     return FragmenTemplate
+//}
 
 const DrawableSize& Text::measure()
 {
