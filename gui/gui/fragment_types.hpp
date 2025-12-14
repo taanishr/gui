@@ -6,22 +6,51 @@
 //
 
 #include <vector>
+#include "buffer_allocator.hpp"
+
+// idea of a drawable
+// Drawables create vector<Atom>; they generate the unpositioned base units
+    // Atoms share a local position buffer
+    // each atom thus has the same buffer handle and specifies offset + length
+    // each atom also stores width + height
+    // FragmentTemplate is a convenient wrapper over this with instrinsics (e.g. width/height)
+
+// Layout engine
+// Transforms Fragment Template into Placed Fragment Template
+    // loops over atoms; places each one individually
 
 struct Atom {
+    BufferHandle bufferHandle; // local position buffer
+    unsigned long bufferOffset;
+    unsigned long length;
+    
     float width;
     float height;
 };
 
-struct FragmentTemplate {
-    std::vector<Atom> atoms; // individual atoms
-    float width; // float of fragment
-    float height; // height of fragment
+struct AtomPlacement {
+    BufferHandle placementBufferHandle;
+    unsigned long offset;
+    
+    float x;
+    float y;
 };
 
-struct Constraints {
-    float maxWidth;
-    float maxHeight;
-    float explicitWidth;
-    float explicitHeight;
+template <typename T>
+struct Uniforms {
+    BufferHandle uniformsBufferHandle;
+    T uniforms;
 };
+
+template <typename T>
+struct FragmentTemplate {
+    std::vector<Atom> atoms; // individual atoms
+    std::vector<AtomPlacement> atomPlacements;
+    float width; // width of fragment
+    float height; // height of fragment
+
+    Uniforms<T> uniforms;
+};
+
+
 

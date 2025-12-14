@@ -11,54 +11,14 @@
 class Renderer;
 
 namespace NewArch {
-    template <typename T>
-    concept Drawable = requires(T t, MTL::RenderCommandEncoder* encoder, simd_float2 pt) {
-        { t.getPipeline() } -> std::same_as<MTL::RenderPipelineState*>; // get pipeline
+    struct UIContext {
+        UIContext(MTL::Device* device);
         
-        { t.update() } -> std::same_as<void>; // update buffers
-        { t.encode(encoder) } -> std::same_as<void>; // encode
-        
-        { t.atomize() } -> std::same_as<FragmentTemplate>; // atomize; useful for layouts
-
-        { t.contains(pt) } -> std::same_as<bool>; // loop over the atoms?
-    };
-
-
-    // centralized buffer allocaiton
-    using BufferHandle = unsigned int;
-
-    struct DrawableBuffer {
-        BufferHandle bufferId;
-        MTL::Buffer* buffer;
-        
-        DrawableBuffer(MTL::Device* device, unsigned int bufferId, unsigned int size);
-        ~DrawableBuffer();
-    };
-
-    struct DrawableBufferAllocator{
-        BufferHandle nextId;
-        std::unordered_map<BufferHandle, DrawableBuffer> buffers;
         MTL::Device* device;
-        
-        DrawableBufferAllocator(MTL::Device* device);
-        
-        BufferHandle allocate(unsigned int size);
-        MTL::Buffer* get(BufferHandle handle);
+        DrawableBufferAllocator allocator;
     };
 
-    // end of centralized buffer allocation;
-
-    struct DrawableSize {
-        float width;
-        float height;
-    };
-
-
-    struct QuadPoint {
-        simd_float2 position;
-    };
-
-    struct Uniforms {
+    struct ShellUniforms {
         simd_float4 color;
         simd_float2 rectCenter;
         simd_float2 halfExtent;
@@ -66,36 +26,93 @@ namespace NewArch {
         float borderWidth;
         simd_float4 borderColor;
     };
-
+    
     struct Shell {
-        Shell(Renderer& renderer, simd_float4 color={0,0,0,1}, float cornerRadius = 0.0);
-        
-        void buildPipeline(MTL::RenderPipelineState*& pipeline);
-        MTL::RenderPipelineState* getPipeline();
-        
-        void update();
-        void encode(MTL::RenderCommandEncoder* encoder);
+        Shell(UIContext& ctx, float width, float height);
 
-        const DrawableSize& measure() const;
-        const FragmentTemplate atomize() const;
+        std::vector<Atom> atomize();
         
-        bool contains(simd_float2 point) const;
-        ~Shell();
-        
-        Renderer& renderer;
-        
-        MTL::Buffer* quadPointsBuffer;
-        MTL::Buffer* uniformsBuffer;
-        MTL::Buffer* frameInfoBuffer;
-        
-        // properties
-        simd_float4 color;
-        simd_float4 borderColor;
-        float cornerRadius = 0.0;
-        float borderWidth = 0.0;
-        
-        DrawableSize intrinsicSize;
+        float width;
+        float height;
+        UIContext& ctx;
     };
 
+    struct Cursor {
+        simd_float2 position;
+    };
 
+    template <typename T>
+    struct Layout {
+        float x;
+        float y;
+        T uniforms;
+    };
+
+    struct LayoutEngine {
+        LayoutEngine(UIContext& ctx);
+        
+        template <typename T>
+        FragmentTemplate<T> place(
+            Layout<T>& layout,
+            std::vector<Atom>& atoms
+        )
+        {
+            FragmentTemplate<T> fragment;
+        
+            // first copy atoms
+            fragment.atoms = atoms;
+            
+            // build placements
+            // simplcity first; handle actual cases later
+            // TODO CASES:
+            // block vs. inline
+            // an actual globally-shared cursor
+            // handling overflow on the screen
+            // actual positioning (absolute vs. relative)
+            
+            auto placementBufferHandle = ctx.allocator.allocate(atoms.size()*sizeof(simd_float2));
+            auto placementBuffer = ctx.allocator.get(placementBufferHandle);
+            
+            
+            simd_float2 cursor {
+                .x = layout.x,
+                .y = layout.y
+            };
+            
+            float running_width;
+            float running_height;
+            
+            std::vector<simd_float2> raw_placements;
+            std::vector<AtomPlacement> placements;
+            
+            for (auto i = 0; i < atoms.size(); ++i) {
+                auto& curr_atom = atoms[i];
+                
+                AtomPlacement placement;
+                placement.x = cursor.x;
+                placement.y = cursor.y;
+                placement.offset = i*sizeof(simd_float2);
+                placement.placementBufferHandle = placementBufferHandle;
+                
+                raw_placements.push_back(cursor);
+                
+                running_width += curr_atom.width;
+                running_height = std::max(running_height, curr_atom.height);
+                cursor.x += curr_atom.width;
+            }
+            
+            std::memcpy(placementBuffer->contents(), raw_placements.data(), raw_placements.size()*sizeof(simd_float2));
+            
+            // handle total width/height
+            fragment.width = running_width;
+            fragment.height = running_height;
+            
+            // copy uniforms
+            fragment.uniforms = layout.uniforms;
+            
+            return fragment;
+        }
+        
+        UIContext& ctx;
+    };
 }
