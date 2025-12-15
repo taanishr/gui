@@ -12,6 +12,7 @@
 #include "drawable.hpp"
 #include "MTKTexture_loader.hpp"
 #include "bounds.hpp"
+#include "sdf_helpers.hpp"
 
 class Renderer;
 

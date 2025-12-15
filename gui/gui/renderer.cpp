@@ -15,9 +15,12 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     view{view},
     commandQueue(device->newCommandQueue()),
     frameSemaphore{MaxOutstandingFrameCount},
-    renderTree{}
-    
+    renderTree{},
+    ctx{device, view},
+    encoder{ctx},
+    layoutEngine{ctx}
 {
+    
     makeResources();
 }
 
@@ -57,13 +60,39 @@ void Renderer::draw() {
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-
-    auto frameInfo = getFrameInfo();
-    renderTree.layout(frameInfo);
-    renderTree.position();
-    renderTree.update();
-    renderTree.render(renderCommandEncoder);
-
+    
+    NewArch::Shell sh {ctx, 200, 200};
+    auto atoms = sh.atomize();
+    
+    NewArch::ShellUniforms uniforms;
+    
+    uniforms.color = simd_float4{0.5, 0.0, 0.0, 1.0};
+    uniforms.borderColor = simd_float4{0.5, 0.0, 0.0, 1.0};
+    uniforms.borderWidth = 0;
+    uniforms.cornerRadius = 0;
+    
+    NewArch::Layout layout;
+    layout.x = 100.0f;
+    layout.y = 100.0f;
+    
+    uniforms.init_shape_dep(sh.width, sh.height);
+    uniforms.init_layout_dep(layout);
+    
+    FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
+    
+    std::println("ft.atoms size: {}", ft.atoms.size());
+    
+    auto pipeline = sh.getPipeline();
+    
+    encoder.encode(renderCommandEncoder, pipeline, ft);
+    
+//    auto frameInfo = getFrameInfo();
+//    renderTree.layout(frameInfo);
+//    renderTree.position();
+//    renderTree.update();
+//    renderTree.render(renderCommandEncoder);
+    
+    
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
 

@@ -5,6 +5,7 @@
 //  Created by Taanish Reja on 11/23/25.
 //
 
+#pragma once
 #include "metal_imports.hpp"
 #include <print>
 

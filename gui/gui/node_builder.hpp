@@ -8,8 +8,11 @@
 #pragma once
 #include "drawable.hpp"
 #include "renderer.hpp"
+#include "render_tree.hpp"
+#include "events.hpp"
 #include "metal_imports.hpp"
 #include "color.hpp"
+#include "ui.hpp"
 
 template <typename T>
 concept HasColor = requires(T t) {

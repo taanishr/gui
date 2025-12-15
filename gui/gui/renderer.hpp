@@ -11,11 +11,10 @@
 #include <semaphore>
 #include <iostream>
 #include <ranges>
-#include "frame_info.hpp"
 #include "render_tree.hpp"
-#include "events.hpp"
+#include "frame_info.hpp"
+#include "new_arch.hpp"
 #include <chrono>
-#include "node_builder.hpp"
 #include "glyphCache.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
@@ -40,6 +39,10 @@ public:
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
+    NewArch::UIContext ctx;
+    NewArch::LayoutEngine layoutEngine;
+    NewArch::Encoder encoder;
+
     
     RenderTree renderTree;
     

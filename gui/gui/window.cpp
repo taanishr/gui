@@ -122,7 +122,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
     
-    UIContext ctx {this->device};
+    
+    // run some tests (no visual updates)
+    UIContext ctx {this->device, this->view};
     index(ctx);
 
     window->setContentView(view);

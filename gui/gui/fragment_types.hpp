@@ -30,7 +30,7 @@ struct Atom {
 
 struct AtomPlacement {
     BufferHandle placementBufferHandle;
-    unsigned long offset;
+    unsigned long placementBufferOffset;
     
     float x;
     float y;
