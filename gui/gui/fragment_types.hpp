@@ -20,8 +20,8 @@
     // loops over atoms; places each one individually
 
 struct Atom {
-    BufferHandle bufferHandle; // local position buffer
-    unsigned long bufferOffset;
+    BufferHandle atomBufferHandle; // local position buffer
+    unsigned long offset;
     unsigned long length;
     
     float width;
@@ -30,7 +30,6 @@ struct Atom {
 
 struct AtomPlacement {
     BufferHandle placementBufferHandle;
-    unsigned long placementBufferOffset;
     
     float x;
     float y;

@@ -49,6 +49,28 @@ void Renderer::makeResources()
     FT_Init_FreeType(&(this->ft));
 }
 
+/*
+start with fragment template
+ 
+multiple passes
+ 
+Shell {
+    initialize();
+    std::vector<Atom> atomize();
+    <- layout pass (independent) ->
+    place(std::vector<AtomPlacements>):
+    
+    <- commit uniforms buffer ->
+    FragmentTemplate& finalize(); -> passed to encoder
+ 
+    FragmentTemplate& template;
+}
+ 
+ 
+ 
+ */
+
+
 void Renderer::draw() {
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
@@ -77,6 +99,11 @@ void Renderer::draw() {
     
     uniforms.init_shape_dep(sh.width, sh.height);
     uniforms.init_layout_dep(layout);
+    
+    // pipeline
+    // create shell object; this initializes buffers and sets up atoms
+    // then, call layout engines place on atoms to get atom placements
+    // then initialize the uniforms
     
     FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
     

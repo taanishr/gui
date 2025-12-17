@@ -20,13 +20,30 @@ struct ShellVertexOut {
     float4 worldPosition;
 };
 
-struct ShellUniforms {
+//struct ShellUniforms {
+//    simd_float4 color;
+//    float cornerRadius;
+//    float borderWidth;
+//    simd_float4 borderColor;
+//    simd_float2 rectCenter;
+//    simd_float2 halfExtent; 
+//};
+
+struct ShellStyleUniforms {
     simd_float4 color;
     float cornerRadius;
     float borderWidth;
     simd_float4 borderColor;
+};
+
+struct ShellGeometryUniforms {
     simd_float2 rectCenter;
-    simd_float2 halfExtent; 
+    simd_float2 halfExtent;
+};
+
+struct ShellUniforms {
+    ShellStyleUniforms style;
+    ShellGeometryUniforms geometry;
 };
 
 //vertex ShellVertexOut vertex_shell(
@@ -103,21 +120,21 @@ fragment float4 fragment_shell(
 )
 {
     // todo: figure out uniforms cpu side
-    float2 localPosition = in.worldPosition.xy - uniforms->rectCenter;
-    float d = rounded_rect_sdf(localPosition, uniforms->halfExtent, uniforms->cornerRadius);
+    float2 localPosition = in.worldPosition.xy - uniforms->geometry.rectCenter;
+    float d = rounded_rect_sdf(localPosition, uniforms->geometry.halfExtent, uniforms->style.cornerRadius);
 
     float px = fwidth(d);
 
     float outerMask = clamp(0.5 - d/px, 0.0, 1.0);
     
-    float innerD = d + uniforms->borderWidth;
+    float innerD = d + uniforms->style.borderWidth;
     float innerMask = clamp(0.5 - innerD/px, 0.0, 1.0);
     
     float borderMask = outerMask - innerMask;
     float fillMask = innerMask;
     
-    float4 fillColor = uniforms->color;
-    float4 borderColor = uniforms->borderColor;
+    float4 fillColor = uniforms->style.color;
+    float4 borderColor = uniforms->style.borderColor;
     
     float3 premulFill = fillColor.rgb * fillColor.a * fillMask;
     float3 premulBorder = borderColor.rgb * borderColor.a * borderMask;

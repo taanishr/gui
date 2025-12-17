@@ -28,71 +28,167 @@ namespace NewArch {
         simd_float2 position;
     };
 
+    enum LengthType {
+        px=0,
+        pct=1
+    };
+
+    struct Length {
+        float value;
+        LengthType type;
+    };
+
     struct Layout {
+        float parentWidth;
+        float parentHeight;
         float x;
         float y;
     };
 
-    struct ShellUniforms {
-        // constant
+    struct ShellStyleUniforms {
         simd_float4 color;
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
-        
-        // layout dependent
-        simd_float2 rectCenter;
-        
-        // shape dependent
-        simd_float2 halfExtent;
-        
-        void init_shape_dep(float width, float height);
-        
-        void init_layout_dep(Layout& layout);
     };
-    
+
+    struct ShellGeometryUniforms {
+        simd_float2 rectCenter;
+        simd_float2 halfExtent;
+    };
+
+    struct ShellUniforms {
+        ShellStyleUniforms style;
+        ShellGeometryUniforms geometry;
+    };
+        
     struct AtomPoint {
         simd_float2 point;
         unsigned int id;
     };
 
-    struct Shell {
-        Shell(UIContext& ctx, float width, float height);
 
-        void buildPipeline(MTL::RenderPipelineState*& pipeline);
-        MTL::RenderPipelineState* getPipeline();
-        std::vector<Atom> atomize();
+    // shell class does what?
+    // initializes fragment template (shell-specific)
+    // atomizes (shell-specific)
+    // creates uniforms (shell-specific)
+    // builds pipelines
+
+    // layout engine does what?
+    // takes fragment template and figures out atom placements.
+    // should the layout engine resize the buffer? Should it call into a shell method that does that?
+
+    // then the problems with text come up; should we just globablly share a text buffer and use indexed buffers? Then encoding becomes specific? Unless we make all draws indexed? Which makes sense, because it would save
+
+    struct Shell {
+        Shell(UIContext& ctx):
+            ctx{ctx}
+        {
+            atomBufferHandle = ctx.allocator.allocate(6*sizeof(AtomPoint));
+            placementBufferHandle = ctx.allocator.allocate(sizeof(simd_float2));
+            uniformsBufferHandle = ctx.allocator.allocate(sizeof(ShellUniforms));
+        }
+
+        void buildPipeline(MTL::RenderPipelineState*& pipeline) {
+            MTL::Library* defaultLibrary = ctx.device->newDefaultLibrary();
+            MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
+            
+            // set up vertex descriptor
+            MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
+            vertexDescriptor->attributes()->object(0)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+            vertexDescriptor->attributes()->object(0)->setOffset(0);
+            vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
+            
+            vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatUInt);
+            vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
+            vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
+
+            vertexDescriptor->layouts()->object(0)->setStride(sizeof(AtomPoint));
+            
+            renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
+
+            
+            // set up vertex function
+            MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_shell", NS::UTF8StringEncoding));
+            renderPipelineDescriptor->setVertexFunction(vertexFunction);
+
+            // color attachments
+            renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(ctx.view->colorPixelFormat());
+            renderPipelineDescriptor->colorAttachments()->object(0)->setBlendingEnabled(true);
+            renderPipelineDescriptor->colorAttachments()->object(0)->setAlphaBlendOperation(MTL::BlendOperationAdd);
+            renderPipelineDescriptor->colorAttachments()->object(0)->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
+            renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+            renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
+            renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+            
+            
+            renderPipelineDescriptor->setDepthAttachmentPixelFormat(ctx.view->depthStencilPixelFormat());
+            
+
+            // set up fragment function
+            MTL::Function* fragmentFunction = defaultLibrary->newFunction(NS::String::string("fragment_shell", NS::UTF8StringEncoding));
+            renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
+            
+            
+            NS::Error* error = nullptr;
+            pipeline = ctx.device->newRenderPipelineState(renderPipelineDescriptor, &error);
+            
+            if (error != nullptr)
+                std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
+            
+            
+            defaultLibrary->release();
+            renderPipelineDescriptor->release();
+            vertexDescriptor->release();
+            vertexFunction->release();
+        }
         
+        
+        MTL::RenderPipelineState* getPipeline() {
+            static MTL::RenderPipelineState* pipeline = nullptr;
+            
+            if (!pipeline)
+                buildPipeline(pipeline);
+            
+            return pipeline;
+        }
+    
+        // atomizes shell
+        std::vector<Atom> atomize();
+        void place(std::vector<AtomPlacements>& placements);
+        FragmentTemplate& finalize();
+        
+        // Shell metadata
+        // explicit dimensions
         float width;
         float height;
+        
+        simd_float4 color;
+        float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
+        
+        // buffers
+        BufferHandle atomBufferHandle;
+        BufferHandle placementBufferHandle;
+        BufferHandle uniformsBufferHandle;
+        
+        FragmentTemplate& fragTemplatae;;
+        
+        // ctx
         UIContext& ctx;
     };
 
     struct LayoutEngine {
         LayoutEngine(UIContext& ctx);
         
-        template <typename T>
-        FragmentTemplate<T> place(
-            Layout& layout,
-            T uniforms_data,
-            std::vector<Atom>& atoms
+        
+        std::vector<AtomPlacement> place(
+            std::vector<Atom>& atoms,
+            BufferHandle placementBufferHandle,
+            Layout& layout
         )
         {
-            Uniforms<T> uniforms;
-            FragmentTemplate<T> fragment;
-        
-            // first copy atoms
-            fragment.atoms = atoms;
-            
-            // build placements
-            // simplcity first; handle actual cases later
-            // TODO CASES:
-            // block vs. inline
-            // an actual globally-shared cursor
-            // handling overflow on the screen
-            // actual positioning (absolute vs. relative)
-            
-            auto placementBufferHandle = ctx.allocator.allocate(atoms.size()*sizeof(simd_float2));
             auto placementBuffer = ctx.allocator.get(placementBufferHandle);
             
             
@@ -101,6 +197,7 @@ namespace NewArch {
                 layout.y
             };
             
+            // simple method first
             float running_width = 0.0;
             float running_height = 0.0;
             
@@ -112,7 +209,6 @@ namespace NewArch {
                 AtomPlacement placement;
                 placement.x = cursor.x;
                 placement.y = cursor.y;
-                placement.placementBufferOffset = i*sizeof(simd_float2);
                 placement.placementBufferHandle = placementBufferHandle;
                 
                 raw_placements.push_back(cursor);
@@ -125,23 +221,7 @@ namespace NewArch {
             
             std::memcpy(placementBuffer->contents(), raw_placements.data(), raw_placements.size()*sizeof(simd_float2));
             
-            fragment.atomPlacements = placements;
-            
-            // handle total width/height
-            fragment.width = running_width;
-            fragment.height = running_height;
-            
-            // copy uniforms
-            auto uniformsBufferHandle = ctx.allocator.allocate(sizeof(T));
-            auto uniformsBuffer = ctx.allocator.get(uniformsBufferHandle);
-            std::memcpy(uniformsBuffer->contents(), &uniforms_data, sizeof(T));
-            
-            uniforms.uniformsBufferHandle = uniformsBufferHandle;
-            uniforms.uniforms = uniforms_data;
-
-            fragment.uniforms = uniforms;
-            
-            return fragment;
+            return placements;
         }
         
         UIContext& ctx;
@@ -170,18 +250,10 @@ namespace NewArch {
 
                 renderCommandEncoder->setFragmentBuffer(uniformsBuf, 0, 0);
                 
-                std::println("atom.bufferOffset: {} atom.length: {}", atom.bufferOffset, atom.length /  sizeof(AtomPoint));
-                
-                // assert works fine on raw points?
-//                std::array<simd_float2, 6> shell_points {{ {0,0}, {300,0}, {0,300}, {0,300}, {300,0}, {300,300} }};
-//                assert(std::memcmp(atomBuf->contents(), shell_points.data(), shell_points.size() * sizeof(simd_float2)) == 0);
-    
-                // assert frames are same; asserts well
                 auto frameDimensions = ctx.view->drawableSize();
                 FrameInfo fi {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
                 assert(std::memcmp(frameInfoBuf->contents(), &fi, sizeof(FrameInfo)) == 0);
                 
-                // atom.length is wrong; buffer size, not num points
                 renderCommandEncoder->drawPrimitives(MTL::PrimitiveTypeTriangle, atom.bufferOffset, atom.length / sizeof(AtomPoint));
             }
         }
