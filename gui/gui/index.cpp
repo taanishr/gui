@@ -2,71 +2,8 @@
 
 #include "index.hpp"
 
-void shell_test(UIContext& ctx) {
-    Shell sh {ctx, 300, 300};
-    assert(sh.width == 300);
-    assert(sh.height == 300);
-    
-    auto atoms = sh.atomize();
-    
-    assert(atoms.size() == 1);
-    auto sh_atom = atoms.front();
-    
-    unsigned long bufferLength = sizeof(AtomPoint)*6;
-    assert(sh_atom.width == 300);
-    assert(sh_atom.height == 300);
-    assert(sh_atom.bufferOffset == 0);
-    assert(sh_atom.length == bufferLength);
-
-    auto sh_buf = ctx.allocator.get(sh_atom.bufferHandle);
-    
-    assert(sh_buf->allocatedSize() == sh_atom.length);
-    
-//    std::array<simd_float2, 6> shell_points {{ {0,0}, {sh.width,0}, {0,sh.height}, {0,sh.height}, {sh.width,0}, {sh.width,sh.height} }};
-//    assert(std::memcmp(sh_buf->contents(), shell_points.data(), shell_points.size() * sizeof(simd_float2)) == 0);
-}
-
-// write a thorough layout test
-void layout_test(UIContext& ctx) {
-    Shell sh {ctx, 300, 300};
-    auto atoms = sh.atomize();
-    
-    LayoutEngine layoutEngine {ctx};
-    
-    ShellUniforms uniforms;
-    
-    Layout layout;
-    layout.x = 100;
-    layout.y = 100;
-    
-    uniforms.init_shape_dep(sh.width, sh.height);
-    uniforms.init_layout_dep(layout);
-    
-    assert(uniforms.halfExtent.x == 150.0f && uniforms.halfExtent.y == 150.0f);
-    assert(uniforms.rectCenter.x == 250.0f && uniforms.rectCenter.y == 250.0f);
-
-    FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
-
-    assert(ft.width == 300);
-    assert(ft.height == 300);
-    
-    
-    std::array<simd_float2, 1> placements {{ {100,100} }};
-    
-    auto pl = ft.atomPlacements.front();
-
-    auto pl_buf = ctx.allocator.get(pl.placementBufferHandle);
-    assert(std::memcmp(pl_buf->contents(), placements.data(), placements.size() * sizeof(simd_float2)) == 0);
-    
-}
-
-void run_tests(UIContext& ctx) {
-    shell_test(ctx);
-    layout_test(ctx);
-}
 
 void index(UIContext& ctx) {
-    run_tests(ctx);
 }
 
 

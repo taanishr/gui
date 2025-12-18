@@ -16,98 +16,120 @@ using namespace std::ranges::views;
 class Renderer;
 
 namespace NewArch {
-    struct UIContext {
-        UIContext(MTL::Device* device, MTK::View* view);
-        
-        MTL::Device* device;
-        MTK::View* view;
-        DrawableBufferAllocator allocator;
-    };
+    using FragmentID = uint64_t;
 
-    struct Cursor {
-        simd_float2 position;
-    };
-
-    enum LengthType {
-        px=0,
-        pct=1
-    };
-
-    struct Length {
-        float value;
-        LengthType type;
-    };
-
-    struct Layout {
-        float parentWidth;
-        float parentHeight;
+    struct Constraints {
+        float maxWidth;
+        float maxHeight;
         float x;
         float y;
     };
 
-    struct ShellStyleUniforms {
+    template <typename S>
+    struct Fragment {
+        FragmentID id;
+        S fragmentStorage;
+    };
+
+    struct DivDescriptor {
+        float width;
+        float height;
+        
         simd_float4 color;
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
     };
 
-    struct ShellGeometryUniforms {
+    struct DivStorage {
+        DrawableBuffer atomsBuffer;
+        DrawableBuffer placementsBuffer;
+        DrawableBuffer uniformsBuffer;
+    };
+
+    struct DivStyleUniforms {
+        simd_float4 color;
+        float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
+    };
+
+    struct DivGeometryUniforms {
         simd_float2 rectCenter;
         simd_float2 halfExtent;
     };
 
-    struct ShellUniforms {
-        ShellStyleUniforms style;
-        ShellGeometryUniforms geometry;
+    struct DivUniforms {
+        DivStyleUniforms style;
+        DivGeometryUniforms geometry;
+    };
+
+    struct Measured {
+        FragmentID id;
+        float explicitWidth;
+        float explicitHeight;
+    };
+
+    struct Atomized {
+        FragmentID id;
+        std::vector<Atom> atoms;
+    };
+
+    struct Placed {
+        FragmentID id;
+        std::vector<AtomPlacement> placements;
+    };
+
+    template <typename U>
+    struct Finalized {
+        FragmentID id;
+        Atomized atomized;
+        Placed placed;
+        U Uniforms;
+    };
+
+    struct LayoutEngine {
+        std::vector<simd_float2> resolve(Constraints& constraints, Atomized atomized);
+    };
+
+
+    struct UIContext {
+        UIContext(MTL::Device* device, MTK::View* view);
+
+        MTL::Device* device;
+        MTK::View* view;
+        DrawableBufferAllocator allocator;
+        LayoutEngine layoutEngine;
+        DrawableBuffer frameInfoBuffer;
     };
         
-    struct AtomPoint {
-        simd_float2 point;
-        unsigned int id;
-    };
 
-
-    // shell class does what?
-    // initializes fragment template (shell-specific)
-    // atomizes (shell-specific)
-    // creates uniforms (shell-specific)
-    // builds pipelines
-
-    // layout engine does what?
-    // takes fragment template and figures out atom placements.
-    // should the layout engine resize the buffer? Should it call into a shell method that does that?
-
-    // then the problems with text come up; should we just globablly share a text buffer and use indexed buffers? Then encoding becomes specific? Unless we make all draws indexed? Which makes sense, because it would save
-
-    struct Shell {
-        Shell(UIContext& ctx):
+    template <typename S = DivStorage, typename U = DivUniforms>
+    struct DivProcessor {
+        DivProcessor(UIContext& ctx):
             ctx{ctx}
-        {
-            atomBufferHandle = ctx.allocator.allocate(6*sizeof(AtomPoint));
-            placementBufferHandle = ctx.allocator.allocate(sizeof(simd_float2));
-            uniformsBufferHandle = ctx.allocator.allocate(sizeof(ShellUniforms));
-        }
-
+        {}
+        
+        // pipeline specific
         void buildPipeline(MTL::RenderPipelineState*& pipeline) {
             MTL::Library* defaultLibrary = ctx.device->newDefaultLibrary();
             MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-            
+
             // set up vertex descriptor
             MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
             vertexDescriptor->attributes()->object(0)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
             vertexDescriptor->attributes()->object(0)->setOffset(0);
             vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
-            
+
             vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatUInt);
             vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
             vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
 
             vertexDescriptor->layouts()->object(0)->setStride(sizeof(AtomPoint));
-            
+
             renderPipelineDescriptor->setVertexDescriptor(vertexDescriptor);
 
-            
+
             // set up vertex function
             MTL::Function* vertexFunction = defaultLibrary->newFunction(NS::String::string("vertex_shell", NS::UTF8StringEncoding));
             renderPipelineDescriptor->setVertexFunction(vertexFunction);
@@ -120,145 +142,183 @@ namespace NewArch {
             renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
             renderPipelineDescriptor->colorAttachments()->object(0)->setSourceAlphaBlendFactor(MTL::BlendFactorSourceAlpha);
             renderPipelineDescriptor->colorAttachments()->object(0)->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
-            
-            
+
+
             renderPipelineDescriptor->setDepthAttachmentPixelFormat(ctx.view->depthStencilPixelFormat());
-            
+
 
             // set up fragment function
             MTL::Function* fragmentFunction = defaultLibrary->newFunction(NS::String::string("fragment_shell", NS::UTF8StringEncoding));
             renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
-            
-            
+
+
             NS::Error* error = nullptr;
             pipeline = ctx.device->newRenderPipelineState(renderPipelineDescriptor, &error);
-            
+
             if (error != nullptr)
                 std::println("error in pipeline creation: {}", error->localizedDescription()->utf8String());
-            
-            
+
+
             defaultLibrary->release();
             renderPipelineDescriptor->release();
             vertexDescriptor->release();
             vertexFunction->release();
         }
-        
-        
+
+
         MTL::RenderPipelineState* getPipeline() {
             static MTL::RenderPipelineState* pipeline = nullptr;
-            
+
             if (!pipeline)
                 buildPipeline(pipeline);
-            
+
             return pipeline;
         }
-    
-        // atomizes shell
-        std::vector<Atom> atomize();
-        void place(std::vector<AtomPlacements>& placements);
-        FragmentTemplate& finalize();
-        
-        // Shell metadata
-        // explicit dimensions
-        float width;
-        float height;
-        
-        simd_float4 color;
-        float cornerRadius;
-        float borderWidth;
-        simd_float4 borderColor;
-        
-        // buffers
-        BufferHandle atomBufferHandle;
-        BufferHandle placementBufferHandle;
-        BufferHandle uniformsBufferHandle;
-        
-        FragmentTemplate& fragTemplatae;;
-        
-        // ctx
-        UIContext& ctx;
-    };
 
-    struct LayoutEngine {
-        LayoutEngine(UIContext& ctx);
+        // placement/encoder/etc...
+        Measured measure(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
+            Measured measured;
         
+            // starting with just one type of measurement; for now, we keep it simple, just desc width and height
+            measured.id = fragment.id;
+            measured.explicitWidth = desc.width;
+            measured.explicitHeight = desc.height;
+            
+            return measured;
+        }
+        // resolve percents as explicit width/height, also resolve explicit width/height (like divs default 100% width?)
         
-        std::vector<AtomPlacement> place(
-            std::vector<Atom>& atoms,
-            BufferHandle placementBufferHandle,
-            Layout& layout
-        )
-        {
-            auto placementBuffer = ctx.allocator.get(placementBufferHandle);
+        // won't be problematic since we know constraints before hand... so percents can be resolved easily
+        // and also, we know 100% width so divs can be easily resolved. this makes sense
+        
+        // after we resolved the measurements, we can actually atomize... question is, do I need a new struct in between?
+        Atomized atomize(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured) {
+            std::vector<Atom> atoms {};
             
+            // get measurements
+            float width = measured.explicitWidth;
+            float height = measured.explicitHeight;
             
-            simd_float2 cursor {
-                layout.x,
-                layout.y
+            // prepare buffer
+            auto atomsBuffer = fragment.fragmentStorage.atomsBuffer.get();
+            size_t bufferLen = 6*sizeof(AtomPoint);
+
+            std::array<AtomPoint, 6> atomPoints {{
+                {{0,0}, 0},
+                {{width,0}, 0},
+                {{0,height}, 0},
+                {{0,height}, 0},
+                {{width,0}, 0},
+                {{width,height}, 0},
+            }};
+
+            // finish allocating atom
+            Atom atom;
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.handle();
+            atom.offset = 0;
+            atom.length = bufferLen;
+            atom.width = width;
+            atom.height = height;
+
+            atoms.push_back(atom);
+            
+            std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
+
+            return Atomized{
+                .id = fragment.id,
+                .atoms = atoms
             };
-            
-            // simple method first
-            float running_width = 0.0;
-            float running_height = 0.0;
-            
-            std::vector<simd_float2> raw_placements;
+        }
+        
+        // TODO: Cache all this
+        Placed place(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) // also needs to take in constraints
+        {
             std::vector<AtomPlacement> placements;
             
-            for (auto i = 0; i < atoms.size(); ++i) {
-                auto& curr_atom = atoms[i];
-                AtomPlacement placement;
-                placement.x = cursor.x;
-                placement.y = cursor.y;
-                placement.placementBufferHandle = placementBufferHandle;
-                
-                raw_placements.push_back(cursor);
-                placements.push_back(placement);
-                
-                running_width += curr_atom.width;
-                running_height = std::max(running_height, curr_atom.height);
-                cursor.x += curr_atom.width;
+            // simply calls the layout engine; nothing implementation specific here
+            auto offsets = ctx.layoutEngine.resolve(constraints, atomized);
+            
+            // copy placements into buffer
+            auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+            size_t bufferLen = sizeof(simd_float2);
+            std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+            
+            // make the actual placement
+            for (int i = 0; i < offsets.size(); ++i) {
+                placements.push_back({
+                    .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.handle(),
+                    .x = offsets[i].x,
+                    .y = offsets[i].y
+                });
             }
             
-            std::memcpy(placementBuffer->contents(), raw_placements.data(), raw_placements.size()*sizeof(simd_float2));
-            
-            return placements;
+            return Placed{
+                .id = fragment.id,
+                .placements = placements
+            };
         }
         
-        UIContext& ctx;
-    };
-
-
-    struct Encoder {
-        Encoder(UIContext& ctx);
-        
-        template <typename T>
-        void encode(MTL::RenderCommandEncoder* renderCommandEncoder, MTL::RenderPipelineState* pipeline, FragmentTemplate<T>& ft) {
-            renderCommandEncoder->setRenderPipelineState(pipeline);
+        // finalizes uniforms and makes final object
+        Finalized<U> finalize(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
+        {
+            // finalizes uniforms and return finalized object
             
-            for (auto [atom, atomPlacement] : zip(ft.atoms, ft.atomPlacements)) {
+            // style uniforms
+            DivStyleUniforms styleUniforms{
+                .color = desc.color,
+                .cornerRadius = desc.cornerRadius,
+                .borderWidth = desc.borderWidth,
+                .borderColor = desc.borderColor
+            };
+            
+            // geometry uniforms
+            auto offset = placed.placements.front();
+            simd_float2 halfExtent { desc.width / 2.0f, desc.height / 2.0f };
+            simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
+            DivGeometryUniforms geometryUniforms {
+                .halfExtent = halfExtent,
+                .rectCenter = rectCenter
+            };
+            
+            DivUniforms uniforms {
+                .style = styleUniforms,
+                .geometry = geometryUniforms
+            };
+            
+            return Finalized {
+                .id = fragment.id,
+                .atomized = atomized,
+                .placed = placed,
+                .uniforms = uniforms
+            };
+        }
+        
+        void encode(MTL::RenderCommandEncoder* encoder, Fragment<S> fragment, Finalized<U> finalized) {
+            auto pipeline = getPipeline();
+            encoder->setRenderPipelineState(pipeline);
+            
+            for (auto [atom, atomPlacement] : zip(finalized.atomized, finalized.placed)) {
                 // vertex buffers
-                auto atomBuf = ctx.allocator.get(atom.bufferHandle);
-                auto atomPlacementBuf = ctx.allocator.get(atomPlacement.placementBufferHandle);
-                auto frameInfoBuf = ctx.allocator.get(this->frameInfo);
+                auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
+                auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.get();
+                auto frameInfoBuf = ctx.frameInfoBuffer.get();
                 
                 // fragment buffers
-                auto uniformsBuf = ctx.allocator.get(ft.uniforms.uniformsBufferHandle);
+                auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
                 
-                renderCommandEncoder->setVertexBuffer(atomBuf, 0, 0);
-                renderCommandEncoder->setVertexBuffer(atomPlacementBuf, 0, 1);
-                renderCommandEncoder->setVertexBuffer(frameInfoBuf, 0, 2);
-
-                renderCommandEncoder->setFragmentBuffer(uniformsBuf, 0, 0);
+                encoder->setVertexBuffer(atomBuf, 0, 0);
+                encoder->setVertexBuffer(atomPlacementBuf, 0, 1);
+                encoder->setVertexBuffer(frameInfoBuf, 0, 2);
                 
-                auto frameDimensions = ctx.view->drawableSize();
-                FrameInfo fi {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
-                assert(std::memcmp(frameInfoBuf->contents(), &fi, sizeof(FrameInfo)) == 0);
-                
-                renderCommandEncoder->drawPrimitives(MTL::PrimitiveTypeTriangle, atom.bufferOffset, atom.length / sizeof(AtomPoint));
+                encoder->setFragmentBuffer(uniformsBuf, 0, 0);
             }
+            
+            
         }
         
-        BufferHandle frameInfo;
+        // Shared resources (optional)
+        
+        // Shared context
         UIContext& ctx;
     };
 

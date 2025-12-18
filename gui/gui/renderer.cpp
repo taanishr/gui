@@ -17,8 +17,7 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     frameSemaphore{MaxOutstandingFrameCount},
     renderTree{},
     ctx{device, view},
-    encoder{ctx},
-    layoutEngine{ctx}
+    layoutEngine{}
 {
     
     makeResources();
@@ -82,36 +81,48 @@ void Renderer::draw() {
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-    
-    NewArch::Shell sh {ctx, 200, 200};
-    auto atoms = sh.atomize();
-    
-    NewArch::ShellUniforms uniforms;
-    
-    uniforms.color = simd_float4{0.5, 0.0, 0.0, 1.0};
-    uniforms.borderColor = simd_float4{0.5, 0.0, 0.0, 1.0};
-    uniforms.borderWidth = 0;
-    uniforms.cornerRadius = 0;
-    
-    NewArch::Layout layout;
-    layout.x = 100.0f;
-    layout.y = 100.0f;
-    
-    uniforms.init_shape_dep(sh.width, sh.height);
-    uniforms.init_layout_dep(layout);
-    
+//    
+//    NewArch::Shell sh {ctx, 200, 200};
+//    auto atoms = sh.atomize();
+//    
+//    NewArch::ShellUniforms uniforms;
+//    
+//    uniforms.color = simd_float4{0.5, 0.0, 0.0, 1.0};
+//    uniforms.borderColor = simd_float4{0.5, 0.0, 0.0, 1.0};
+//    uniforms.borderWidth = 0;
+//    uniforms.cornerRadius = 0;
+//    
+//    NewArch::Layout layout;
+//    layout.x = 100.0f;
+//    layout.y = 100.0f;
+//    
+//    uniforms.init_shape_dep(sh.width, sh.height);
+//    uniforms.init_layout_dep(layout);
+//    
     // pipeline
     // create shell object; this initializes buffers and sets up atoms
     // then, call layout engines place on atoms to get atom placements
     // then initialize the uniforms
     
-    FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
+//    FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
+//    
+//    std::println("ft.atoms size: {}", ft.atoms.size());
+//    
+//    auto pipeline = sh.getPipeline();
+//    
+//    encoder.encode(renderCommandEncoder, pipeline, ft);
     
-    std::println("ft.atoms size: {}", ft.atoms.size());
     
-    auto pipeline = sh.getPipeline();
+    // already initialized sh object
+//    for (auto& obj : objects) {
+//        sh.atomize();
+//        sh.place(LayoutEngine& layoutEngine);
+//        sh.commit(); // finalize uniforms & commit to buffers
+//        sh.encode(Encoder& encoder);
+//    }
     
-    encoder.encode(renderCommandEncoder, pipeline, ft);
+    // this maintains flexibility while isolating the parts that share behavior (i.e. the layout engine, encoder, etc...)
+    
     
 //    auto frameInfo = getFrameInfo();
 //    renderTree.layout(frameInfo);

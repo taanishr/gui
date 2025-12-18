@@ -19,10 +19,15 @@
 // Transforms Fragment Template into Placed Fragment Template
     // loops over atoms; places each one individually
 
+struct AtomPoint {
+    simd_float2 point;
+    unsigned int id;
+};
+
 struct Atom {
     BufferHandle atomBufferHandle; // local position buffer
-    unsigned long offset;
-    unsigned long length;
+    size_t offset;
+    size_t length;
     
     float width;
     float height;
@@ -30,7 +35,6 @@ struct Atom {
 
 struct AtomPlacement {
     BufferHandle placementBufferHandle;
-    
     float x;
     float y;
 };

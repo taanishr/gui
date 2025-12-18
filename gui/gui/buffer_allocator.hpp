@@ -9,26 +9,33 @@
 #include "metal_imports.hpp"
 #include <print>
 
-using BufferHandle = unsigned long;
+using BufferHandle = uint64_t;
 
 struct DrawableBuffer {
     BufferHandle bufferId;
     MTL::Buffer* buffer;
     
-    DrawableBuffer(MTL::Device* device, unsigned long bufferId, unsigned long size);
+    BufferHandle handle();
+    MTL::Buffer* get();
+    void resize(unsigned long newSize);
+    
+    DrawableBuffer(MTL::Device* device, uint64_t bufferId, uint64_t size);
+    DrawableBuffer(DrawableBuffer&&);
+    DrawableBuffer& operator=(DrawableBuffer&& other);
+    
     DrawableBuffer(const DrawableBuffer&) = delete;
+    DrawableBuffer& operator=(DrawableBuffer& other) = delete;
+
     ~DrawableBuffer();
 };
 
 struct DrawableBufferAllocator{
     BufferHandle nextId;
-    std::unordered_map<BufferHandle, std::unique_ptr<DrawableBuffer>> buffers;
     MTL::Device* device;
     
     DrawableBufferAllocator(MTL::Device* device);
     
-    BufferHandle allocate(unsigned long size);
-    void resize(BufferHandle handle, unsigned long newSize);
-    MTL::Buffer* get(BufferHandle handle);
+    DrawableBuffer allocate(size_t size);
+    void resize(DrawableBuffer buffer, size_t newSize);
 };
 

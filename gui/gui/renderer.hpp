@@ -41,7 +41,6 @@ public:
     FT_Library ft;
     NewArch::UIContext ctx;
     NewArch::LayoutEngine layoutEngine;
-    NewArch::Encoder encoder;
 
     
     RenderTree renderTree;
