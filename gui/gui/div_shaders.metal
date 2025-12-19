@@ -10,12 +10,12 @@
 
 using namespace metal;
 
-struct ShellVertexIn {
+struct DivVertexIn {
     float2 position [[attribute(0)]];
     unsigned int atom_id [[attribute(1)]];
 };
 
-struct ShellVertexOut {
+struct DivVertexOut {
     float4 position [[position]];
     float4 worldPosition;
 };
@@ -29,21 +29,21 @@ struct ShellVertexOut {
 //    simd_float2 halfExtent; 
 //};
 
-struct ShellStyleUniforms {
+struct DivStyleUniforms {
     simd_float4 color;
     float cornerRadius;
     float borderWidth;
     simd_float4 borderColor;
 };
 
-struct ShellGeometryUniforms {
+struct DivGeometryUniforms {
     simd_float2 rectCenter;
     simd_float2 halfExtent;
 };
 
-struct ShellUniforms {
-    ShellStyleUniforms style;
-    ShellGeometryUniforms geometry;
+struct DivUniforms {
+    DivStyleUniforms style;
+    DivGeometryUniforms geometry;
 };
 
 //vertex ShellVertexOut vertex_shell(
@@ -97,13 +97,13 @@ struct ShellUniforms {
 //    return float4(rgb, alpha);
 //}
 
-vertex ShellVertexOut vertex_shell(
-   ShellVertexIn in [[stage_in]],
+vertex DivVertexOut vertex_shell(
+   DivVertexIn in [[stage_in]],
    constant float2* offsets [[buffer(1)]],
    constant FrameInfo* frameInfo [[buffer(2)]]
 )
 {
-    ShellVertexOut out;
+    DivVertexOut out;
     
     // todo: add the offsets
     in.position += offsets[in.atom_id];
@@ -115,8 +115,8 @@ vertex ShellVertexOut vertex_shell(
 }
 
 fragment float4 fragment_shell(
-    ShellVertexOut in [[stage_in]],
-    constant ShellUniforms* uniforms [[buffer(0)]]
+    DivVertexOut in [[stage_in]],
+    constant DivUniforms* uniforms [[buffer(0)]]
 )
 {
     // todo: figure out uniforms cpu side
