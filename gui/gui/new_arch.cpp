@@ -23,6 +23,7 @@ namespace NewArch {
         std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
     };
 
+
     std::vector<simd_float2> LayoutEngine::resolve(Constraints& constraints, Atomized atomized)
     {
         float running_width = 0.0;

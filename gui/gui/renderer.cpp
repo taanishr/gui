@@ -17,7 +17,9 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     frameSemaphore{MaxOutstandingFrameCount},
     renderTree{},
     ctx{device, view},
-    layoutEngine{}
+    layoutEngine{},
+    divProcessor{ctx},
+    div{ctx}
 {
     
     makeResources();
@@ -46,6 +48,10 @@ MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()
 void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
+    auto& desc = div.getDescriptor();
+    desc.width = 100;
+    desc.height = 100;
+    desc.color = simd_float4{0.5,0.0,0.0,1.0};
 }
 
 /*
@@ -81,7 +87,18 @@ void Renderer::draw() {
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-//    
+    NewArch::Constraints constraints;
+    constraints.x = 100;
+    constraints.y = 100;
+    
+    auto measured = divProcessor.measure(div.getFragment(), constraints, div.getDescriptor());
+    
+    std::println("desc width: {}, desc height: {}", div.getDescriptor().width, div.getDescriptor().height);
+    auto atomized = divProcessor.atomize(div.getFragment(), constraints, div.getDescriptor(), measured);
+    auto placed = divProcessor.place(div.getFragment(), constraints, div.getDescriptor(), measured, atomized);
+    auto finalized = divProcessor.finalize(div.getFragment(), constraints, div.getDescriptor(), measured, atomized, placed);
+    divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
+//
 //    NewArch::Shell sh {ctx, 200, 200};
 //    auto atoms = sh.atomize();
 //    

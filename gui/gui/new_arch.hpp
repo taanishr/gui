@@ -7,6 +7,7 @@
 
 #pragma once
 #include "fragment_types.hpp"
+#include "printers.hpp"
 #include "metal_imports.hpp"
 #include "frame_info.hpp"
 #include <ranges>
@@ -23,45 +24,6 @@ namespace NewArch {
         float maxHeight;
         float x;
         float y;
-    };
-
-    template <typename S>
-    struct Fragment {
-        FragmentID id;
-        S fragmentStorage;
-    };
-
-    struct DivDescriptor {
-        float width;
-        float height;
-        
-        simd_float4 color;
-        float cornerRadius;
-        float borderWidth;
-        simd_float4 borderColor;
-    };
-
-    struct DivStorage {
-        DrawableBuffer atomsBuffer;
-        DrawableBuffer placementsBuffer;
-        DrawableBuffer uniformsBuffer;
-    };
-
-    struct DivStyleUniforms {
-        simd_float4 color;
-        float cornerRadius;
-        float borderWidth;
-        simd_float4 borderColor;
-    };
-
-    struct DivGeometryUniforms {
-        simd_float2 rectCenter;
-        simd_float2 halfExtent;
-    };
-
-    struct DivUniforms {
-        DivStyleUniforms style;
-        DivGeometryUniforms geometry;
     };
 
     struct Measured {
@@ -85,7 +47,7 @@ namespace NewArch {
         FragmentID id;
         Atomized atomized;
         Placed placed;
-        U Uniforms;
+        U uniforms;
     };
 
     struct LayoutEngine {
@@ -102,7 +64,81 @@ namespace NewArch {
         LayoutEngine layoutEngine;
         DrawableBuffer frameInfoBuffer;
     };
+
+    template <typename S>
+    struct Fragment {
+        Fragment(UIContext& ctx):
+            id{Fragment::nextId++},
+            fragmentStorage{ctx}
+        {}
         
+        static FragmentID nextId;
+        FragmentID id;
+        S fragmentStorage;
+    };
+
+    template <typename S>
+    FragmentID Fragment<S>::nextId = 0;
+
+    struct DivDescriptor {
+        float width;
+        float height;
+        
+        simd_float4 color;
+        float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
+    };
+
+    struct DivStyleUniforms {
+        simd_float4 color;
+        float cornerRadius;
+        float borderWidth;
+        simd_float4 borderColor;
+    };
+
+    struct DivGeometryUniforms {
+        simd_float2 rectCenter;
+        simd_float2 halfExtent;
+    };
+
+    struct DivUniforms {
+        DivStyleUniforms style;
+        DivGeometryUniforms geometry;
+    };
+
+    struct DivStorage {
+        DivStorage(UIContext& ctx):
+            atomsBuffer{ctx.allocator.allocate(6*sizeof(AtomPoint))},
+            placementsBuffer{ctx.allocator.allocate(sizeof(simd_float2))},
+            uniformsBuffer{ctx.allocator.allocate(sizeof(DivUniforms))}
+        {}
+        
+        DrawableBuffer atomsBuffer;
+        DrawableBuffer placementsBuffer;
+        DrawableBuffer uniformsBuffer;
+    };
+
+    template <typename S = DivStorage>
+    struct Div {
+        Div(UIContext& ctx):
+            desc{},
+            fragment{ctx}
+        {}
+
+        DivDescriptor& getDescriptor()
+        {
+            return desc;
+        }
+        
+        Fragment<S>& getFragment()
+        {
+            return fragment;
+        }
+
+        DivDescriptor desc;
+        Fragment<S> fragment;
+    };
 
     template <typename S = DivStorage, typename U = DivUniforms>
     struct DivProcessor {
@@ -176,13 +212,16 @@ namespace NewArch {
         }
 
         // placement/encoder/etc...
-        Measured measure(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
+        Measured measure(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
             Measured measured;
         
             // starting with just one type of measurement; for now, we keep it simple, just desc width and height
             measured.id = fragment.id;
             measured.explicitWidth = desc.width;
             measured.explicitHeight = desc.height;
+            
+            
+            std::println("desc width: {}, desc height: {}, measured width: {}, measured height: {}", desc.width, desc.height, measured.explicitWidth, measured.explicitHeight);
             
             return measured;
         }
@@ -192,7 +231,7 @@ namespace NewArch {
         // and also, we know 100% width so divs can be easily resolved. this makes sense
         
         // after we resolved the measurements, we can actually atomize... question is, do I need a new struct in between?
-        Atomized atomize(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured) {
+        Atomized atomize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured) {
             std::vector<Atom> atoms {};
             
             // get measurements
@@ -211,6 +250,10 @@ namespace NewArch {
                 {{width,0}, 0},
                 {{width,height}, 0},
             }};
+            
+            debug_print_arr(atomPoints, "Atom points");
+            
+            std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
 
             // finish allocating atom
             Atom atom;
@@ -221,8 +264,6 @@ namespace NewArch {
             atom.height = height;
 
             atoms.push_back(atom);
-            
-            std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
 
             return Atomized{
                 .id = fragment.id,
@@ -231,12 +272,14 @@ namespace NewArch {
         }
         
         // TODO: Cache all this
-        Placed place(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) // also needs to take in constraints
+        Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) // also needs to take in constraints
         {
             std::vector<AtomPlacement> placements;
             
             // simply calls the layout engine; nothing implementation specific here
             auto offsets = ctx.layoutEngine.resolve(constraints, atomized);
+            
+            debug_print_vec(offsets, "Placement offsets");
             
             // copy placements into buffer
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
@@ -259,7 +302,7 @@ namespace NewArch {
         }
         
         // finalizes uniforms and makes final object
-        Finalized<U> finalize(Fragment<S> fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
         {
             // finalizes uniforms and return finalized object
             
@@ -285,7 +328,9 @@ namespace NewArch {
                 .geometry = geometryUniforms
             };
             
-            return Finalized {
+            std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(DivUniforms));
+            
+            return Finalized<U> {
                 .id = fragment.id,
                 .atomized = atomized,
                 .placed = placed,
@@ -293,16 +338,18 @@ namespace NewArch {
             };
         }
         
-        void encode(MTL::RenderCommandEncoder* encoder, Fragment<S> fragment, Finalized<U> finalized) {
+        void encode(MTL::RenderCommandEncoder* encoder, Fragment<S>& fragment, Finalized<U>& finalized) {
             auto pipeline = getPipeline();
             encoder->setRenderPipelineState(pipeline);
             
-            for (auto [atom, atomPlacement] : zip(finalized.atomized, finalized.placed)) {
+            for (auto [atom, atomPlacement] : zip(finalized.atomized.atoms, finalized.placed.placements)) {
                 // vertex buffers
                 auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
+                debug_print_ptr(static_cast<AtomPoint*>(atomBuf->contents()), 6, "atomBuf");
                 auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.get();
+                debug_print_ptr(static_cast<simd_float2*>(atomPlacementBuf->contents()), 1, "atomPlacementBuf");
                 auto frameInfoBuf = ctx.frameInfoBuffer.get();
-                
+
                 // fragment buffers
                 auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
                 
@@ -311,9 +358,12 @@ namespace NewArch {
                 encoder->setVertexBuffer(frameInfoBuf, 0, 2);
                 
                 encoder->setFragmentBuffer(uniformsBuf, 0, 0);
+                
+                U* runiforms = reinterpret_cast<U*>(uniformsBuf->contents());
+                std::println("rect center: {} half extent: {}", runiforms->geometry.rectCenter, runiforms->geometry.halfExtent);
+                
+                encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
             }
-            
-            
         }
         
         // Shared resources (optional)

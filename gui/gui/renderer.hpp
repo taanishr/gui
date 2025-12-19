@@ -41,6 +41,8 @@ public:
     FT_Library ft;
     NewArch::UIContext ctx;
     NewArch::LayoutEngine layoutEngine;
+    NewArch::DivProcessor<> divProcessor;
+    NewArch::Div<> div;
 
     
     RenderTree renderTree;

@@ -24,6 +24,15 @@ struct AtomPoint {
     unsigned int id;
 };
 
+template <>
+struct std::formatter<AtomPoint> : std::formatter<float>
+{
+    auto format(const AtomPoint& v, format_context& ctx) const
+    {
+        return std::format_to(ctx.out(), "({}, {})", v.point.x, v.point.y);
+    }
+};
+
 struct Atom {
     BufferHandle atomBufferHandle; // local position buffer
     size_t offset;
