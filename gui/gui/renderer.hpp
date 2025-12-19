@@ -42,7 +42,9 @@ public:
     NewArch::UIContext ctx;
     NewArch::LayoutEngine layoutEngine;
     NewArch::DivProcessor<> divProcessor;
+    NewArch::ImageProcessor<> imgProcessor;
     NewArch::Div<> div;
+    NewArch::Image<> img;
 
     
     RenderTree renderTree;
@@ -51,7 +53,6 @@ public:
     
     long long numSamples = 0;
     long long totalMicros;
-    
     
     static Renderer* current;
 private:

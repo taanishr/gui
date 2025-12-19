@@ -5,6 +5,8 @@
 //  Created by Taanish Reja on 1/21/25.
 //
 
+#pragma once
+
 #include "swift_object.hpp"
 #include "metal_imports.hpp"
 

@@ -19,20 +19,6 @@
 // Transforms Fragment Template into Placed Fragment Template
     // loops over atoms; places each one individually
 
-struct AtomPoint {
-    simd_float2 point;
-    unsigned int id;
-};
-
-template <>
-struct std::formatter<AtomPoint> : std::formatter<float>
-{
-    auto format(const AtomPoint& v, format_context& ctx) const
-    {
-        return std::format_to(ctx.out(), "({}, {})", v.point.x, v.point.y);
-    }
-};
-
 struct Atom {
     BufferHandle atomBufferHandle; // local position buffer
     size_t offset;
@@ -53,16 +39,4 @@ struct Uniforms {
     BufferHandle uniformsBufferHandle;
     T uniforms;
 };
-
-template <typename T>
-struct FragmentTemplate {
-    std::vector<Atom> atoms; // individual atoms
-    std::vector<AtomPlacement> atomPlacements;
-    float width; // width of fragment
-    float height; // height of fragment
-
-    Uniforms<T> uniforms;
-};
-
-
 

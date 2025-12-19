@@ -19,7 +19,9 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     ctx{device, view},
     layoutEngine{},
     divProcessor{ctx},
-    div{ctx}
+    div{ctx},
+    imgProcessor{ctx},
+    img{ctx}
 {
     
     makeResources();
@@ -48,33 +50,16 @@ MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()
 void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
-    auto& desc = div.getDescriptor();
-    desc.width = 100;
-    desc.height = 100;
-    desc.color = simd_float4{0.5,0.0,0.0,1.0};
-}
-
-/*
-start with fragment template
- 
-multiple passes
- 
-Shell {
-    initialize();
-    std::vector<Atom> atomize();
-    <- layout pass (independent) ->
-    place(std::vector<AtomPlacements>):
+    auto& divDesc = div.getDescriptor();
+    divDesc.width = 100;
+    divDesc.height = 100;
+    divDesc.color = simd_float4{0.5,0.0,0.0,1.0};
     
-    <- commit uniforms buffer ->
-    FragmentTemplate& finalize(); -> passed to encoder
- 
-    FragmentTemplate& template;
+    auto& imgDesc = img.getDescriptor();
+    imgDesc.width = 286;
+    imgDesc.height = 147;
+    imgDesc.path = "/Users/treja/Downloads/coarsening.png";
 }
- 
- 
- 
- */
-
 
 void Renderer::draw() {
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
@@ -87,66 +72,26 @@ void Renderer::draw() {
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-    NewArch::Constraints constraints;
-    constraints.x = 100;
-    constraints.y = 100;
+    NewArch::Constraints divConstraints;
+    divConstraints.x = 100;
+    divConstraints.y = 100;
     
-    auto measured = divProcessor.measure(div.getFragment(), constraints, div.getDescriptor());
-    
-    std::println("desc width: {}, desc height: {}", div.getDescriptor().width, div.getDescriptor().height);
-    auto atomized = divProcessor.atomize(div.getFragment(), constraints, div.getDescriptor(), measured);
-    auto placed = divProcessor.place(div.getFragment(), constraints, div.getDescriptor(), measured, atomized);
-    auto finalized = divProcessor.finalize(div.getFragment(), constraints, div.getDescriptor(), measured, atomized, placed);
+    auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
+    auto atomized = divProcessor.atomize(div.getFragment(), divConstraints, div.getDescriptor(), measured);
+    auto placed = divProcessor.place(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized);
+    auto finalized = divProcessor.finalize(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized, placed);
     divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
-//
-//    NewArch::Shell sh {ctx, 200, 200};
-//    auto atoms = sh.atomize();
-//    
-//    NewArch::ShellUniforms uniforms;
-//    
-//    uniforms.color = simd_float4{0.5, 0.0, 0.0, 1.0};
-//    uniforms.borderColor = simd_float4{0.5, 0.0, 0.0, 1.0};
-//    uniforms.borderWidth = 0;
-//    uniforms.cornerRadius = 0;
-//    
-//    NewArch::Layout layout;
-//    layout.x = 100.0f;
-//    layout.y = 100.0f;
-//    
-//    uniforms.init_shape_dep(sh.width, sh.height);
-//    uniforms.init_layout_dep(layout);
-//    
-    // pipeline
-    // create shell object; this initializes buffers and sets up atoms
-    // then, call layout engines place on atoms to get atom placements
-    // then initialize the uniforms
     
-//    FragmentTemplate ft = layoutEngine.place(layout, uniforms, atoms);
-//    
-//    std::println("ft.atoms size: {}", ft.atoms.size());
-//    
-//    auto pipeline = sh.getPipeline();
-//    
-//    encoder.encode(renderCommandEncoder, pipeline, ft);
+    NewArch::Constraints imgConstraints;
+    imgConstraints.x = 50;
+    imgConstraints.y = 300;
     
-    
-    // already initialized sh object
-//    for (auto& obj : objects) {
-//        sh.atomize();
-//        sh.place(LayoutEngine& layoutEngine);
-//        sh.commit(); // finalize uniforms & commit to buffers
-//        sh.encode(Encoder& encoder);
-//    }
-    
-    // this maintains flexibility while isolating the parts that share behavior (i.e. the layout engine, encoder, etc...)
-    
-    
-//    auto frameInfo = getFrameInfo();
-//    renderTree.layout(frameInfo);
-//    renderTree.position();
-//    renderTree.update();
-//    renderTree.render(renderCommandEncoder);
-    
+    auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());
+    auto iAtomized = imgProcessor.atomize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured);
+    auto iPlaced = imgProcessor.place(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized);
+    auto iFinalized = imgProcessor.finalize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iPlaced);
+    imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
+
     
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
