@@ -6,7 +6,6 @@
 //
 
 #include "renderer.hpp"
-#include "ui.hpp"
 
 Renderer* Renderer::current = nullptr;
 
@@ -15,7 +14,6 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     view{view},
     commandQueue(device->newCommandQueue()),
     frameSemaphore{MaxOutstandingFrameCount},
-    renderTree{},
     ctx{device, view},
     layoutEngine{},
     divProcessor{ctx},

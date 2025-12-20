@@ -11,7 +11,6 @@
 #include <semaphore>
 #include <iostream>
 #include <ranges>
-#include "render_tree.hpp"
 #include "frame_info.hpp"
 #include "new_arch.hpp"
 #include <chrono>
@@ -46,9 +45,8 @@ public:
     NewArch::Div<> div;
     NewArch::Image<> img;
 
-    
-    RenderTree renderTree;
-    
+
+
     std::chrono::high_resolution_clock clock {};
     
     long long numSamples = 0;
