@@ -1,0 +1,11 @@
+CompileFlags:
+  Compiler: /usr/bin/clang++
+  
+  Add: [
+    "-isysroot", "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+    "--target=arm64-apple-macos26",
+    "-D__APPLE__=1",
+    "-D__arm64__=1"
+  ]
+Index:
+  Background: Build

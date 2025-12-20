@@ -1,2 +1,2 @@
 dependencies: /Users/treja/projects/gui/gui/gui/common.metal \
-  /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.2.54.0.rSIiMU/Metal.xctoolchain/usr/metal/32023/lib/clang/32023.830/include/metal/module.modulemap
+  /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.3.48.0.a3P2w6/Metal.xctoolchain/usr/metal/32023/lib/clang/32023.850/include/metal/module.modulemap

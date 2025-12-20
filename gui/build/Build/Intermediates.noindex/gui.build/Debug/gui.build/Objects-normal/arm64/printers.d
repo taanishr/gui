@@ -1,5 +1,5 @@
-dependencies: /Users/treja/projects/gui/gui/gui/Debug/printers.cpp \
-  /Users/treja/projects/gui/gui/gui/Debug/printers.hpp \
+dependencies: /Users/treja/projects/gui/gui/gui/printers.cpp \
+  /Users/treja/projects/gui/gui/gui/printers.hpp \
   /Users/treja/projects/gui/gui/gui/metal_imports.hpp \
   /Users/treja/metal-cpp/Foundation/Foundation.hpp \
   /Users/treja/metal-cpp/Foundation/NSArray.hpp \

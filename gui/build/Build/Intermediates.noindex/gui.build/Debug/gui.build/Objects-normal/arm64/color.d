@@ -1,5 +1,5 @@
-dependencies: /Users/treja/projects/gui/gui/gui/Color/color.cpp \
-  /Users/treja/projects/gui/gui/gui/Color/color.hpp \
+dependencies: /Users/treja/projects/gui/gui/gui/color.cpp \
+  /Users/treja/projects/gui/gui/gui/color.hpp \
   /Users/treja/projects/gui/gui/gui/metal_imports.hpp \
   /Users/treja/metal-cpp/Foundation/Foundation.hpp \
   /Users/treja/metal-cpp/Foundation/NSArray.hpp \

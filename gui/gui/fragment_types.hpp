@@ -5,6 +5,7 @@
 //  Created by Taanish Reja on 11/20/25.
 //
 
+#pragma once
 #include <vector>
 #include "buffer_allocator.hpp"
 

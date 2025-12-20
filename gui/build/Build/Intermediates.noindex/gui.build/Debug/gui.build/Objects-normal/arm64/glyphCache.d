@@ -1,8 +1,8 @@
-dependencies: /Users/treja/projects/gui/gui/gui/Text/glyphCache.cpp \
-  /Users/treja/projects/gui/gui/gui/Text/glyphCache.hpp \
+dependencies: /Users/treja/projects/gui/gui/gui/glyphCache.cpp \
+  /Users/treja/projects/gui/gui/gui/glyphCache.hpp \
   /Users/treja/projects/gui/gui/gui/hash_combine.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/process_contours.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/freetype.hpp \
+  /Users/treja/projects/gui/gui/gui/process_contours.hpp \
+  /Users/treja/projects/gui/gui/gui/freetype.hpp \
   /opt/homebrew/opt/freetype/include/freetype2/ft2build.h \
   /opt/homebrew/opt/freetype/include/freetype2/freetype/config/ftheader.h \
   /opt/homebrew/opt/freetype/include/freetype2/freetype/ftoutln.h \
@@ -19,7 +19,7 @@ dependencies: /Users/treja/projects/gui/gui/gui/Text/glyphCache.cpp \
   /opt/homebrew/opt/freetype/include/freetype2/freetype/fterrors.h \
   /opt/homebrew/opt/freetype/include/freetype2/freetype/ftmoderr.h \
   /opt/homebrew/opt/freetype/include/freetype2/freetype/fterrdef.h \
-  /Users/treja/projects/gui/gui/gui/Debug/printers.hpp \
+  /Users/treja/projects/gui/gui/gui/printers.hpp \
   /Users/treja/projects/gui/gui/gui/metal_imports.hpp \
   /Users/treja/metal-cpp/Foundation/Foundation.hpp \
   /Users/treja/metal-cpp/Foundation/NSArray.hpp \

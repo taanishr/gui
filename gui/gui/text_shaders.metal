@@ -9,20 +9,14 @@
 #include "common.metal"
 
 using namespace metal;
-
-struct GlyphMeta {
-    simd_float2 offset;
-};
-
 struct TextUniforms {
     float4 color;
 };
 
 struct TextVertexIn {
     float2 position [[attribute(0)]];
-//    float2 offset [[attribute(1)]];
-    int glyphIndex [[attribute(1)]];
-    int metadataIndex [[attribute(2)]];
+    int metadataIndex [[attribute(1)]];
+    int atom_id [[attribute(2)]];
 };
 
 
@@ -34,13 +28,13 @@ struct TextVertexOut {
 
 vertex TextVertexOut vertex_text(
     TextVertexIn in [[stage_in]],
-    constant float2* offset [[buffer(1)]],
+    constant float2* offsets [[buffer(1)]],
     constant FrameInfo* frameInfo [[buffer(2)]]
 )
 {
     TextVertexOut out;
     
-    float2 adjustedPos = (in.position + offset[in.glyphIndex])/64.0f;
+    float2 adjustedPos = (in.position + offsets[in.atom_id])/64.0f;
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
@@ -159,7 +153,6 @@ fragment float4 fragment_text(
     }
     
     bool inside = intersections & 1;
-
     
     float sd = inside ? -minDist : minDist;
     
@@ -169,9 +162,6 @@ fragment float4 fragment_text(
     
     float alpha = coverage * uniforms->color.w;
 
-//    float3 rgb = mix(float3{uniforms->color.rgb}, float3{uniforms->color.xyz}, alpha);
-//
-//    return float4(rgb*alpha,alpha);
     float3 rgb = uniforms->color.rgb;
     return float4(rgb * alpha, alpha);
 }

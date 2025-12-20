@@ -17,7 +17,6 @@ struct DrawableBuffer {
     
     BufferHandle handle();
     MTL::Buffer* get();
-    void resize(unsigned long newSize);
     
     DrawableBuffer(MTL::Device* device, uint64_t bufferId, uint64_t size);
     DrawableBuffer(DrawableBuffer&&);
@@ -36,6 +35,6 @@ struct DrawableBufferAllocator{
     DrawableBufferAllocator(MTL::Device* device);
     
     DrawableBuffer allocate(size_t size);
-    void resize(DrawableBuffer buffer, size_t newSize);
+    void resize(DrawableBuffer& buffer, size_t newSize);
 };
 

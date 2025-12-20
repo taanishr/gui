@@ -1,7 +1,6 @@
-dependencies: \
-  /Users/treja/projects/gui/gui/gui/MTKTextureWrapper/MTKTexture_loader.cpp \
-  /Users/treja/projects/gui/gui/gui/MTKTextureWrapper/MTKTexture_loader.hpp \
-  /Users/treja/projects/gui/gui/gui/SwiftHelpers/swift_object.hpp \
+dependencies: /Users/treja/projects/gui/gui/gui/MTKTexture_loader.cpp \
+  /Users/treja/projects/gui/gui/gui/MTKTexture_loader.hpp \
+  /Users/treja/projects/gui/gui/gui/swift_object.hpp \
   /Users/treja/projects/gui/gui/gui/metal_imports.hpp \
   /Users/treja/metal-cpp/Foundation/Foundation.hpp \
   /Users/treja/metal-cpp/Foundation/NSArray.hpp \

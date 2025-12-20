@@ -13,8 +13,11 @@
 #include <ranges>
 #include "frame_info.hpp"
 #include "new_arch.hpp"
+#include "div.hpp"
+#include "image.hpp"
 #include <chrono>
 #include "glyphCache.hpp"
+#include "n_text.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 
@@ -42,8 +45,10 @@ public:
     NewArch::LayoutEngine layoutEngine;
     NewArch::DivProcessor<> divProcessor;
     NewArch::ImageProcessor<> imgProcessor;
+    NewArch::TextProcessor<> txtProcessor;
     NewArch::Div<> div;
     NewArch::Image<> img;
+    NewArch::Text<> txt;
 
 
 

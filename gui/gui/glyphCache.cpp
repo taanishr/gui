@@ -28,6 +28,24 @@ std::size_t GlyphCacheHash::operator()(const std::tuple<FontName, FontSize, char
     return hv;
 }
 
+bool GlyphQuery::operator==(const GlyphQuery& other) const {
+    return ch == other.ch
+        && fontName == other.fontName
+        && fontSize == other.fontSize;
+}
+
+std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
+{
+    std::size_t hv = 0;
+    
+    hash_combine(hv, queryKey.ch);
+    hash_combine(hv, queryKey.fontName);
+    hash_combine(hv, queryKey.fontSize);
+    
+    return hv;
+}
+
+
 GlyphCache::GlyphCache(FT_Library ft):
     ft{ft}
 {}
@@ -38,6 +56,10 @@ GlyphCache::~GlyphCache() {
         FT_Done_Face(pair.second);
 }
 
+const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
+    return GlyphCache::retrieve(glyphQuery.fontName, glyphQuery.fontSize, glyphQuery.ch);
+}
+                                  
 const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
 {
     bool glyphCached = cache.find({font,fontSize,ch}) != cache.end();
@@ -70,4 +92,5 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
 
     return glyphIt->second;
 }
+
 

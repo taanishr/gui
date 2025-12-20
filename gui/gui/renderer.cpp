@@ -19,7 +19,9 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     divProcessor{ctx},
     div{ctx},
     imgProcessor{ctx},
-    img{ctx}
+    txtProcessor{ctx},
+    img{ctx},
+    txt{ctx}
 {
     
     makeResources();
@@ -57,6 +59,12 @@ void Renderer::makeResources()
     imgDesc.width = 286;
     imgDesc.height = 147;
     imgDesc.path = "/Users/treja/Downloads/coarsening.png";
+    
+    auto& txtDesc = txt.getDescriptor();
+    txtDesc.text = "hello";
+    txtDesc.font = "/System/Library/Fonts/Supplemental/Arial.ttf";
+    txtDesc.color = simd_float4{1,1,1,1};
+    txtDesc.fontSize = 64.0;
 }
 
 void Renderer::draw() {
@@ -90,6 +98,15 @@ void Renderer::draw() {
     auto iFinalized = imgProcessor.finalize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iPlaced);
     imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
 
+    NewArch::Constraints txtConstraints;
+    txtConstraints.x = 50;
+    txtConstraints.y = 0;
+
+    auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
+    auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);
+    auto tPlaced = txtProcessor.place(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized);
+    auto tFinalized = txtProcessor.finalize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized, tPlaced);
+    txtProcessor.encode(renderCommandEncoder, txt.getFragment(), tFinalized);
     
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();

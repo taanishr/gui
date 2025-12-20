@@ -1,7 +1,8 @@
 dependencies: /Users/treja/projects/gui/gui/gui/index.cpp \
   /Users/treja/projects/gui/gui/gui/index.hpp \
-  /Users/treja/projects/gui/gui/gui/NodeBuilder/node_builder.hpp \
-  /Users/treja/projects/gui/gui/gui/drawable.hpp \
+  /Users/treja/projects/gui/gui/gui/new_arch.hpp \
+  /Users/treja/projects/gui/gui/gui/fragment_types.hpp \
+  /Users/treja/projects/gui/gui/gui/buffer_allocator.hpp \
   /Users/treja/projects/gui/gui/gui/metal_imports.hpp \
   /Users/treja/metal-cpp/Foundation/Foundation.hpp \
   /Users/treja/metal-cpp/Foundation/NSArray.hpp \
@@ -109,41 +110,7 @@ dependencies: /Users/treja/projects/gui/gui/gui/index.cpp \
   /Users/treja/metal-cpp-extensions/MetalKit/MetalKit.hpp \
   /Users/treja/metal-cpp-extensions/MetalKit/MTKView.hpp \
   /Users/treja/metal-cpp-extensions/MetalKit/MetalKitPrivate.hpp \
-  /Users/treja/projects/gui/gui/gui/RenderTree/layout.hpp \
-  /Users/treja/projects/gui/gui/gui/bounds.hpp \
-  /Users/treja/projects/gui/gui/gui/renderer.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/freetype.hpp \
-  /opt/homebrew/opt/freetype/include/freetype2/ft2build.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/ftheader.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/ftoutln.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/freetype.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/ftconfig.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/ftoption.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/ftstdlib.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/integer-types.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/public-macros.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/config/mac-support.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/fttypes.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/ftsystem.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/ftimage.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/fterrors.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/ftmoderr.h \
-  /opt/homebrew/opt/freetype/include/freetype2/freetype/fterrdef.h \
+  /Users/treja/projects/gui/gui/gui/printers.hpp \
   /Users/treja/projects/gui/gui/gui/frame_info.hpp \
-  /Users/treja/projects/gui/gui/gui/RenderTree/render_tree.hpp \
-  /Users/treja/projects/gui/gui/gui/RenderTree/events.hpp \
-  /Users/treja/projects/gui/gui/gui/sdf_helpers.hpp \
-  /Users/treja/projects/gui/gui/gui/ui.hpp \
-  /Users/treja/projects/gui/gui/gui/Shell/shell.hpp \
-  /Users/treja/projects/gui/gui/gui/Debug/printers.hpp \
-  /Users/treja/projects/gui/gui/gui/Color/color.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/text.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/process_contours.hpp \
-  /Users/treja/projects/gui/gui/gui/buffer_helpers.hpp \
-  /Users/treja/projects/gui/gui/gui/Text/glyphCache.hpp \
-  /Users/treja/projects/gui/gui/gui/hash_combine.hpp \
-  /Users/treja/projects/gui/gui/gui/RootDrawable/root_drawable.hpp \
-  /Users/treja/projects/gui/gui/gui/Image/image_drawable.hpp \
-  /Users/treja/projects/gui/gui/gui/MTKTextureWrapper/MTKTexture_loader.hpp \
-  /Users/treja/projects/gui/gui/gui/SwiftHelpers/swift_object.hpp \
-  /Users/treja/projects/gui/gui/gui/overloaded.hpp
+  /Users/treja/projects/gui/gui/gui/MTKTexture_loader.hpp \
+  /Users/treja/projects/gui/gui/gui/swift_object.hpp

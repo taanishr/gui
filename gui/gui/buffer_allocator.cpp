@@ -55,8 +55,8 @@ DrawableBuffer DrawableBufferAllocator::allocate(size_t size) {
     return newBuffer;
 }
 
-void DrawableBufferAllocator::resize(DrawableBuffer db, size_t newSize) {
-    auto rawBuffer = db.buffer;
+void DrawableBufferAllocator::resize(DrawableBuffer& db, size_t newSize) {
+    auto& rawBuffer = db.buffer;
     
     unsigned long oldSize = rawBuffer->length();
 
