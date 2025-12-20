@@ -1,9 +1,0 @@
-{
-    "clangd.arguments": [
-        "--enable-config",
-        "--compile-commands-dir=${workspaceFolder}",
-        "--fallback-style=Apple",
-        "--query-driver=/usr/bin/clang++"
-    ],
-    "clangd.onConfigChanged": "restart",
-}

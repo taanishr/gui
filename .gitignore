@@ -1,0 +1,8 @@
+MTK-Extensions/MTK-Extensions.xcodeproj
+MTK-Extensions-Library/MTK-Extensions
+gui/build
+gui/gui.xcodeproj
+.vscode
+gui/.vscode
+font-rendering.xcodeproj
+AppKit-Extensions/AppKit-Extensions.xcodeproj

@@ -1,6 +1,0 @@
-{
-  "files.associations": {
-    "*.metal": "cpp"
-  },
-  "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
-}
