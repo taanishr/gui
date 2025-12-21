@@ -34,6 +34,17 @@ namespace NewArch {
         float explicitHeight;
     };
 
+    enum Position {
+        Absolute,
+        Fixed,
+        Relative,
+    };
+
+    enum Display {
+        Block,
+        Inline
+    };
+
     struct Atomized {
         FragmentID id;
         std::vector<Atom> atoms;
@@ -52,6 +63,7 @@ namespace NewArch {
         U uniforms;
     };
 
+    
     struct LayoutEngine {
         std::vector<simd_float2> resolve(Constraints& constraints, Atomized atomized);
     };

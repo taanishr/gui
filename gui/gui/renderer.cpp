@@ -61,7 +61,7 @@ void Renderer::makeResources()
     imgDesc.path = "/Users/treja/Downloads/coarsening.png";
     
     auto& txtDesc = txt.getDescriptor();
-    txtDesc.text = "hello";
+    txtDesc.text = "bac";
     txtDesc.font = "/System/Library/Fonts/Supplemental/Arial.ttf";
     txtDesc.color = simd_float4{1,1,1,1};
     txtDesc.fontSize = 64.0;
@@ -100,7 +100,7 @@ void Renderer::draw() {
 
     NewArch::Constraints txtConstraints;
     txtConstraints.x = 50;
-    txtConstraints.y = 0;
+    txtConstraints.y = 50;
 
     auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
     auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);

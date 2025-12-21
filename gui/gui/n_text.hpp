@@ -16,11 +16,22 @@
 
 namespace NewArch {
     struct TextPoint {
-        simd_float2 position;
+        simd_float2 point;
         int metadataIndex;
         int id;
     };
+}
 
+template <>
+struct std::formatter<NewArch::TextPoint> : std::formatter<float>
+{
+    auto format(const NewArch::TextPoint& v, format_context& ctx) const
+    {
+        return std::format_to(ctx.out(), "(x: {}, y: {}, mi: {} id: {})", v.point.x, v.point.y, v.metadataIndex, v.id);
+    }
+};
+
+namespace NewArch {
     struct TextDescriptor {
         std::string text;
         std::string font;
@@ -45,8 +56,6 @@ namespace NewArch {
         DrawableBuffer uniformsBuffer;
 
         DrawableBuffer metadataBuffer;
-
-        std::vector<int> metadata;
     };
 
     template <typename S = TextStorage>
@@ -74,6 +83,7 @@ namespace NewArch {
     struct TextProcessor {
         TextProcessor(UIContext& ctx):
             glyphCache{nullptr},
+            lastGlyphsBufferOffset{0},
             glyphBuffer{ctx.allocator.allocate(4096)},
             ctx{ctx}
         {
@@ -161,18 +171,19 @@ namespace NewArch {
         
         std::array<TextPoint, 6> makeAtomPoints(const Quad& quad, int metadataIndex, int id) {
             return std::array<TextPoint,6>{
-                TextPoint{ .position = quad.topLeft, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .position = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .position = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .position = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .position = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .position = quad.bottomRight, .metadataIndex = metadataIndex, .id = id }
+                TextPoint{ .point = quad.topLeft, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = quad.bottomRight, .metadataIndex = metadataIndex, .id = id }
             };
         }
         
         Atomized atomize(Fragment<S>& fragment, Constraints&, TextDescriptor& desc, Measured&) {
             std::vector<Atom> atoms;
             std::vector<TextPoint> allAtomPoints;
+            std::vector<int> metadata;
             allAtomPoints.reserve(desc.text.size() * 6);
 
             for (size_t i = 0; i < desc.text.size(); ++i) {
@@ -199,29 +210,29 @@ namespace NewArch {
 
                     std::memcpy(copyStart, glyph.points.data(), pointsLenBytes);
 
-                    glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset;
+                    glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset / sizeof(simd_float2);
                     offset_it = glyphBufferOffsets.find(glyphQuery);
                     lastGlyphsBufferOffset += pointsLenBytes;
                 }
 
                 size_t offset = offset_it->second;
 
-                int metadataIndex = fragment.fragmentStorage.metadata.size();
+                int metadataIndex = metadata.size();
 
-                fragment.fragmentStorage.metadata.push_back(offset);
-                fragment.fragmentStorage.metadata.push_back(metadataIndex);
+                metadata.push_back(offset);
+                metadata.push_back(glyph.numContours);
                 for (auto& contourSize : glyph.contourSizes) {
-                    fragment.fragmentStorage.metadata.push_back(contourSize);
+                    metadata.push_back(contourSize);
                 }
 
-                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, static_cast<int>(i));
-                for (const auto& tp : atomPts) allAtomPoints.push_back(tp);
+                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, i);
+                allAtomPoints.insert(allAtomPoints.end(), atomPts.begin(), atomPts.end());
 
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
-                atom.width = glyph.quad.topLeft.x - glyph.quad.bottomRight.x;
-                atom.height = glyph.quad.topLeft.y - glyph.quad.bottomRight.y;
+                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / 64.0f;
+                atom.height = (glyph.quad.topLeft.y - glyph.quad.bottomRight.y) / 64.0f;
 
                 atoms.push_back(atom);
             }
@@ -242,8 +253,7 @@ namespace NewArch {
                 );
             }
 
-            size_t neededMetaBytes =
-                fragment.fragmentStorage.metadata.size() * sizeof(int);
+            size_t neededMetaBytes = metadata.size() * sizeof(int);
 
             auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
 
@@ -254,9 +264,11 @@ namespace NewArch {
 
             std::memcpy(
                 reinterpret_cast<std::byte*>(metaBuf->contents()),
-                fragment.fragmentStorage.metadata.data(),
+                metadata.data(),
                 neededMetaBytes
             );
+            
+//            debug_print_vec(allAtomPoints);
 
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
@@ -276,6 +288,9 @@ namespace NewArch {
             }
             
             std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+            
+            
+//            debug_print_vec(offsets);
 
             for (int i = 0; i < offsets.size(); ++i) {
                 placements.push_back({
@@ -322,19 +337,9 @@ namespace NewArch {
             encoder->setFragmentBuffer(metaBuf, 0, 1);
             encoder->setFragmentBuffer(uniformsBuf, 0, 2);
 
-            
-            // gpu buffer hanghere idk why
             const auto& atoms = finalized.atomized.atoms;
-//            std::println("atoms.size(): {}", atoms.size());
-            for (int i = 0; i < 2; ++i) {
-                const auto& atom = atoms[i];
-//                std::println("atoms offset: {}", atom.offset / sizeof(TextPoint));
-//                std::println("atom length: {}", atom.length / sizeof(TextPoint));
-//                
-//                std::println("atom buf length: {}", atomBuf->length() / sizeof(TextPoint));
+            encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), atoms.size()*6);
 
-                encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(atom.offset / sizeof(TextPoint)), NS::UInteger(atom.length / sizeof(TextPoint)));
-            }
         }
         
         ~TextProcessor() {

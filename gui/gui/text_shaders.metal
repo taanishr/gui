@@ -34,7 +34,7 @@ vertex TextVertexOut vertex_text(
 {
     TextVertexOut out;
     
-    float2 adjustedPos = (in.position + offsets[in.atom_id])/64.0f;
+    float2 adjustedPos = (in.position)/64.0f + offsets[in.atom_id];
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
@@ -160,10 +160,13 @@ fragment float4 fragment_text(
 
     float coverage = clamp(0.5 - sd/px, 0.0, 1.0);
     
+    
     float alpha = coverage * uniforms->color.w;
 
     float3 rgb = uniforms->color.rgb;
     return float4(rgb * alpha, alpha);
+    
+//    return float4(1,0,0,1);
 }
 
 

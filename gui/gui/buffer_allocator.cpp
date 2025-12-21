@@ -65,6 +65,10 @@ void DrawableBufferAllocator::resize(DrawableBuffer& db, size_t newSize) {
 
     MTL::Buffer* newBuffer = device->newBuffer(std::max(oldSize*2, newSize), MTL::StorageModeShared);
     
+    if (rawBuffer && oldSize > 0) {
+        std::memcpy(newBuffer->contents(), rawBuffer->contents(), oldSize);
+    }
+    
     if (!newBuffer) return;
     
     rawBuffer->release();

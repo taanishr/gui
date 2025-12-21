@@ -91,5 +91,4 @@ fragment float4 fragment_image(
         rgb /= alpha;
     
     return float4(rgb, alpha);
-
 }
