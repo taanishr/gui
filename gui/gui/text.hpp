@@ -268,15 +268,20 @@ namespace NewArch {
                 neededMetaBytes
             );
             
-//            debug_print_vec(allAtomPoints);
 
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
 
         Placed place(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc, Measured& measured, Atomized& atomized) {
             std::vector<AtomPlacement> placements;
+            
+            LayoutInput li;
+            
+            li.display = Display::Inline;
+            li.position = Position::Relative;
 
-            auto offsets = ctx.layoutEngine.resolve(constraints, atomized);
+            auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+            auto offsets = lr.atomOffsets;
 
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
@@ -288,9 +293,7 @@ namespace NewArch {
             }
             
             std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
-            
-            
-//            debug_print_vec(offsets);
+        
 
             for (int i = 0; i < offsets.size(); ++i) {
                 placements.push_back({
