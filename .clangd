@@ -1,11 +1,21 @@
 CompileFlags:
   Compiler: /usr/bin/clang++
-  
-  Add: [
-    "-isysroot", "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
-    "--target=arm64-apple-macos26",
-    "-D__APPLE__=1",
-    "-D__arm64__=1"
-  ]
-Index:
-  Background: Build
+  Add:
+    # language
+    - -std=c++23
+
+    # project includes
+    - -Igui
+    - -I/Users/treja/projects/gui/AppKit-Extensions-Library
+    - -I/Users/treja/projects/gui/MTK-Extensions-Library
+
+    # metal-cpp
+    - -I/Users/treja/metal-cpp
+    - -I/Users/treja/metal-cpp-extensions
+
+    # freetype
+    - -I/opt/homebrew/opt/freetype/include/freetype2
+
+    # Apple SDK
+    - -isysroot
+    - /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk

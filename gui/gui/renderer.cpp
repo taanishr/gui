@@ -79,8 +79,7 @@ void Renderer::draw() {
 
     auto ts1 = clock.now();
     NewArch::Constraints divConstraints;
-    divConstraints.x = 100;
-    divConstraints.y = 100;
+    divConstraints.cursor = simd_float2{100.0,100.0};
     
     auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
     auto atomized = divProcessor.atomize(div.getFragment(), divConstraints, div.getDescriptor(), measured);
@@ -89,8 +88,7 @@ void Renderer::draw() {
     divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
     
     NewArch::Constraints imgConstraints;
-    imgConstraints.x = 50;
-    imgConstraints.y = 300;
+    imgConstraints.cursor = simd_float2{50.0,300.0};
     
     auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());
     auto iAtomized = imgProcessor.atomize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured);
@@ -99,9 +97,9 @@ void Renderer::draw() {
     imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
 
     NewArch::Constraints txtConstraints;
-    txtConstraints.x = 50;
-    txtConstraints.y = 50;
-
+    txtConstraints.maxWidth = 500;
+    txtConstraints.cursor = simd_float2{50.0,50.0};
+    
     auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
     auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);
     auto tPlaced = txtProcessor.place(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized);

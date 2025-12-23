@@ -17,7 +17,7 @@
 #include "image.hpp"
 #include <chrono>
 #include "glyphCache.hpp"
-#include "n_text.hpp"
+#include "text.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 

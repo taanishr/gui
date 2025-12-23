@@ -289,7 +289,7 @@ namespace NewArch {
             
             if (bufferLen > placementsBuffer->length()) {
                 ctx.allocator.resize(fragment.fragmentStorage.placementsBuffer, bufferLen*2);
-                placementsBuffer = fragment.fragmentStorage.atomsBuffer.get();
+                placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             }
             
             std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);

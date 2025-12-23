@@ -6,3 +6,4 @@ gui/gui.xcodeproj
 gui/.vscode
 font-rendering.xcodeproj
 AppKit-Extensions/AppKit-Extensions.xcodeproj
+.cache

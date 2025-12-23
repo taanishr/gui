@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/Users/treja/projects/gui",
+    "file": "gui/gui/main.cpp",
+    "command": "/usr/bin/clang++ main.cpp"
+  }
+]

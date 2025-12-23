@@ -249,8 +249,14 @@ namespace NewArch {
         Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor&, Measured&, Atomized& atomized) {
             std::vector<AtomPlacement> placements;
 
-            auto offsets = ctx.layoutEngine.resolve(constraints, atomized);
-
+            LayoutInput li;
+            
+            li.display = Display::Block;
+            li.position = Position::Relative;
+            
+            auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+            auto offsets = lr.atomOffsets;
+            
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
             if (bufferLen > 0) {
@@ -275,14 +281,16 @@ namespace NewArch {
                 .borderColor = desc.borderColor
             };
 
-            auto offset = placed.placements.front();
-            simd_float2 halfExtent { measured.explicitWidth / 2.0f, measured.explicitHeight / 2.0f };
-            simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
-
-            ImageGeometryUniforms geometryUniforms {
-                .rectCenter = rectCenter,
-                .halfExtent = halfExtent
-            };
+            ImageGeometryUniforms geometryUniforms;
+            
+            if (placed.placements.size() > 0) {
+                auto offset = placed.placements.front();
+                simd_float2 halfExtent { measured.explicitWidth / 2.0f, measured.explicitHeight / 2.0f };
+                simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
+                
+                geometryUniforms.rectCenter = rectCenter;
+                geometryUniforms.halfExtent = halfExtent;
+            }
 
             ImageUniforms uniforms {
                 .style = styleUniforms,

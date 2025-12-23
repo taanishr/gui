@@ -224,13 +224,18 @@ namespace NewArch {
         {
             std::vector<AtomPlacement> placements;
             
-            // simply calls the layout engine; nothing implementation specific here
-            auto offsets = ctx.layoutEngine.resolve(constraints, atomized);
+            LayoutInput li;
             
+            li.display = Display::Block;
+            li.position = Position::Relative;
+            
+            // simply calls the layout engine; nothing implementation specific here
+            auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+            auto offsets = lr.atomOffsets;
             
             // copy placements into buffer
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
-            size_t bufferLen = sizeof(simd_float2);
+            size_t bufferLen = offsets.size()*sizeof(simd_float2);
             std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
             
             // make the actual placement
@@ -262,13 +267,16 @@ namespace NewArch {
             };
             
             // geometry uniforms
-            auto offset = placed.placements.front();
-            simd_float2 halfExtent { desc.width / 2.0f, desc.height / 2.0f };
-            simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
-            DivGeometryUniforms geometryUniforms {
-                .halfExtent = halfExtent,
-                .rectCenter = rectCenter
-            };
+            DivGeometryUniforms geometryUniforms;
+            
+            if (placed.placements.size() > 0) {
+                auto offset = placed.placements.front();
+                simd_float2 halfExtent { desc.width / 2.0f, desc.height / 2.0f };
+                simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
+                
+                geometryUniforms.halfExtent = halfExtent;
+                geometryUniforms.rectCenter = rectCenter;
+            }
             
             DivUniforms uniforms {
                 .style = styleUniforms,
