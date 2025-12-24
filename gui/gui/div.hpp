@@ -34,6 +34,8 @@ struct std::formatter<NewArch::DivPoint> : std::formatter<float>
 
 namespace NewArch {
     struct DivDescriptor {
+        DivDescriptor();
+
         float width;
         float height;
         
@@ -41,6 +43,9 @@ namespace NewArch {
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
+
+        Display display;
+        Position position;
     };
 
     struct DivStyleUniforms {
@@ -226,8 +231,8 @@ namespace NewArch {
             
             LayoutInput li;
             
-            li.display = Display::Block;
-            li.position = Position::Relative;
+            li.display = desc.display;
+            li.position = desc.position;
             
             // simply calls the layout engine; nothing implementation specific here
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);

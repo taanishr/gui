@@ -151,9 +151,9 @@ namespace NewArch {
     //
     // ------------------------------------------------------------------------------------------
 
-
-
+    
     struct Constraints {
+        simd_float2 origin;
         simd_float2 cursor;
         float maxWidth;
         float maxHeight;
@@ -215,9 +215,9 @@ namespace NewArch {
         LayoutResult resolveNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         
         // fixed and absolute, block/inline
-        void layoutAbsolute(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized);
-        void layoutFixed(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized);
-        void resolveOutOfFlow(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized);
+        LayoutResult layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        LayoutResult layoutFixed(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        LayoutResult resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         
         // break into lines
         std::vector<LineBox> breakIntoLines(

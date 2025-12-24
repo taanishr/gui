@@ -6,6 +6,7 @@
 //
 
 #include "renderer.hpp"
+#include "new_arch.hpp"
 
 Renderer* Renderer::current = nullptr;
 
@@ -51,6 +52,7 @@ void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
     auto& divDesc = div.getDescriptor();
+    divDesc.position = NewArch::Position::Absolute;
     divDesc.width = 100;
     divDesc.height = 100;
     divDesc.color = simd_float4{0.5,0.0,0.0,1.0};
@@ -79,6 +81,7 @@ void Renderer::draw() {
 
     auto ts1 = clock.now();
     NewArch::Constraints divConstraints;
+    divConstraints.origin = simd_float2{0.0,0.0};
     divConstraints.cursor = simd_float2{100.0,100.0};
     
     auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
@@ -88,6 +91,7 @@ void Renderer::draw() {
     divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
     
     NewArch::Constraints imgConstraints;
+    imgConstraints.origin = simd_float2{0.0,0.0};
     imgConstraints.cursor = simd_float2{50.0,300.0};
     
     auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());

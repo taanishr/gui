@@ -6,6 +6,7 @@
 //
 
 #pragma once
+#include "image.hpp"
 #include "metal_imports.hpp"
 #include "freetype.hpp"
 #include "glyphs.hpp"
@@ -33,11 +34,17 @@ struct std::formatter<NewArch::TextPoint> : std::formatter<float>
 
 namespace NewArch {
     struct TextDescriptor {
+        TextDescriptor();
+
         std::string text;
         std::string font;
         simd_float4 color;
         float fontSize;
+
+        Display display;
+        Position position;
     };
+
 
     struct TextUniforms {
         simd_float4 color;
@@ -277,8 +284,8 @@ namespace NewArch {
             
             LayoutInput li;
             
-            li.display = Display::Inline;
-            li.position = Position::Relative;
+            li.display = desc.display;
+            li.position = desc.position;
 
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;

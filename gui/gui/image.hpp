@@ -23,12 +23,17 @@ namespace NewArch {
     };
 
     struct ImageDescriptor {
+        ImageDescriptor();
+
         float width  = 0.0f;
         float height = 0.0f;
         std::string path;
         float cornerRadius = 0.0f;
         float borderWidth = 0.0f;
         simd_float4 borderColor = {0,0,0,1};
+
+        Display display;
+        Position position; 
     };
 
     struct ImageStyleUniforms {
@@ -246,14 +251,14 @@ namespace NewArch {
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
 
-        Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor&, Measured&, Atomized& atomized) {
+        Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized) {
             std::vector<AtomPlacement> placements;
 
             LayoutInput li;
             
-            li.display = Display::Block;
-            li.position = Position::Relative;
-            
+            li.display = desc.display;
+            li.position = desc.position;
+
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
             

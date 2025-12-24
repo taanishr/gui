@@ -6,6 +6,7 @@
 //
 
 #include "new_arch.hpp"
+#include "fragment_types.hpp"
 #include <simd/vector_types.h>
 
 namespace NewArch {
@@ -24,17 +25,138 @@ namespace NewArch {
         std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
     };
 
+
+    // absolute needs:
+    /*
+        - Out-of-flow: does not affect siblings or the parent cursor.
+        - Containing block selection:
+            - nearest ancestor with position != static (i.e. positioned ancestor) -> containing block
+            - otherwise -> root frame.
+        - Position coordinates are relative to the containing block origin (top-left by default).
+        - Internal layout (for its children) still uses inline/block semantics and the same
+          line-box logic, but the "available width" is the containing block's inner width.
+        - Shrink-to-fit for inline absolute boxes:
+            - Compute minContentWidth and maxContentWidth for the node.
+            - resolvedWidth = min( max(minContentWidth, availableWidth), maxContentWidth ).
+            - If minContentWidth > availableWidth => inline internal layout degenerates to
+              block-like stacking (vertical flow of line boxes).
+        - Absolute elements must carry owner/style and be atomized as content atoms; any
+          background/box rect for the absolute node is emitted in Finalize after layout.
+    */
+
     // fixed and absolute, block/inline
-    void LayoutEngine::layoutAbsolute(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized) {
-        
+    LayoutResult LayoutEngine::layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized) {
+        LayoutResult lr;
+        lr.outOfFlow = true;
+
+        simd_float2 absolutePosition = constraints.origin;
+        simd_float2 newCursor = absolutePosition;
+        float resolvedHeight = 0.0f;
+        float resolvedWidth = 0.0f;
+
+        std::vector<simd_float2> atomOffsets;
+        // blockify all elements
+        for (auto& atom : atomized.atoms) {
+            atomOffsets.push_back(newCursor);
+            newCursor.x += atom.width;  
+            resolvedWidth += atom.width;
+            resolvedHeight = std::max(resolvedHeight, atom.height);
+        }
+
+        lr.atomOffsets = atomOffsets;
+        lr.siblingCursor = currentCursor;
+        lr.consumedHeight = 0;
+
+        lr.childConstraints = {
+            .origin = absolutePosition,
+            .cursor = absolutePosition,
+            .maxWidth = resolvedWidth,
+            .maxHeight = resolvedHeight,
+            .frameInfo = constraints.frameInfo
+        };
+
+        lr.computedBox = {
+            .x = constraints.cursor.x,
+            .y = constraints.cursor.y,
+            .width = resolvedWidth,
+            .height = resolvedHeight
+        };
+
+        return lr;
     }
 
-    void LayoutEngine::layoutFixed(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized) {
+
+    // fixed needs:
+    /*
+        - Out-of-flow: does not affect siblings or the parent cursor.
+        - Containing block: the viewport (screen). Coordinates are relative to viewport origin.
+        - Requires awareness of viewport dimensions (screenWidth/screenHeight) as available space.
+        - Internal layout respects inline vs block semantics; shrink-to-fit applies the same way:
+            - If minContentWidth > viewportAvailableWidth => degenerate to block-like stacking.
+        - Position and final atom placement are independent of scrolling of any containing block.
+    */
+    LayoutResult LayoutEngine::layoutFixed(
+        Constraints& constraints, 
+        simd_float2 currentCursor, 
+        LayoutInput& layoutInput, 
+        Atomized& atomized
+    ) {
+        LayoutResult lr;
+        lr.outOfFlow = true;
+
+        simd_float2 viewportOrigin = {0.0f, 0.0f};
+        simd_float2 fixedPosition = viewportOrigin;
         
+        // TODO: Apply top/left/right/bottom offsets when added
+        // if (layoutInput.hasLeft) fixedPosition.x += layoutInput.left;
+        // if (layoutInput.hasTop) fixedPosition.y += layoutInput.top;
+        
+        simd_float2 newCursor = fixedPosition;
+        float resolvedHeight = 0.0f;
+        float resolvedWidth = 0.0f;
+        std::vector<simd_float2> atomOffsets;
+
+        for (auto& atom : atomized.atoms) {
+            atomOffsets.push_back(newCursor);
+            newCursor.x += atom.width;
+            resolvedWidth += atom.width;
+            resolvedHeight = std::max(resolvedHeight, atom.height);
+        }
+
+        lr.atomOffsets = atomOffsets;
+        
+        lr.siblingCursor = currentCursor;
+        lr.consumedHeight = 0;
+
+        lr.childConstraints = {
+            .origin = viewportOrigin,
+            .cursor = fixedPosition,                  
+            .maxWidth = resolvedWidth,
+            .maxHeight = resolvedHeight,
+            .frameInfo = constraints.frameInfo
+        };
+
+        lr.computedBox = {
+            .x = fixedPosition.x,
+            .y = fixedPosition.y,
+            .width = resolvedWidth,
+            .height = resolvedHeight
+        };
+
+        return lr;
     }
 
-    void LayoutEngine::resolveOutOfFlow(Constraints& constraints, LayoutInput& layoutInput, Atomized& atomized){
-        
+
+    LayoutResult LayoutEngine::resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized){
+        LayoutResult lr;
+
+        if (layoutInput.position == Position::Absolute) {
+            lr = layoutAbsolute(constraints, currentCursor, layoutInput, atomized);
+        }else {
+            lr =layoutFixed(constraints, currentCursor, layoutInput, atomized);
+        }
+
+        return lr;
     }
 
     // relative, block/inline
@@ -50,6 +172,7 @@ namespace NewArch {
         
         float resolvedWidth = 0;
         float resolvedHeight = 0;
+        childConstraints.origin = currentCursor;
         childConstraints.cursor = newCursor;
         childConstraints.frameInfo = constraints.frameInfo;
             
@@ -99,6 +222,7 @@ namespace NewArch {
         std::vector<simd_float2> atomOffsets;
         simd_float2 newCursor = currentCursor;
         
+        lr.childConstraints.origin = currentCursor;
         float lineHeight = 0;
         float totalWidth = 0;
         float totalHeight = 0;
@@ -164,25 +288,23 @@ namespace NewArch {
 
     LayoutResult LayoutEngine::resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized)
     {
-        // LayoutResult lr;
+        LayoutResult lr;
         
-//        simd_float2 cursor = constraints.cursor;
-//        
-//        for (auto i = 0; i < atomized.atoms.size(); ++i) {
-//            auto& curr_atom = atomized.atoms[i];
-//
-//            atomOffsets.push_back(cursor);
-//            cursor.x += curr_atom.width;
-//        }
+       simd_float2 cursor = constraints.cursor;
+       
+    //    for (auto i = 0; i < atomized.atoms.size(); ++i) {
+    //        auto& curr_atom = atomized.atoms[i];
+
+    //        atomOffsets.push_back(cursor);
+    //        cursor.x += curr_atom.width;
+    //    }
 
         
-        // if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {
-        //     // resolveOutOfFlow(constraints, cuconstraints.cursor, layoutInput, atomized);
-        // }else {
-        //     resolveNormalFlow(constraints, constraints.cursor, layoutInput, atomized);
-        // }
-
-        auto lr = resolveNormalFlow(constraints, constraints.cursor, layoutInput, atomized);
+        if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {
+            lr = resolveOutOfFlow(constraints, constraints.cursor, layoutInput, atomized);
+        }else {
+            lr = resolveNormalFlow(constraints, constraints.cursor, layoutInput, atomized);
+        }
         
         return lr;
     }
