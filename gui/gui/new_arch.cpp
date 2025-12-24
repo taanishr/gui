@@ -7,6 +7,7 @@
 
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
+#include <print>
 #include <simd/vector_types.h>
 
 namespace NewArch {
@@ -228,9 +229,15 @@ namespace NewArch {
         float totalHeight = 0;
         float minX = currentCursor.x;
         float maxX = currentCursor.x;
+
+        float ncx = newCursor.x;
+        float ncy = newCursor.y;
+
+        std::println("currentCursor: {} {}", ncx, ncy);
+        std::println("currentCursor: {} {}", ncx, ncy);
         
         for (auto& atom : atomized.atoms) {
-            if (newCursor.x + atom.width > constraints.cursor.x + constraints.maxWidth && 
+            if ((newCursor.x + atom.width > constraints.cursor.x + constraints.maxWidth || newCursor.x > constraints.frameInfo.width) && 
                 newCursor.x > constraints.cursor.x) {
                 
                 newCursor.x = constraints.cursor.x;
@@ -241,6 +248,7 @@ namespace NewArch {
             
             atomOffsets.push_back(newCursor);
             newCursor.x += atom.width;
+
             lineHeight = std::max(lineHeight, atom.height);
             
             minX = std::min(minX, newCursor.x - atom.width);
@@ -298,6 +306,7 @@ namespace NewArch {
     //        atomOffsets.push_back(cursor);
     //        cursor.x += curr_atom.width;
     //    }
+    
 
         
         if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {

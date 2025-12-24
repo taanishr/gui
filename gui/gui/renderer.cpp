@@ -83,6 +83,10 @@ void Renderer::draw() {
     NewArch::Constraints divConstraints;
     divConstraints.origin = simd_float2{0.0,0.0};
     divConstraints.cursor = simd_float2{100.0,100.0};
+    divConstraints.frameInfo = {
+        .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
+        .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
+    };
     
     auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
     auto atomized = divProcessor.atomize(div.getFragment(), divConstraints, div.getDescriptor(), measured);
@@ -93,6 +97,11 @@ void Renderer::draw() {
     NewArch::Constraints imgConstraints;
     imgConstraints.origin = simd_float2{0.0,0.0};
     imgConstraints.cursor = simd_float2{50.0,300.0};
+    imgConstraints.frameInfo = {
+        .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
+        .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
+    };
+    
     
     auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());
     auto iAtomized = imgProcessor.atomize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured);
@@ -102,7 +111,11 @@ void Renderer::draw() {
 
     NewArch::Constraints txtConstraints;
     txtConstraints.maxWidth = 500;
-    txtConstraints.cursor = simd_float2{50.0,50.0};
+    txtConstraints.cursor = simd_float2{450.0,50.0};
+    txtConstraints.frameInfo = {
+        .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
+        .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
+    };
     
     auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
     auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);

@@ -239,7 +239,7 @@ namespace NewArch {
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
                 atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / 64.0f;
-                atom.height = (glyph.quad.topLeft.y - glyph.quad.bottomRight.y) / 64.0f;
+                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / 64.0f;
 
                 atoms.push_back(atom);
             }
