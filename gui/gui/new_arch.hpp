@@ -37,8 +37,11 @@ namespace NewArch {
         std::vector<AtomPlacement> placements;
     };
 
+    struct FinalizedBase {
+    };
+
     template <typename U>
-    struct Finalized {
+    struct Finalized : FinalizedBase {
         FragmentID id;
         Atomized atomized;
         Placed placed;
@@ -151,14 +154,15 @@ namespace NewArch {
     //
     // ------------------------------------------------------------------------------------------
 
-    
+
     struct Constraints {
-        simd_float2 origin;
-        simd_float2 cursor;
-        float maxWidth;
-        float maxHeight;
+
+        simd_float2 origin{};
+        simd_float2 cursor{};
+        float maxWidth{};
+        float maxHeight{};
     
-        FrameInfo frameInfo; // viewport size (for fixed)
+        FrameInfo frameInfo{}; // viewport size (for fixed)
         
         // TODO: include padding details (in form of available width/height)
     };

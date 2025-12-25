@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 usage() {
     echo "Usage: $0 [option]"
@@ -16,13 +17,13 @@ fi
 
 case "$1" in
     build)
-        /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project gui.xcodeproj -scheme "gui" -configuration Debug -sdk macosx -derivedDataPath ./build clean build | xcpretty
+        /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project gui.xcodeproj -scheme "gui" -configuration Debug -sdk macosx -derivedDataPath ./build clean build -quiet
         ;;
     run)
         ./build/Build/Products/Debug/gui
         ;;
     buildrun)
-        /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project gui.xcodeproj -scheme "gui" -configuration Debug -sdk macosx -derivedDataPath ./build clean build | xcpretty
+        /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project gui.xcodeproj -scheme "gui" -configuration Debug -sdk macosx -derivedDataPath ./build clean build -quiet
         ./build/Build/Products/Debug/gui
         ;;
     debug)

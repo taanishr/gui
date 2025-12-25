@@ -11,6 +11,7 @@
 #include <simd/vector_types.h>
 
 namespace NewArch {
+
     // pipeline specific
     UIContext::UIContext(MTL::Device* device, MTK::View* view):
         device{device},
@@ -230,15 +231,9 @@ namespace NewArch {
         float minX = currentCursor.x;
         float maxX = currentCursor.x;
 
-        float ncx = newCursor.x;
-        float ncy = newCursor.y;
-
-        std::println("currentCursor: {} {}", ncx, ncy);
-        std::println("currentCursor: {} {}", ncx, ncy);
-        
         for (auto& atom : atomized.atoms) {
-            if ((newCursor.x + atom.width > constraints.cursor.x + constraints.maxWidth || newCursor.x > constraints.frameInfo.width) && 
-                newCursor.x > constraints.cursor.x) {
+            if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.cursor.x + constraints.maxWidth)
+                || (newCursor.x + atom.width > constraints.frameInfo.width)) {
                 
                 newCursor.x = constraints.cursor.x;
                 newCursor.y += lineHeight;

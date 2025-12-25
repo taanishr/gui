@@ -7,6 +7,7 @@
 
 #include "renderer.hpp"
 #include "new_arch.hpp"
+#include <print>
 
 Renderer* Renderer::current = nullptr;
 
@@ -63,7 +64,7 @@ void Renderer::makeResources()
     imgDesc.path = "/Users/treja/Downloads/coarsening.png";
     
     auto& txtDesc = txt.getDescriptor();
-    txtDesc.text = "bac";
+    txtDesc.text = "bacfsdfsdfsfdfsdfdf";
     txtDesc.font = "/System/Library/Fonts/Supplemental/Arial.ttf";
     txtDesc.color = simd_float4{1,1,1,1};
     txtDesc.fontSize = 64.0;
@@ -110,8 +111,7 @@ void Renderer::draw() {
     imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
 
     NewArch::Constraints txtConstraints;
-    txtConstraints.maxWidth = 500;
-    txtConstraints.cursor = simd_float2{450.0,50.0};
+    txtConstraints.cursor = simd_float2{100.0,50.0};
     txtConstraints.frameInfo = {
         .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
         .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
@@ -178,3 +178,10 @@ Renderer::~Renderer() {
     commandQueue->release();
     FT_Done_FreeType(ft);
 }
+
+
+
+
+
+
+
