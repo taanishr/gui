@@ -20,11 +20,13 @@ namespace NewArch {
         Measured& measured,
         Atomized& atomized,
         Placed& placed,
+        LayoutResult layout,
         MTL::RenderCommandEncoder* encoder
     ) {
         { proc.measure(fragment, constraints, desc) } -> std::same_as<Measured>;
         { proc.atomize(fragment, constraints, desc, measured) } -> std::same_as<Atomized>;
-        { proc.place(fragment, constraints, desc, measured, atomized) } -> std::same_as<Placed>;
+        { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
+        { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
         proc.finalize(fragment, constraints, desc, measured, atomized, placed);
         proc.encode(encoder, fragment, proc.finalize(fragment, constraints, desc, measured, atomized, placed));
     };
@@ -33,7 +35,10 @@ namespace NewArch {
     struct ElementBase {
         virtual Measured measure(Constraints& constraints) = 0;
         virtual Atomized atomize(Constraints& constraints, Measured& measured) = 0;
-        virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
+        virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
+        virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
+        virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
+        virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
         virtual ~ElementBase();
     };
 
@@ -52,15 +57,23 @@ namespace NewArch {
             return processor.atomize(element.getFragment(), constraints, measured);
         }
 
-        Placed place(Constraints& constraints, Measured& measured, Atomized& atomized) {
-            return processor.place(element.getFragment(), constraints,  measured, atomized);
+
+        LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) {
+            return processor.layout(element.getFragment(), constraints, measured, atomized);
         }
 
-        Finalized<typename E::UniformsType> finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) {
-            processor.finalize(element.getFragment(), constraints,  measured, atomized, placed);
+        Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+            return processor.place(element.getFragment(), constraints, measured, atomized, layout);
         }
 
-        void encode(MTL::RenderCommandEncoder* encoder, Finalized<typename E::UniformsType> finalized) {
+        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) {
+            auto finalized = processor.finalize(element.getFragment(), constraints,  measured, atomized, placed);
+            auto finalizedErased = finalized;
+            return finalizedErased;
+        }
+
+        void encode(MTL::RenderCommandEncoder* encoder, std::any finalizedErased) {
+            auto finalized = std::any_cast<Finalized<typename E::UniformsType>>(finalizedErased);
             return processor.encode(encoder, finalized);
         }
 
@@ -73,6 +86,7 @@ namespace NewArch {
     struct ComputationCache {
         std::unordered_map<uint64_t, Measured> measured;
         std::unordered_map<uint64_t, Atomized> atomized;
+        std::unordered_map<uint64_t, LayoutResult> layouts;
         std::unordered_map<uint64_t, Placed> placed;
         std::unordered_map<uint64_t, std::any> finalized; 
     };
@@ -108,6 +122,7 @@ namespace NewArch {
         static uint64_t nextId;
     };
 
+    // pointers for raw views
     struct RenderTree {
         template<typename E, typename P>
         TreeNode* createRoot(E elem, P& processor) {
@@ -121,13 +136,18 @@ namespace NewArch {
         void render(MTL::RenderCommandEncoder* encoder);
 
     private:
+        Constraints rootConstraints; // root constraints;
+        simd_float2 rootCursor; // root cursor
+
+
         std::unique_ptr<TreeNode> elementTree;
         ComputationCache renderCache;
         LayoutEngine layoutEngine;
         
-        void measurePhase(TreeNode* node);
-        void layoutPhase(TreeNode* node, const FrameInfo& frameInfo);
-        void finalizePhase(TreeNode* node);
+        void measurePhase(TreeNode* node, Constraints& constraints);
+        void atomizePhase(TreeNode* node, Constraints& constraints);
+        void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+        void finalizePhase(TreeNode* node, Constraints& constraints);
     };
 
 }

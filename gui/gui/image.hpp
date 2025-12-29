@@ -251,15 +251,24 @@ namespace NewArch {
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
 
-        Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized) {
-            std::vector<AtomPlacement> placements;
-
+        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized) {
             LayoutInput li;
-            
             li.display = desc.display;
             li.position = desc.position;
-
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+
+            return lr;
+        }
+
+        Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
+            std::vector<AtomPlacement> placements;
+
+            // LayoutInput li;
+            
+            // li.display = desc.display;
+            // li.position = desc.position;
+
+            // auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
             
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();

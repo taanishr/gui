@@ -91,7 +91,8 @@ void Renderer::draw() {
     
     auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
     auto atomized = divProcessor.atomize(div.getFragment(), divConstraints, div.getDescriptor(), measured);
-    auto placed = divProcessor.place(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized);
+    auto layout = divProcessor.layout(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized);
+    auto placed = divProcessor.place(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized, layout);
     auto finalized = divProcessor.finalize(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized, placed);
     divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
     
@@ -106,7 +107,8 @@ void Renderer::draw() {
     
     auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());
     auto iAtomized = imgProcessor.atomize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured);
-    auto iPlaced = imgProcessor.place(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized);
+    auto iLayout = imgProcessor.layout(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized);
+    auto iPlaced = imgProcessor.place(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iLayout);
     auto iFinalized = imgProcessor.finalize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iPlaced);
     imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
 
@@ -119,7 +121,8 @@ void Renderer::draw() {
     
     auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
     auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);
-    auto tPlaced = txtProcessor.place(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized);
+    auto tLayout = txtProcessor.layout(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized);
+    auto tPlaced = txtProcessor.place(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized, tLayout);
     auto tFinalized = txtProcessor.finalize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized, tPlaced);
     txtProcessor.encode(renderCommandEncoder, txt.getFragment(), tFinalized);
     

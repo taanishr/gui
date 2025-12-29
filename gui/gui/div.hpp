@@ -223,19 +223,28 @@ namespace NewArch {
                 .atoms = atoms
             };
         }
+
+        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) {
+            LayoutInput li;
+            li.display = desc.display;
+            li.position = desc.position;
+            auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+
+            return lr;
+        }
         
         // TODO: Cache all this
-        Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) // also needs to take in constraints
+        Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) // also needs to take in constraints
         {
             std::vector<AtomPlacement> placements;
             
-            LayoutInput li;
+            // LayoutInput li;
             
-            li.display = desc.display;
-            li.position = desc.position;
+            // li.display = desc.display;
+            // li.position = desc.position;
             
-            // simply calls the layout engine; nothing implementation specific here
-            auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+            // // simply calls the layout engine; nothing implementation specific here
+            // auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
             
             // copy placements into buffer
