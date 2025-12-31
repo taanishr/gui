@@ -12,6 +12,7 @@
 #include "glyphs.hpp"
 #include "frame_info.hpp"
 #include "glyphCache.hpp"
+#include <mutex>
 #include <ranges>
 #include "new_arch.hpp"
 
@@ -89,14 +90,15 @@ namespace NewArch {
     template <typename S = TextStorage, typename U = TextUniforms>
     struct TextProcessor {
         TextProcessor(UIContext& ctx):
-            glyphCache{nullptr},
+            glyphCache{},
             lastGlyphsBufferOffset{0},
             glyphBuffer{ctx.allocator.allocate(4096)},
             ctx{ctx}
         {
-            FT_Init_FreeType(&(this->ft));
+            // FT_Init_FreeType(&(this->ft));
+            // FT_Done_FreeType(ft);
             
-            glyphCache = GlyphCache{this->ft};
+            // glyphCache = GlyphCache{this->ft};
         }
         
         void buildPipeline(MTL::RenderPipelineState*& pipeline) {
@@ -158,10 +160,12 @@ namespace NewArch {
         }
         
         MTL::RenderPipelineState* getPipeline() {
+            static std::once_flag initFlag;
             static MTL::RenderPipelineState* pipeline = nullptr;
         
-            if (!pipeline)
+            std::call_once(initFlag, [&](){
                 buildPipeline(pipeline);
+            });
         
             return pipeline;
         }
@@ -193,36 +197,41 @@ namespace NewArch {
             std::vector<int> metadata;
             allAtomPoints.reserve(desc.text.size() * 6);
 
+            
             for (size_t i = 0; i < desc.text.size(); ++i) {
                 char ch = desc.text[i];
                 Atom atom;
 
-                GlyphQuery glyphQuery { ch, desc.font, .fontSize = desc.fontSize };
+                GlyphQuery glyphQuery { ch, desc.font, desc.fontSize };
                 auto glyph = glyphCache.retrieve(glyphQuery);
-
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
+                size_t offset = 0;
 
-                auto offset_it = glyphBufferOffsets.find(glyphQuery);
-                if (offset_it == glyphBufferOffsets.end()) {
-                    auto rawGlyphBuffer = glyphBuffer.get();
-                    size_t requiredSize = lastGlyphsBufferOffset + pointsLenBytes;
+                // highly unoptimized coarse lock, for now
+                {
+                    std::lock_guard<std::mutex> lock(glyphBufferMutex);
+                    auto offset_it = glyphBufferOffsets.find(glyphQuery);
+                    if (offset_it == glyphBufferOffsets.end()) {
+                        auto rawGlyphBuffer = glyphBuffer.get();
+                        size_t requiredSize = lastGlyphsBufferOffset + pointsLenBytes;
 
-                    if (requiredSize > rawGlyphBuffer->length()) {
-                        ctx.allocator.resize(glyphBuffer, requiredSize);
-                        rawGlyphBuffer = glyphBuffer.get();
+                        if (requiredSize > rawGlyphBuffer->length()) {
+                            ctx.allocator.resize(glyphBuffer, requiredSize);
+                            rawGlyphBuffer = glyphBuffer.get();
+                        }
+
+                        auto copyStart =
+                            reinterpret_cast<std::byte*>(rawGlyphBuffer->contents()) + lastGlyphsBufferOffset;
+
+                        std::memcpy(copyStart, glyph.points.data(), pointsLenBytes);
+
+                        glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset / sizeof(simd_float2);
+                        offset_it = glyphBufferOffsets.find(glyphQuery);
+                        lastGlyphsBufferOffset += pointsLenBytes;
                     }
 
-                    auto copyStart =
-                        reinterpret_cast<std::byte*>(rawGlyphBuffer->contents()) + lastGlyphsBufferOffset;
-
-                    std::memcpy(copyStart, glyph.points.data(), pointsLenBytes);
-
-                    glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset / sizeof(simd_float2);
-                    offset_it = glyphBufferOffsets.find(glyphQuery);
-                    lastGlyphsBufferOffset += pointsLenBytes;
+                    offset = offset_it->second;
                 }
-
-                size_t offset = offset_it->second;
 
                 int metadataIndex = metadata.size();
 
@@ -363,7 +372,6 @@ namespace NewArch {
         
         ~TextProcessor() {
 //            FT_Done_Face(face);
-            FT_Done_FreeType(ft);
         }
 
         // shared glyph cache wrapper?
@@ -373,7 +381,7 @@ namespace NewArch {
         size_t lastGlyphsBufferOffset;
         std::unordered_map<GlyphQuery, size_t, GlyphQueryHash> glyphBufferOffsets;
         DrawableBuffer glyphBuffer;
-        FT_Library ft;
+        std::mutex glyphBufferMutex;
         
         UIContext& ctx;
     };

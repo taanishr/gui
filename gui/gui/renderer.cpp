@@ -7,7 +7,6 @@
 
 #include "renderer.hpp"
 #include "new_arch.hpp"
-#include <print>
 
 Renderer* Renderer::current = nullptr;
 
@@ -27,11 +26,6 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
 {
     
     makeResources();
-}
-
-GlyphCache& Renderer::glyphCache() {
-    static GlyphCache cache {ft};
-    return cache;
 }
 
 MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()

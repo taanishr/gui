@@ -35,8 +35,7 @@ public:
     void makeCurrent();
     static bool hasActiveRenderer();
     static Renderer& active();
-    
-    GlyphCache& glyphCache();
+
     
     MTL::Device* device;
     MTK::View* view;

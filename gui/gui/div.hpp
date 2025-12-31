@@ -13,6 +13,7 @@
 #include <ranges>
 #include "MTKTexture_loader.hpp"
 #include <format>
+#include <mutex>
 #include "new_arch.hpp"
 
 namespace NewArch {
@@ -161,11 +162,13 @@ namespace NewArch {
         
         
         MTL::RenderPipelineState* getPipeline() {
+            static std::once_flag initFlag;
             static MTL::RenderPipelineState* pipeline = nullptr;
-            
-            if (!pipeline)
+        
+            std::call_once(initFlag, [&](){
                 buildPipeline(pipeline);
-            
+            });
+        
             return pipeline;
         }
         

@@ -147,10 +147,14 @@ namespace NewArch {
             fragmentFunction->release();
         }
 
-
         MTL::RenderPipelineState* getPipeline() {
+            static std::once_flag initFlag;
             static MTL::RenderPipelineState* pipeline = nullptr;
-            if (!pipeline) buildPipeline(pipeline);
+        
+            std::call_once(initFlag, [&](){
+                buildPipeline(pipeline);
+            });
+        
             return pipeline;
         }
 

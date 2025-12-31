@@ -3,6 +3,11 @@
 #include <concepts>
 #include <any>
 #include <cstdint>
+#include <algorithm>
+#include "frame_info.hpp"
+#include <simd/vector_types.h>
+#include <execution>
+
 
 namespace NewArch {
     template<typename E>
@@ -83,13 +88,13 @@ namespace NewArch {
         P& processor;
     };
 
-    struct ComputationCache {
-        std::unordered_map<uint64_t, Measured> measured;
-        std::unordered_map<uint64_t, Atomized> atomized;
-        std::unordered_map<uint64_t, LayoutResult> layouts;
-        std::unordered_map<uint64_t, Placed> placed;
-        std::unordered_map<uint64_t, std::any> finalized; 
-    };
+    // struct ComputationCache {
+    //     std::unordered_map<uint64_t, Measured> measured;
+    //     std::unordered_map<uint64_t, Atomized> atomized;
+    //     std::unordered_map<uint64_t, LayoutResult> layouts;
+    //     std::unordered_map<uint64_t, Placed> placed;
+    //     std::unordered_map<uint64_t, std::any> finalized; 
+    // };
 
 
     struct TreeNode {
@@ -117,10 +122,18 @@ namespace NewArch {
         TreeNode* parent = nullptr;
         std::vector<std::unique_ptr<TreeNode>> children;
         uint64_t id;
+
+        std::optional<Measured> measured;
+        std::optional<Atomized> atomized;
+        std::optional<LayoutResult> layout;
+        std::optional<Placed> placed;
+        std::any finalized;
         
     private:
         static uint64_t nextId;
     };
+
+    std::vector<TreeNode*> collectAllNodes(TreeNode* root);
 
     // pointers for raw views
     struct RenderTree {
@@ -133,7 +146,7 @@ namespace NewArch {
         TreeNode* getRoot() { return elementTree.get(); }
         
         void update(const FrameInfo& frameInfo);
-        void render(MTL::RenderCommandEncoder* encoder);
+        void render(MTL::RenderCommandEncoder* encoder);        
 
     private:
         Constraints rootConstraints; // root constraints;
@@ -141,12 +154,13 @@ namespace NewArch {
 
 
         std::unique_ptr<TreeNode> elementTree;
-        ComputationCache renderCache;
+        // ComputationCache renderCache;
         LayoutEngine layoutEngine;
         
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+        void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     };
 

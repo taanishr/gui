@@ -206,6 +206,7 @@ namespace NewArch {
         // for creating background atom in finalize for text? but doesn't make sense in case of border when regular inline...?
 
         float consumedHeight; // how much height consumed
+
         Constraints childConstraints; // child constraints
     
         simd_float2 siblingCursor;

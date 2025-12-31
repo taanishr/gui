@@ -46,14 +46,17 @@ std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
 }
 
 
-GlyphCache::GlyphCache(FT_Library ft):
-    ft{ft}
-{}
+GlyphCache::GlyphCache()
+{
+    FT_Init_FreeType(&(this->ft));
+}
 
 
 GlyphCache::~GlyphCache() {
     for (auto& pair : fontFaces)
         FT_Done_Face(pair.second);
+
+    FT_Done_FreeType(this->ft);
 }
 
 const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
@@ -62,9 +65,25 @@ const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
                                   
 const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
 {
-    bool glyphCached = cache.find({font,fontSize,ch}) != cache.end();
+    
+    GlyphQuery query{ch, font, fontSize};
 
-    if (!glyphCached) {
+    {
+        std::shared_lock<std::shared_mutex> readLock(cacheMutex);
+        auto it = cache.find(query);
+        if (it != cache.end()) {
+            return it->second;
+        }
+    }
+    
+    {
+        std::unique_lock<std::shared_mutex> writeLock(cacheMutex);
+
+        auto it = cache.find(query);
+        if (it != cache.end()) {
+            return it->second;
+        }
+        
         bool faceCached = fontFaces.find({font, fontSize}) != fontFaces.end();
         
         if (!faceCached) {
@@ -85,12 +104,10 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
 
         glyph.metrics = fontFace->glyph->metrics;
     
-        cache[{font, fontSize, ch}] = glyph;
+        cache[query] = glyph;
+
+        return cache[query];
     }
-
-    auto glyphIt = cache.find({font,fontSize,ch});
-
-    return glyphIt->second;
 }
 
 

@@ -2,6 +2,7 @@
 
 #include "hash_combine.hpp"
 #include "glyphs.hpp"
+#include <shared_mutex>
 
 using FontSize = float;
 using FontName = std::string;
@@ -28,14 +29,15 @@ struct GlyphQueryHash {
 
 
 struct GlyphCache {
-    GlyphCache(FT_Library ft);
+    GlyphCache();
     
     ~GlyphCache();
     
     const Glyph& retrieve(GlyphQuery glyphQuery);
     const Glyph& retrieve(const FontName& font, FontSize fontSize, char ch);
     
+    std::shared_mutex cacheMutex;
     FT_Library ft;
     std::unordered_map<std::pair<FontName, FontSize>, FT_Face, GlyphFaceHash> fontFaces;
-    std::unordered_map<std::tuple<FontName, FontSize, char>, Glyph, GlyphCacheHash> cache;
+    std::unordered_map<GlyphQuery, Glyph, GlyphQueryHash> cache;
 };
