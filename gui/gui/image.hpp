@@ -86,6 +86,10 @@ namespace NewArch {
         
         ImageDescriptor desc;
         Fragment<S> fragment;
+
+        using StorageType = S;
+        using UniformsType = ImageUniforms;
+        using DescriptorType = ImageDescriptor;
     };
 
     template <typename S = ImageStorage, typename U = ImageUniforms>

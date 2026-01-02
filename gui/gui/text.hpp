@@ -85,6 +85,10 @@ namespace NewArch {
         
         TextDescriptor desc;
         Fragment<S> fragment;
+
+        using StorageType = S;
+        using UniformsType = TextUniforms;
+        using DescriptorType = TextDescriptor;
     };
 
     template <typename S = TextStorage, typename U = TextUniforms>

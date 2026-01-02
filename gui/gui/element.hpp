@@ -1,3 +1,5 @@
+#pragma once
+
 #include "metal_imports.hpp"
 #include "new_arch.hpp"
 #include <concepts>
@@ -8,12 +10,15 @@
 #include <simd/vector_types.h>
 #include "parallel.hpp"
 
-
 namespace NewArch {
     template<typename E>
     concept ElementType = requires(E& e) {
         e.getDescriptor();
         e.getFragment();
+
+        typename E::StorageType;
+        typename E::DescriptorType;
+        typename E::UniformsType;
     };
 
     template<typename P, typename Fragment, typename Descriptor, typename U>
@@ -79,7 +84,7 @@ namespace NewArch {
         }
 
         void encode(MTL::RenderCommandEncoder* encoder, std::any& finalizedErased) override {
-            auto finalized = std::any_cast<Finalized<typename P::UniformsType>>(finalizedErased);
+            auto finalized = std::any_cast<Finalized<typename E::UniformsType>>(finalizedErased);
             return processor.encode(encoder, element.getFragment(), finalized);
         }
 
@@ -123,8 +128,8 @@ namespace NewArch {
     // pointers for raw views
     struct RenderTree {
         template<typename E, typename P>
-        TreeNode* createRoot(E elem, P& processor) {
-            elementTree = std::make_unique<TreeNode>(std::move(elem), processor);
+        TreeNode* createRoot(UIContext& ctx, E elem, P& processor) {
+            elementTree = std::make_unique<TreeNode>(ctx, std::move(elem), processor);
             return elementTree.get();
         }
         

@@ -18,6 +18,8 @@
 #include <chrono>
 #include "glyphCache.hpp"
 #include "text.hpp"
+#include "element.hpp"
+#include "node_builder.hpp"
 
 constexpr int MaxOutstandingFrameCount = 2;
 
@@ -48,6 +50,7 @@ public:
     NewArch::Div<> div;
     NewArch::Image<> img;
     NewArch::Text<> txt;
+    NewArch::RenderTree tree;
 
 
 

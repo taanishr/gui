@@ -5,6 +5,8 @@
 //  Created by Taanish Reja on 11/20/25.
 //
 
+#pragma once
+
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
 #include <print>

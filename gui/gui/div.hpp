@@ -6,6 +6,7 @@
 //
 
 #pragma once
+
 #include "fragment_types.hpp"
 #include "printers.hpp"
 #include "metal_imports.hpp"
