@@ -97,6 +97,10 @@ namespace NewArch {
         
         DivDescriptor desc;
         Fragment<S> fragment;
+
+        using StorageType = S;
+        using UniformsType = DivUniforms;
+        using DescriptorType = DivDescriptor;
     };
 
     template <typename S = DivStorage, typename U = DivUniforms>
@@ -332,7 +336,9 @@ namespace NewArch {
         }
         
         // Shared resources (optional)
-        
+        using UniformsType = U;
+
+
         // Shared context
         UIContext& ctx;
     };

@@ -6,7 +6,7 @@
 //
 
 #include "MTKTexture_loader.hpp"
-#include <MTK_Extensions-Swift.h>
+#include "MTK_Extensions.hpp"
 
 namespace MTKTextures {
     MTKTextureLoader::MTKTextureLoader(MTL::Device* device):

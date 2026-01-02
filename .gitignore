@@ -1,5 +1,8 @@
 MTK-Extensions/MTK-Extensions.xcodeproj
 MTK-Extensions-Library/MTK-Extensions
+AppKit-Extensions-Library/MTK-Extensions-Old
+AppKit-Extensions-Library/AppKit-Extensions
+AppKit-Extensions-Library/AppKit-Extensions_Old
 gui/build
 gui/gui.xcodeproj
 .vscode
@@ -7,3 +10,4 @@ gui/.vscode
 font-rendering.xcodeproj
 AppKit-Extensions/AppKit-Extensions.xcodeproj
 .cache
+.DS_Store

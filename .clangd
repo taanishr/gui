@@ -1,13 +1,13 @@
 CompileFlags:
-  Compiler: /usr/bin/clang++
+  Compiler: /opt/homebrew/opt/llvm/bin/clang++
   Add:
     # language
     - -std=c++23
 
     # project includes
     - -Igui
-    - -I/Users/treja/projects/gui/AppKit-Extensions-Library
-    - -I/Users/treja/projects/gui/MTK-Extensions-Library
+    # - -I/Users/treja/projects/gui/AppKit-Extensions-Library
+    # - -I/Users/treja/projects/gui/MTK-Extensions-Library
 
     # metal-cpp
     - -I/Users/treja/metal-cpp

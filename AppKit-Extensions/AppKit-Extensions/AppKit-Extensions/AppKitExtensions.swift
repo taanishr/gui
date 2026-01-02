@@ -8,13 +8,14 @@
 import AppKit
 import MetalKit
 
+@_cdecl("setTitleBarTransparent")
 public func setTitleBarTransparent(windowPtr: UnsafeMutableRawPointer) {
     let window = Unmanaged<NSWindow>.fromOpaque(windowPtr).takeUnretainedValue();
     window.titlebarAppearsTransparent = true;
     window.styleMask.insert(.fullSizeContentView);
-    print(window.titlebarAppearsTransparent);
 }
 
+@_cdecl("setWindowTransparent")
 public func setWindowTransparent(windowPtr: UnsafeMutableRawPointer) {
     let window = Unmanaged<NSWindow>.fromOpaque(windowPtr).takeUnretainedValue();
     
@@ -28,6 +29,7 @@ public func setWindowTransparent(windowPtr: UnsafeMutableRawPointer) {
     }
 }
 
+@_cdecl("setMaximumDrawableCount")
 public func setMaximumDrawableCount(viewPtr: UnsafeMutableRawPointer, count: CInt) {
     let view = Unmanaged<MTKView>.fromOpaque(viewPtr).takeUnretainedValue();
     
@@ -36,6 +38,7 @@ public func setMaximumDrawableCount(viewPtr: UnsafeMutableRawPointer, count: CIn
     }
 }
 
+@_cdecl("setSyncEnabled")
 public func setSyncEnabled(viewPtr: UnsafeMutableRawPointer, enabled: CBool) {
     let view = Unmanaged<MTKView>.fromOpaque(viewPtr).takeUnretainedValue();
     

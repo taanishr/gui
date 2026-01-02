@@ -8,7 +8,7 @@
 
 
 #include "window.hpp"
-#include <AppKit_Extensions-Swift.h>
+#include "AppKit_Extensions.hpp"
 #include "index.hpp"
 
 // refactor objective c into a cleaner interface? maybe a struct with key funcs?

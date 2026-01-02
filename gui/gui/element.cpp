@@ -1,6 +1,10 @@
 #include "element.hpp"
 
+
+    
 namespace NewArch {
+    ElementBase::~ElementBase() {};
+
     uint64_t TreeNode::nextId = 0;
 
     std::vector<TreeNode*> collectAllNodes(TreeNode* root) {
@@ -33,39 +37,49 @@ namespace NewArch {
         };
 
         // AHH APPLE CLANG DOESN'T SUPPORT EXECUTION POLICIES YET EXECUTE ME
-        // std::for_each(std::execution::par, allNodes.begin(), allNodes.end(),
-        //     [&](TreeNode* node) {
-        //         node->measured = node->element->measure(rootConstraints);
-        //     }
-        // );
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                node->measured = node->element->measure(rootConstraints);
+            }
+        );
         
-        // std::for_each(std::execution::par, allNodes.begin(), allNodes.end(),
-        //     [&](TreeNode* node) {
-        //         node->atomized = node->element->atomize(rootConstraints, *node->measured);
-        //     }
-        // );
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                node->atomized = node->element->atomize(rootConstraints, *node->measured);
+            }
+        );
         
-        // layoutPhase(root, frameInfo, rootConstraints);
+        layoutPhase(root, frameInfo, rootConstraints);
         
-        // std::for_each(std::execution::par, allNodes.begin(), allNodes.end(),
-        //     [&](TreeNode* node) {
-        //         node->placed = node->element->place(rootConstraints, *node->measured, 
-        //                                             *node->atomized, *node->layout);
-        //     }
-        // );
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                node->placed = node->element->place(rootConstraints, *node->measured, 
+                                                    *node->atomized, *node->layout);
+            }
+        );
         
-        // std::for_each(std::execution::par, allNodes.begin(), allNodes.end(),
-        //     [&](TreeNode* node) {
-        //         node->finalized = node->element->finalize(rootConstraints, *node->measured,
-        //                                                 *node->atomized, *node->placed);
-        //     }
-        // );
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                node->finalized = node->element->finalize(rootConstraints, *node->measured,
+                                                        *node->atomized, *node->placed);
+            }
+        );
     }
 
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
-        // encoder->setRenderPipelineState(const MTL::RenderPipelineState *pipelineState)
-        
-        
+        auto root = getRoot();
+        auto allNodes = collectAllNodes(root);
+
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                assert(node->finalized.has_value() && 
+                    "atomizePhase called before measurePhase");
+
+                auto& finalized = node->finalized;
+                node->element->encode(encoder, finalized);
+            }
+        );
+
     }
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {

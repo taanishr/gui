@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "frame_info.hpp"
 #include <simd/vector_types.h>
-#include <execution>
+#include "parallel.hpp"
 
 
 namespace NewArch {
@@ -16,7 +16,7 @@ namespace NewArch {
         e.getFragment();
     };
 
-    template<typename P, typename Fragment, typename Descriptor>
+    template<typename P, typename Fragment, typename Descriptor, typename U>
     concept ProcessorType = requires(
         P& proc,
         Fragment& fragment,
@@ -25,6 +25,7 @@ namespace NewArch {
         Measured& measured,
         Atomized& atomized,
         Placed& placed,
+        Finalized<U>& finalized,
         LayoutResult layout,
         MTL::RenderCommandEncoder* encoder
     ) {
@@ -32,8 +33,8 @@ namespace NewArch {
         { proc.atomize(fragment, constraints, desc, measured) } -> std::same_as<Atomized>;
         { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
-        proc.finalize(fragment, constraints, desc, measured, atomized, placed);
-        proc.encode(encoder, fragment, proc.finalize(fragment, constraints, desc, measured, atomized, placed));
+        { proc.finalize(fragment, constraints, desc, measured, atomized, placed) } -> std::same_as<Finalized<U>>;
+        proc.encode(encoder, fragment, finalized);
     };
 
     // ughhh figure out type erasure route for finalized this annoys tf outta me bro
@@ -44,80 +45,64 @@ namespace NewArch {
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
-        virtual ~ElementBase();
+        virtual ~ElementBase() = 0;
     };
 
-    template <typename E, typename P, typename S, typename D> 
-        requires ElementType<E> && ProcessorType<P, Fragment<S>, D>
+    template <typename E, typename P, typename S, typename D, typename U> 
+        requires ElementType<E> && ProcessorType<P, Fragment<S>, D, U>
     struct Element : ElementBase {
-        Element(UIContext& ctx, E elem, P& proc):
-            element{elem}, processor{proc}
+        Element(UIContext& ctx, E&& elem, P& proc):
+            element{std::move(elem)}, processor{proc}
         {}
         
-        Measured measure(Constraints& constraints) {
-            return processor.measure(element.getFragment(), constraints);
+        Measured measure(Constraints& constraints) override {
+            return processor.measure(element.getFragment(), constraints, element.getDescriptor());
         }
 
-        Atomized atomize(Constraints& constraints, Measured& measured) {
-            return processor.atomize(element.getFragment(), constraints, measured);
+        Atomized atomize(Constraints& constraints, Measured& measured) override {
+            return processor.atomize(element.getFragment(), constraints, element.getDescriptor(), measured);
         }
 
 
-        LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) {
-            return processor.layout(element.getFragment(), constraints, measured, atomized);
+        LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) override {
+            return processor.layout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized);
         }
 
-        Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) {
-            return processor.place(element.getFragment(), constraints, measured, atomized, layout);
+        Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
+            return processor.place(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
         }
 
-        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) {
-            auto finalized = processor.finalize(element.getFragment(), constraints,  measured, atomized, placed);
+        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) override {
+            auto finalized = processor.finalize(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, placed);
             auto finalizedErased = finalized;
             return finalizedErased;
         }
 
-        void encode(MTL::RenderCommandEncoder* encoder, std::any finalizedErased) {
-            auto finalized = std::any_cast<Finalized<typename E::UniformsType>>(finalizedErased);
-            return processor.encode(encoder, finalized);
+        void encode(MTL::RenderCommandEncoder* encoder, std::any& finalizedErased) override {
+            auto finalized = std::any_cast<Finalized<typename P::UniformsType>>(finalizedErased);
+            return processor.encode(encoder, element.getFragment(), finalized);
         }
 
-        ~Element() {};
+        ~Element() override {};
 
         E element;
         P& processor;
     };
 
-    // struct ComputationCache {
-    //     std::unordered_map<uint64_t, Measured> measured;
-    //     std::unordered_map<uint64_t, Atomized> atomized;
-    //     std::unordered_map<uint64_t, LayoutResult> layouts;
-    //     std::unordered_map<uint64_t, Placed> placed;
-    //     std::unordered_map<uint64_t, std::any> finalized; 
-    // };
-
-
     struct TreeNode {
-        template<typename E, typename P, typename S, typename D>
-        TreeNode(E elem, P& processor)
-            : element(std::make_unique<Element<E, P, S, D>>(std::move(elem), processor))
+        template<typename E, typename P>
+        TreeNode(UIContext& ctx, E&& elem, P& processor)
+            : element(std::make_unique<Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>>(ctx, std::move(elem), processor))
             , parent(nullptr)
             , id(nextId++)
         {}
         
-        void add_child(std::unique_ptr<TreeNode> child) {
+        void attach_child(std::unique_ptr<TreeNode>&& child) {
+            if (!child) return;
             child->parent = this;
             children.push_back(std::move(child));
         }
-        
-        template<typename E, typename P>
-        TreeNode* create_child(E elem, P& processor) {
-            auto child = std::make_unique<TreeNode>(std::move(elem), processor);
-            auto* ptr = child.get();
-            add_child(std::move(child));
-            return ptr;
-        }
-        
+
         std::unique_ptr<ElementBase> element;
         TreeNode* parent = nullptr;
         std::vector<std::unique_ptr<TreeNode>> children;

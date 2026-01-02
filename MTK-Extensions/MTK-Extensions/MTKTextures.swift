@@ -9,6 +9,7 @@ import Foundation
 import Metal
 import MetalKit
 
+@_cdecl("createMTKTextureLoader")
 public func createMTKTextureLoader(devicePtr: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
     let device = Unmanaged<MTLDevice>.fromOpaque(devicePtr).takeUnretainedValue();
     let loader = MTKTextureLoader(device: device);
@@ -16,11 +17,13 @@ public func createMTKTextureLoader(devicePtr: UnsafeMutableRawPointer) -> Unsafe
     return loaderPtr;
 }
 
+@_cdecl("releaseMTKTextureLoader")
 public func releaseMTKTextureLoader(loaderPtr: UnsafeMutableRawPointer) {
     let loader = Unmanaged<MTKTextureLoader>.fromOpaque(loaderPtr);
     loader.release();
 }
 
+@_cdecl("createTexture")
 public func createTexture(loaderPtr: UnsafeMutableRawPointer, filePath: UnsafePointer<CChar>) -> UnsafeMutableRawPointer?
 {
     let loader = Unmanaged<MTKTextureLoader>.fromOpaque(loaderPtr).takeUnretainedValue();
