@@ -75,7 +75,9 @@ void Renderer::makeResources()
     txtDesc.fontSize = 64.0;
 
 
-    auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1});
+    auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1})(
+        NewArch::text(ctx, tree, "hello world", 96.0)
+    );
 
     std::println("first child: {}", reinterpret_cast<void*>(firstChild.node));
 }

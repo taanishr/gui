@@ -5,6 +5,8 @@
 #include "image.hpp"
 #include "text.hpp"
 #include "new_arch.hpp"
+#include <Security/SecCustomTransform.h>
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <print>
@@ -18,6 +20,7 @@ namespace NewArch {
         RenderTree& renderTree;
         UIContext& ctx;
         TreeNode* node;
+        std::vector<NodeBuilder> children;
 
         template <ElementType E, typename P>
         NodeBuilder(UIContext& ctx, RenderTree& tree, E elem, P& proc): 
@@ -33,13 +36,27 @@ namespace NewArch {
             std::println("root ptr: {}", reinterpret_cast<void*>(root));
             
             this->node = n.get();
-            
+
             root->attach_child(std::move(n));
+        }
+        
+        static void reparent(TreeNode* newParent, TreeNode* child) {
+            auto& siblings = child->parent->children;
+            auto it = std::find_if(siblings.begin(), siblings.end(), [&](auto& elem){
+                return elem.get() == child;
+            });
+
+            if (it == siblings.end()) return;
+
+            std::unique_ptr<TreeNode> moved = std::move(*it);
+            siblings.erase(it);
+
+            newParent->attach_child(std::move(moved));
         }
 
         template <typename... Children>
-        NodeBuilder& operator()(Children&... args) {
-           (node->attach_child(args->node), ...);
+        NodeBuilder& operator()(Children&&... args) {
+           (reparent(this->node, args.node), ...);
             return *this;
         }
     };

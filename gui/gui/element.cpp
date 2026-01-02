@@ -70,16 +70,11 @@ namespace NewArch {
         auto root = getRoot();
         auto allNodes = collectAllNodes(root);
 
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                assert(node->finalized.has_value() && 
-                    "atomizePhase called before measurePhase");
-
-                auto& finalized = node->finalized;
-                node->element->encode(encoder, finalized);
-            }
-        );
-
+        // serially encoded; encoders are not thread safe
+        for (auto node : allNodes) { 
+            auto& finalized = node->finalized;
+            node->element->encode(encoder, finalized);
+        }
     }
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {
