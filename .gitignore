@@ -11,3 +11,4 @@ font-rendering.xcodeproj
 AppKit-Extensions/AppKit-Extensions.xcodeproj
 .cache
 .DS_Store
+gui/bin
