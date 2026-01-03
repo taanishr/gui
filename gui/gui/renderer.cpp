@@ -76,10 +76,9 @@ void Renderer::makeResources()
 
 
     auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1})(
-        NewArch::text(ctx, tree, "hello world", 96.0)
+        NewArch::text(ctx, tree, "hello world", 96.0).color(simd_float4{0.0,0.0,1.0,1.0})
     );
-
-    std::println("first child: {}", reinterpret_cast<void*>(firstChild.node));
+    
 }
 
 void Renderer::draw() {

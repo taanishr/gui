@@ -21,12 +21,12 @@ namespace NewArch {
         typename E::UniformsType;
     };
 
-    template<typename P, typename Fragment, typename Descriptor, typename U>
+    template<typename P, typename S, typename D, typename U>
     concept ProcessorType = requires(
         P& proc,
-        Fragment& fragment,
+        Fragment<S>& fragment,
         Constraints& constraints,
-        Descriptor& desc,
+        D& desc,
         Measured& measured,
         Atomized& atomized,
         Placed& placed,
@@ -53,8 +53,8 @@ namespace NewArch {
         virtual ~ElementBase() = 0;
     };
 
-    template <typename E, typename P, typename S, typename D, typename U> 
-        requires ElementType<E> && ProcessorType<P, Fragment<S>, D, U>
+    template <ElementType E, typename P, typename S, typename D, typename U> 
+        requires ProcessorType<P, S, D, U>
     struct Element : ElementBase {
         Element(UIContext& ctx, E&& elem, P& proc):
             element{std::move(elem)}, processor{proc}
@@ -95,12 +95,24 @@ namespace NewArch {
     };
 
     struct TreeNode {
-        template<typename E, typename P>
+        // using DivElem  = Element<Div<DivStorage>,  DivProcessor<...>, DivStorage, DivDescriptor, DivUniforms>;
+        // using TextElem = Element<Text<...>, TextProcessor<...>, ...>;
+        // using ImageElem= Element<Image<...>, ImageProcessor<...>, ...>;
+        // using ElementVariant = std::variant<DivElem, TextElem, ImageElem>;
+
+
+        template<ElementType E, typename P>
+            requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
         TreeNode(UIContext& ctx, E&& elem, P& processor)
             : element(std::make_unique<Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>>(ctx, std::move(elem), processor))
             , parent(nullptr)
             , id(nextId++)
         {}
+
+        template<typename T>
+        T* getElementAs() {
+            
+        }
         
         void attach_child(std::unique_ptr<TreeNode>&& child) {
             if (!child) return;
@@ -127,7 +139,8 @@ namespace NewArch {
 
     // pointers for raw views
     struct RenderTree {
-        template<typename E, typename P>
+        template<ElementType E, typename P>
+            requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
         TreeNode* createRoot(UIContext& ctx, E elem, P& processor) {
             elementTree = std::make_unique<TreeNode>(ctx, std::move(elem), processor);
             return elementTree.get();
@@ -142,9 +155,7 @@ namespace NewArch {
         Constraints rootConstraints; // root constraints;
         simd_float2 rootCursor; // root cursor
 
-
         std::unique_ptr<TreeNode> elementTree;
-        // ComputationCache renderCache;
         LayoutEngine layoutEngine;
         
         void measurePhase(TreeNode* node, Constraints& constraints);

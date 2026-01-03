@@ -37,7 +37,7 @@ namespace NewArch {
 
     
 
-    NodeBuilder div(UIContext& ctx, RenderTree& tree, float width, float height, simd_float4 color)
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(UIContext& ctx, RenderTree& tree, float width, float height, simd_float4 color)
     {
         auto& proc = getDivProcessor(ctx);
         Div elem {ctx};
@@ -49,7 +49,7 @@ namespace NewArch {
         return NodeBuilder(ctx, tree, std::move(elem), proc);
     }
 
-    NodeBuilder text(UIContext& ctx, RenderTree& tree, const std::string& text, 
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(UIContext& ctx, RenderTree& tree, const std::string& text, 
                  float fontSize, simd_float4 color, 
                  const std::string& font)
     {
@@ -64,7 +64,7 @@ namespace NewArch {
         return NodeBuilder(ctx, tree, std::move(elem), proc);
     }
 
-    NodeBuilder image(UIContext& ctx, RenderTree& tree, const std::string& path,
+    NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(UIContext& ctx, RenderTree& tree, const std::string& path,
                     float width, float height)
     {
         auto& proc = getImageProcessor(ctx);
