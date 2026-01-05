@@ -9,7 +9,6 @@
 
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
-#include <print>
 #include <simd/vector_types.h>
 
 namespace NewArch {
@@ -54,7 +53,13 @@ namespace NewArch {
         lr.outOfFlow = true;
 
         simd_float2 absolutePosition = constraints.origin;
+
+
+        absolutePosition.x += layoutInput.left;
+        absolutePosition.y += layoutInput.top;
+
         simd_float2 newCursor = absolutePosition;
+
         float resolvedHeight = 0.0f;
         float resolvedWidth = 0.0f;
 
@@ -110,10 +115,10 @@ namespace NewArch {
 
         simd_float2 viewportOrigin = {0.0f, 0.0f};
         simd_float2 fixedPosition = viewportOrigin;
-        
-        // TODO: Apply top/left/right/bottom offsets when added
-        // if (layoutInput.hasLeft) fixedPosition.x += layoutInput.left;
-        // if (layoutInput.hasTop) fixedPosition.y += layoutInput.top;
+    
+
+        fixedPosition.x += layoutInput.left;
+        fixedPosition.y += layoutInput.top;
         
         simd_float2 newCursor = fixedPosition;
         float resolvedHeight = 0.0f;

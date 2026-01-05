@@ -14,7 +14,6 @@
 
 #include "window.hpp"
 
-
 int main(int argc, const char * argv[]) {
     sleep(1);
     

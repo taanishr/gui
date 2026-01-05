@@ -30,8 +30,8 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
 {
     auto rootElem = NewArch::Div(ctx);
     auto& desc = rootElem.getDescriptor();
-    desc.width = 300;
-    desc.height = 300;
+    desc.width = ctx.view->drawableSize().width / 2.0f;
+    desc.height = ctx.view->drawableSize().height / 2.0f;
     desc.color = simd_float4{1,0,0,1};
     desc.cornerRadius = 0;
 
@@ -57,25 +57,9 @@ MTL::DepthStencilState* Renderer::getDefaultDepthStencilState()
 void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
-    auto& divDesc = div.getDescriptor();
-    divDesc.position = NewArch::Position::Absolute;
-    divDesc.width = 100;
-    divDesc.height = 100;
-    divDesc.color = simd_float4{0.5,0.0,0.0,1.0};
-    
-    auto& imgDesc = img.getDescriptor();
-    imgDesc.width = 286;
-    imgDesc.height = 147;
-    imgDesc.path = "/Users/treja/Downloads/coarsening.png";
-    
-    auto& txtDesc = txt.getDescriptor();
-    txtDesc.text = "bacfsdfsdfsfdfsdfdf";
-    txtDesc.font = "/System/Library/Fonts/Supplemental/Arial.ttf";
-    txtDesc.color = simd_float4{1,1,1,1};
-    txtDesc.fontSize = 64.0;
 
-
-    auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1})(
+    auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1}).position(NewArch::Position::Absolute).left(100).top(200)
+    (
         NewArch::text(ctx, tree, "hello world", 96.0).color(simd_float4{0.0,0.0,1.0,1.0})
     );
     
@@ -92,53 +76,8 @@ void Renderer::draw() {
     renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-    NewArch::Constraints divConstraints;
-    divConstraints.origin = simd_float2{0.0,0.0};
-    divConstraints.cursor = simd_float2{100.0,100.0};
-    divConstraints.frameInfo = {
-        .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
-        .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
-    };
-
     tree.update(getFrameInfo());
     tree.render(renderCommandEncoder);
-    
-    // auto measured = divProcessor.measure(div.getFragment(), divConstraints, div.getDescriptor());
-    // auto atomized = divProcessor.atomize(div.getFragment(), divConstraints, div.getDescriptor(), measured);
-    // auto layout = divProcessor.layout(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized);
-    // auto placed = divProcessor.place(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized, layout);
-    // auto finalized = divProcessor.finalize(div.getFragment(), divConstraints, div.getDescriptor(), measured, atomized, placed);
-    // divProcessor.encode(renderCommandEncoder, div.getFragment(), finalized);
-    
-    // NewArch::Constraints imgConstraints;
-    // imgConstraints.origin = simd_float2{0.0,0.0};
-    // imgConstraints.cursor = simd_float2{50.0,300.0};
-    // imgConstraints.frameInfo = {
-    //     .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
-    //     .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
-    // };
-    
-    
-    // auto iMeasured = imgProcessor.measure(img.getFragment(), imgConstraints, img.getDescriptor());
-    // auto iAtomized = imgProcessor.atomize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured);
-    // auto iLayout = imgProcessor.layout(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized);
-    // auto iPlaced = imgProcessor.place(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iLayout);
-    // auto iFinalized = imgProcessor.finalize(img.getFragment(), imgConstraints, img.getDescriptor(), iMeasured, iAtomized, iPlaced);
-    // imgProcessor.encode(renderCommandEncoder, img.getFragment(), iFinalized);
-
-    // NewArch::Constraints txtConstraints;
-    // txtConstraints.cursor = simd_float2{100.0,50.0};
-    // txtConstraints.frameInfo = {
-    //     .width = static_cast<float>(ctx.view->drawableSize().width / 2.0),
-    //     .height = static_cast<float>(ctx.view->drawableSize().height / 2.0)
-    // };
-    
-    // auto tMeasured = txtProcessor.measure(txt.getFragment(), txtConstraints, txt.getDescriptor());
-    // auto tAtomized = txtProcessor.atomize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured);
-    // auto tLayout = txtProcessor.layout(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized);
-    // auto tPlaced = txtProcessor.place(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized, tLayout);
-    // auto tFinalized = txtProcessor.finalize(txt.getFragment(), txtConstraints, txt.getDescriptor(), tMeasured, tAtomized, tPlaced);
-    // txtProcessor.encode(renderCommandEncoder, txt.getFragment(), tFinalized);
     
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();

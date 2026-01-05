@@ -10,6 +10,12 @@
 
 namespace NewArch {
     template<typename T>
+    concept HasDisplay = requires { std::declval<T&>().display; };
+
+    template<typename T>
+    concept HasPosition = requires { std::declval<T&>().position; };
+    
+    template<typename T>
     concept HasText = requires { std::declval<T&>().text; };
 
     template<typename T>
@@ -29,6 +35,12 @@ namespace NewArch {
 
     template<typename T>
     concept HasBorderColor = requires { std::declval<T&>().borderColor; };
+
+    template <typename T>
+    concept HasTop = requires{ std::declval<T&>().top; };
+
+    template <typename T>
+    concept HasLeft = requires{ std::declval<T&>().left; };
 
     DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx);
     ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx);
@@ -77,12 +89,20 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder<E,P>& position(Position position) requires HasPosition<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.position = position;
+            return *this;
+        }
         
         NodeBuilder<E,P>& borderColor(simd_float4 color) requires HasBorderColor<typename E::DescriptorType> {
-            auto& elem = static_cast<ElemT*>(node->element.get());
+            auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
             desc.borderColor = color;
+            return *this;
         }
 
         NodeBuilder<E,P>& color(simd_float4 color) requires HasColor<typename E::DescriptorType> {
@@ -132,6 +152,23 @@ namespace NewArch {
             desc.borderWidth = width;
             return *this;
         }
+
+        NodeBuilder<E,P>& top(float top) requires HasTop<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.top = top;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& left(float left) requires HasLeft<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.left = left;
+            return *this;
+        }
+
 
 
         using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;

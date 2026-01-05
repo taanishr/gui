@@ -6,6 +6,7 @@
 //
 
 #pragma once
+#include "printers.hpp"
 #include "image.hpp"
 #include "metal_imports.hpp"
 #include "freetype.hpp"
@@ -304,12 +305,6 @@ namespace NewArch {
         Placed place(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
             
-            // LayoutInput li;
-            
-            // li.display = desc.display;
-            // li.position = desc.position;
-
-            // auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
 
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();

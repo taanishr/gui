@@ -45,6 +45,7 @@ namespace NewArch {
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
+        float top, left;
 
         Display display;
         Position position;
@@ -236,6 +237,10 @@ namespace NewArch {
             LayoutInput li;
             li.display = desc.display;
             li.position = desc.position;
+
+            li.top = desc.top;
+            li.left = desc.left;
+            
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
             return lr;
@@ -254,6 +259,7 @@ namespace NewArch {
             // // simply calls the layout engine; nothing implementation specific here
             // auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
+            
             
             // copy placements into buffer
             auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
