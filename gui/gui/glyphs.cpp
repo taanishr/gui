@@ -6,14 +6,17 @@
 //
 
 #include "glyphs.hpp"
+#include "freetype/ftglyph.h"
+#include <limits>
+#include "freetype/ftbbox.h"
 
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
 
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end) {
-    Quad quad {.topLeft = {0,0}, .bottomRight = {0,0}};
+Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender) {
+    Quad quad {.topLeft = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, .bottomRight = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()}};
     std::vector<int> offsets {};
     std::vector<simd_float2> points {};
     std::vector<simd_float2> pointsBuffer {};
@@ -21,7 +24,7 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
     Segment currentSegmentType = Segment::Line;
     
     for (int p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)rawPoints[p].x, -(float)rawPoints[p].y};
+        simd_float2 currentPoint {(float)rawPoints[p].x, -(float)rawPoints[p].y + ascender};
         
         // quad handling
         if (currentPoint.x < quad.topLeft.x)
@@ -112,9 +115,11 @@ Glyph processContours(FT_Face face)
     
     int contourStart = 0;
     std::vector<int> contourSizes;
-    
+
+    float ascender = face->size->metrics.ascender;
+
     for (int c = 0; c < numContours; ++c) {
-        Contour contour = processContour(rawPoints, tags, contourStart, contours[c]);
+        Contour contour = processContour(rawPoints, tags, contourStart, contours[c], ascender);
         
         // handle quad
         if (contour.quad.topLeft.x < quad.topLeft.x)
@@ -138,7 +143,6 @@ Glyph processContours(FT_Face face)
         
         contourStart = contours[c] + 1;
     }
-    
 
     return {.quad = quad, .points = points, .numContours = numContours, .contourSizes = contourSizes};
 }

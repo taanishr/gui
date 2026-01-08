@@ -14,6 +14,7 @@
 #include "frame_info.hpp"
 #include "glyphCache.hpp"
 #include <mutex>
+#include <print>
 #include <ranges>
 #include "new_arch.hpp"
 
@@ -207,6 +208,23 @@ namespace NewArch {
                 char ch = desc.text[i];
                 Atom atom;
 
+                if (ch == '\n') {
+                    int metadataIndex = metadata.size();
+                    metadata.push_back(0); 
+                    metadata.push_back(0); 
+                    
+                    atom.atomBufferHandle = glyphBuffer.handle();
+                    atom.length = 0;
+                    atom.offset = 0;
+                    atom.width = 0;
+                    atom.height = 0;
+                    atom.placeOnNewLine = true;
+                    
+                    atoms.push_back(atom);
+                    continue;
+                }
+
+
                 GlyphQuery glyphQuery { ch, desc.font, desc.fontSize };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
@@ -252,8 +270,8 @@ namespace NewArch {
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
-                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / 64.0f;
-                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / 64.0f;
+                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF;
+                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF;
 
                 atoms.push_back(atom);
             }

@@ -37,5 +37,5 @@ struct Glyph {
     FT_Glyph_Metrics metrics;
 };
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end);
+Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender);
 Glyph processContours(FT_Face glyphMeta);

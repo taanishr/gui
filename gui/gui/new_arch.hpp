@@ -186,6 +186,7 @@ namespace NewArch {
         
         float width, height; // width and height of total box?
         float top, left, bottom, right; // for absolute positioning
+        float margin{}, padding{};
     };
 
     struct LineBox {

@@ -21,13 +21,25 @@
     // loops over atoms; places each one individually
 
 struct Atom {
+    Atom():
+        atomBufferHandle{0},
+        offset{0},
+        length{0},
+        width{0},
+        height{0},
+        placeOnNewLine{false}
+    {}
+
     BufferHandle atomBufferHandle; // local position buffer
     size_t offset;
     size_t length;
     
     float width;
     float height;
+
+    bool placeOnNewLine;
 };
+
 
 struct AtomPlacement {
     BufferHandle placementBufferHandle;

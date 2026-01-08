@@ -65,7 +65,6 @@ const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
                                   
 const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
 {
-    
     GlyphQuery query{ch, font, fontSize};
 
     {
@@ -97,12 +96,23 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
         auto fontFace = fontFaces[{font, fontSize}];
 
         FT_Load_Char(fontFace, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
-
-        auto glyph = processContours(fontFace);
-
-        glyph.metrics = fontFace->glyph->metrics;
-    
-        cache[query] = glyph;
+        
+        if (ch != ' ') {
+            auto glyph = processContours(fontFace);
+            glyph.metrics = fontFace->glyph->metrics;
+            cache[query] = glyph;
+        }else {
+            Glyph glyph;
+            glyph.numContours = 0;
+            glyph.contourSizes = {};
+            glyph.metrics = fontFace->glyph->metrics;
+            glyph.points = {};
+            glyph.quad = {
+                .topLeft = {0,0},
+                .bottomRight = simd_float2{(float)fontFace->glyph->metrics.horiAdvance, (float)fontFace->glyph->metrics.height},
+            };
+            cache[query] = glyph;
+        }  
 
         return cache[query];
     }

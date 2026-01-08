@@ -42,6 +42,9 @@ namespace NewArch {
     template <typename T>
     concept HasLeft = requires{ std::declval<T&>().left; };
 
+    template <typename T>
+    concept HasPadding = requires{ std::declval<T&>().padding; };
+
     DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx);
     ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx);
     TextProcessor<TextStorage, TextUniforms>& getTextProcessor(UIContext& ctx);
@@ -169,6 +172,13 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder<E,P>& padding(float padding) requires HasPadding<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.padding = padding;
+            return *this;
+        }
 
 
         using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
