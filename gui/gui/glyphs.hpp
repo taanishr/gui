@@ -38,4 +38,4 @@ struct Glyph {
 };
 
 Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end);
-Glyph processContours(FT_Outline* outlinePtr);
+Glyph processContours(FT_Face glyphMeta);

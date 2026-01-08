@@ -98,9 +98,7 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
 
         FT_Load_Char(fontFace, ch, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT);
 
-        auto outline = &fontFace->glyph->outline;
-
-        auto glyph = processContours(outline);
+        auto glyph = processContours(fontFace);
 
         glyph.metrics = fontFace->glyph->metrics;
     

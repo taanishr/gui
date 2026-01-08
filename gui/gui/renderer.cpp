@@ -60,6 +60,7 @@ void Renderer::makeResources()
 
     auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1}).position(NewArch::Position::Absolute).left(100).top(200)
     (
+        NewArch::div(ctx, tree, 50, 50, simd_float4{1,1,1,1}),
         NewArch::text(ctx, tree, "hello world", 96.0).color(simd_float4{0.0,0.0,1.0,1.0})
     );
     

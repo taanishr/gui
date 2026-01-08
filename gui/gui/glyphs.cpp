@@ -94,10 +94,10 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
     return {.quad = quad, .points = points};
 }
 
-Glyph processContours(FT_Outline* outlinePtr)
+Glyph processContours(FT_Face face)
 {
     // FT metadata
-    FT_Outline outline = *outlinePtr;
+    FT_Outline outline = face->glyph->outline;
     
     int numContours = outline.n_contours;
     unsigned short* contours = outline.contours;
