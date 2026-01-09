@@ -104,14 +104,20 @@ namespace NewArch {
         template<ElementType E, typename P>
             requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
         TreeNode(UIContext& ctx, E&& elem, P& processor)
-            : element(std::make_unique<Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>>(ctx, std::move(elem), processor))
-            , parent(nullptr)
-            , id(nextId++)
+            : element(std::make_unique<Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>>(ctx, std::move(elem), processor)),
+            parent(nullptr),
+            id(nextId++),
+            localZIndex{0},
+            globalZIndex{0}
         {}
 
-        template<typename T>
-        T* getElementAs() {
+
+        void calculateGlobalZIndex(unsigned int parentGlobal) {
+            globalZIndex = parentGlobal + localZIndex;
             
+            for (auto& child : children) {
+                child->calculateGlobalZIndex(globalZIndex);
+            }
         }
         
         void attach_child(std::unique_ptr<TreeNode>&& child) {
@@ -124,6 +130,8 @@ namespace NewArch {
         TreeNode* parent = nullptr;
         std::vector<std::unique_ptr<TreeNode>> children;
         uint64_t id;
+        uint64_t localZIndex;
+        uint64_t globalZIndex;
 
         std::optional<Measured> measured;
         std::optional<Atomized> atomized;

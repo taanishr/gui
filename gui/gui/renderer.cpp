@@ -74,7 +74,7 @@ void Renderer::draw() {
     MTL::CommandBuffer* commandBuffer = commandQueue->commandBuffer();
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
-    renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
+    // renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
     tree.update(getFrameInfo());

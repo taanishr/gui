@@ -1,4 +1,6 @@
 #include "element.hpp"
+#include "printers.hpp"
+#include <print>
 
 
     
@@ -50,6 +52,7 @@ namespace NewArch {
         );
         
         layoutPhase(root, frameInfo, rootConstraints);
+        root->calculateGlobalZIndex(0);
         
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
@@ -69,6 +72,19 @@ namespace NewArch {
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
         auto root = getRoot();
         auto allNodes = collectAllNodes(root);
+
+        std::sort(allNodes.begin(), allNodes.end(), [](TreeNode* a, TreeNode* b) {
+            if (a->globalZIndex != b->globalZIndex) {
+                return a->globalZIndex < b->globalZIndex;
+            }
+            return a->id < b->id;
+        });
+
+        auto ids = allNodes
+         | std::views::transform([](TreeNode* n) { return n->id; })
+         | std::ranges::to<std::vector>();
+
+        debug_print_vec(ids);
 
         // serially encoded; encoders are not thread safe
         for (auto node : allNodes) { 
