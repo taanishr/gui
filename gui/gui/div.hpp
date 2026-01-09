@@ -8,11 +8,6 @@
 #pragma once
 
 #include "fragment_types.hpp"
-#include "printers.hpp"
-#include "metal_imports.hpp"
-#include "frame_info.hpp"
-#include <ranges>
-#include "MTKTexture_loader.hpp"
 #include <format>
 #include <mutex>
 #include "new_arch.hpp"
