@@ -19,7 +19,8 @@ namespace NewArch {
         view{view},
         allocator{DrawableBufferAllocator{device}},
         layoutEngine{},
-        frameInfoBuffer{allocator.allocate(sizeof(FrameInfo))}
+        frameInfoBuffer{allocator.allocate(sizeof(FrameInfo))},
+        frameIndex{0}
     {
         auto frameDimensions = this->view->drawableSize();
 

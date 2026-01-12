@@ -11,6 +11,8 @@
 #include <format>
 #include <mutex>
 #include "new_arch.hpp"
+#include "frame_buffered_buffer.hpp"
+#include "renderer_constants.hpp"
 
 namespace NewArch {
     struct DivPoint {
@@ -64,15 +66,25 @@ namespace NewArch {
     };
 
     struct DivStorage {
-        DivStorage(UIContext& ctx):
-        atomsBuffer{ctx.allocator.allocate(6*sizeof(DivPoint))},
-        placementsBuffer{ctx.allocator.allocate(sizeof(simd_float2))},
-        uniformsBuffer{ctx.allocator.allocate(sizeof(DivUniforms))}
-        {}
+        // DivStorage(UIContext& ctx):
+        // atomsBuffer{ctx.allocator.allocate(6*sizeof(DivPoint))},
+        // placementsBuffer{ctx.allocator.allocate(sizeof(simd_float2))},
+        // uniformsBuffer{ctx.allocator.allocate(sizeof(DivUniforms))}
+        // {}
         
-        DrawableBuffer atomsBuffer;
-        DrawableBuffer placementsBuffer;
-        DrawableBuffer uniformsBuffer;
+        // DrawableBuffer atomsBuffer;
+        // DrawableBuffer placementsBuffer;
+        // DrawableBuffer uniformsBuffer;
+
+        DivStorage(UIContext& ctx):
+            atomsBuffer{ctx.allocator, 6*sizeof(DivPoint), MaxOutstandingFrameCount},
+            placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},
+            uniformsBuffer{ctx.allocator, sizeof(DivUniforms), MaxOutstandingFrameCount}
+        {}
+
+        FrameBufferedBuffer<DivPoint> atomsBuffer;
+        FrameBufferedBuffer<simd_float2> placementsBuffer;
+        FrameBufferedBuffer<DivUniforms> uniformsBuffer;
     };
 
     template <typename S = DivStorage>
@@ -198,7 +210,7 @@ namespace NewArch {
             float height = measured.explicitHeight;
             
             // prepare buffer
-            auto atomsBuffer = fragment.fragmentStorage.atomsBuffer.get();
+            // auto atomsBuffer = fragment.fragmentStorage.atomsBuffer.get();
             size_t bufferLen = 6*sizeof(DivPoint);
             
             std::array<DivPoint, 6> atomPoints {{
@@ -210,11 +222,12 @@ namespace NewArch {
                 {{width,height}, 0},
             }};
             
-            std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
+            // std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
+            fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
             
             // finish allocating atom
             Atom atom;
-            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.handle();
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
             atom.offset = 0;
             atom.length = bufferLen;
             atom.width = width;
@@ -249,14 +262,15 @@ namespace NewArch {
             
             
             // copy placements into buffer
-            auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+            // auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             size_t bufferLen = offsets.size()*sizeof(simd_float2);
-            std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+            // std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+            fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
             
             // make the actual placement
             for (int i = 0; i < offsets.size(); ++i) {
                 placements.push_back({
-                    .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.handle(),
+                    .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.getBufferHandle(0),
                     .x = offsets[i].x,
                     .y = offsets[i].y
                 });
@@ -298,7 +312,9 @@ namespace NewArch {
                 .geometry = geometryUniforms
             };
             
-            std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(DivUniforms));
+            // std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(DivUniforms));
+
+            fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(DivUniforms));
             
             return Finalized<U> {
                 .id = fragment.id,
@@ -313,12 +329,12 @@ namespace NewArch {
             encoder->setRenderPipelineState(pipeline);
             
             // vertex buffers
-            auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
-            auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.get();
+            auto atomBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
+            auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
             
             // fragment buffers
-            auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
+            auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
             
             encoder->setVertexBuffer(atomBuf, 0, 0);
             encoder->setVertexBuffer(atomPlacementBuf, 0, 1);

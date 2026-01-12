@@ -79,13 +79,7 @@ namespace NewArch {
             }
             return a->id < b->id;
         });
-
-        auto ids = allNodes
-         | std::views::transform([](TreeNode* n) { return n->id; })
-         | std::ranges::to<std::vector>();
-
-        debug_print_vec(ids);
-
+        
         // serially encoded; encoders are not thread safe
         for (auto node : allNodes) { 
             auto& finalized = node->finalized;

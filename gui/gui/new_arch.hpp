@@ -10,6 +10,7 @@
 #include "printers.hpp"
 #include "metal_imports.hpp"
 #include "frame_info.hpp"
+#include <cstdint>
 #include <ranges>
 #include "MTKTexture_loader.hpp"
 #include <format>
@@ -251,6 +252,7 @@ namespace NewArch {
         DrawableBufferAllocator allocator;
         LayoutEngine layoutEngine;
         DrawableBuffer frameInfoBuffer;
+        uint64_t frameIndex;
     };
 
     template <typename S>

@@ -6,6 +6,8 @@
 //
 
 #pragma once
+#include "frame_buffered_buffer.hpp"
+#include "renderer_constants.hpp"
 #include "printers.hpp"
 #include "image.hpp"
 #include "metal_imports.hpp"
@@ -54,18 +56,31 @@ namespace NewArch {
     };
 
     struct TextStorage {
+        // TextStorage(UIContext& ctx):
+        //     atomsBuffer{ ctx.allocator.allocate(6 * sizeof(TextPoint) * 4) },
+        //     placementsBuffer{ ctx.allocator.allocate(sizeof(simd_float2) * 4) },
+        //     uniformsBuffer{ ctx.allocator.allocate(sizeof(TextUniforms)) },
+        //     metadataBuffer{ ctx.allocator.allocate(sizeof(int) * 16) }
+        // {}
+
+        // DrawableBuffer atomsBuffer;
+        // DrawableBuffer placementsBuffer;
+        // DrawableBuffer uniformsBuffer;
+
+        // DrawableBuffer metadataBuffer;
+
         TextStorage(UIContext& ctx):
-            atomsBuffer{ ctx.allocator.allocate(6 * sizeof(TextPoint) * 4) },
-            placementsBuffer{ ctx.allocator.allocate(sizeof(simd_float2) * 4) },
-            uniformsBuffer{ ctx.allocator.allocate(sizeof(TextUniforms)) },
-            metadataBuffer{ ctx.allocator.allocate(sizeof(int) * 16) }
+            atomsBuffer{ctx.allocator, 6 * sizeof(TextPoint) * 4, MaxOutstandingFrameCount},
+            placementsBuffer{ctx.allocator, sizeof(simd_float2) * 4, MaxOutstandingFrameCount},
+            uniformsBuffer{ctx.allocator, sizeof(TextUniforms), MaxOutstandingFrameCount},
+            metadataBuffer{ctx.allocator,sizeof(int) * 16, MaxOutstandingFrameCount }
         {}
 
-        DrawableBuffer atomsBuffer;
-        DrawableBuffer placementsBuffer;
-        DrawableBuffer uniformsBuffer;
+        FrameBufferedBuffer<TextPoint> atomsBuffer;
+        FrameBufferedBuffer<simd_float2> placementsBuffer;
+        FrameBufferedBuffer<TextUniforms> uniformsBuffer;
 
-        DrawableBuffer metadataBuffer;
+        FrameBufferedBuffer<int> metadataBuffer;
     };
 
     template <typename S = TextStorage>
@@ -278,35 +293,40 @@ namespace NewArch {
 
             if (!allAtomPoints.empty()) {
                 size_t neededAtomsBytes = allAtomPoints.size() * sizeof(TextPoint);
-                auto atomsBuf = fragment.fragmentStorage.atomsBuffer.get();
+                // auto atomsBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
 
-                if (neededAtomsBytes > atomsBuf->length()) {
-                    ctx.allocator.resize(fragment.fragmentStorage.atomsBuffer, neededAtomsBytes);
-                    atomsBuf = fragment.fragmentStorage.atomsBuffer.get();
-                }
+                // if (neededAtomsBytes > atomsBuf->length()) {
+                //     ctx.allocator.resize(fragment.fragmentStorage.atomsBuffer, neededAtomsBytes);
+                //     atomsBuf = fragment.fragmentStorage.atomsBuffer.get();
+                // }
 
-                std::memcpy(
-                    reinterpret_cast<std::byte*>(atomsBuf->contents()),
-                    allAtomPoints.data(),
-                    neededAtomsBytes
-                );
+                // std::memcpy(
+                //     reinterpret_cast<std::byte*>(atomsBuf->contents()),
+                //     allAtomPoints.data(),
+                //     neededAtomsBytes
+                // );
+
+                fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, allAtomPoints.data(), neededAtomsBytes);
             }
 
             size_t neededMetaBytes = metadata.size() * sizeof(int);
 
-            auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
+            // auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
 
-            if (neededMetaBytes > metaBuf->length()) {
-                ctx.allocator.resize(fragment.fragmentStorage.metadataBuffer, neededMetaBytes);
-                metaBuf = fragment.fragmentStorage.metadataBuffer.get();
+            // if (neededMetaBytes > metaBuf->length()) {
+            //     ctx.allocator.resize(fragment.fragmentStorage.metadataBuffer, neededMetaBytes);
+            //     metaBuf = fragment.fragmentStorage.metadataBuffer.get();
+            // }
+
+            // std::memcpy(
+            //     reinterpret_cast<std::byte*>(metaBuf->contents()),
+            //     metadata.data(),
+            //     neededMetaBytes
+            // );
+
+            if (!metadata.empty()) {
+                fragment.fragmentStorage.metadataBuffer.write(ctx.frameIndex, metadata.data(), neededMetaBytes);
             }
-
-            std::memcpy(
-                reinterpret_cast<std::byte*>(metaBuf->contents()),
-                metadata.data(),
-                neededMetaBytes
-            );
-            
 
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
@@ -325,21 +345,23 @@ namespace NewArch {
             
             auto offsets = lr.atomOffsets;
 
-            auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+            // auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
             
             
-            if (bufferLen > placementsBuffer->length()) {
-                ctx.allocator.resize(fragment.fragmentStorage.placementsBuffer, bufferLen*2);
-                placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
-            }
+            // if (bufferLen > placementsBuffer->length()) {
+            //     ctx.allocator.resize(fragment.fragmentStorage.placementsBuffer, bufferLen*2);
+            //     placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+            // }
             
-            std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+            // std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
+
+            fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
         
 
             for (int i = 0; i < offsets.size(); ++i) {
                 placements.push_back({
-                    .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.handle(),
+                    .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.getBufferHandle(ctx.frameIndex),
                     .x = offsets[i].x,
                     .y = offsets[i].y
                 });
@@ -353,7 +375,8 @@ namespace NewArch {
                 .color = desc.color
             };
 
-            std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(TextUniforms));
+            // std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(TextUniforms));
+            fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(TextUniforms));
 
             return Finalized<U> {
                 .id = fragment.id,
@@ -367,11 +390,15 @@ namespace NewArch {
             auto pipeline = getPipeline();
             encoder->setRenderPipelineState(pipeline);
 
-            auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
-            auto placementBuf = fragment.fragmentStorage.placementsBuffer.get();
+            // auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
+            // auto placementBuf = fragment.fragmentStorage.placementsBuffer.get();
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
-            auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
-            auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
+            // auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
+            // auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
+            auto atomBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
+            auto placementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
+            auto metaBuf = fragment.fragmentStorage.metadataBuffer.getBuffer(ctx.frameIndex);
+            auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
             auto bezierBuf = glyphBuffer.get();
 
             encoder->setVertexBuffer(atomBuf, 0, 0);

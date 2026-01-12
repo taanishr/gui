@@ -1,4 +1,6 @@
-#include "gui/buffer_allocator.hpp"
+#pragma once
+
+#include "buffer_allocator.hpp"
 #include <cstdint>
 template <typename T>
 struct FrameBufferedBuffer {
@@ -17,9 +19,11 @@ struct FrameBufferedBuffer {
         auto rawBuffer = buffer.get();
 
         if (length > rawBuffer->length()) {
-            allocator.resize(buffer, length);
+            allocator.resize(buffer, 2*length); // double length for now; maybe make a resize strat func later on
         }
 
+        rawBuffer = buffer.get();
+        
         auto rawBufferContents = reinterpret_cast<std::byte*>(rawBuffer->contents());
 
         std::memcpy(rawBufferContents + offset, data, length);

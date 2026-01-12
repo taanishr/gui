@@ -20,8 +20,7 @@
 #include "text.hpp"
 #include "element.hpp"
 #include "node_builder.hpp"
-
-constexpr int MaxOutstandingFrameCount = 2;
+#include "renderer_constants.hpp"
 
 class Renderer {
 public:
