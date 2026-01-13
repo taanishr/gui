@@ -43,7 +43,13 @@ namespace NewArch {
     concept HasLeft = requires{ std::declval<T&>().left; };
 
     template <typename T>
-    concept HasPadding = requires{ std::declval<T&>().padding; };
+    concept HasPadding = requires(T& t) { 
+        { t.padding } -> std::convertible_to<float>;
+        { t.paddingTop } -> std::same_as<std::optional<float>&>;
+        { t.paddingRight } -> std::same_as<std::optional<float>&>;
+        { t.paddingBottom } -> std::same_as<std::optional<float>&>;
+        { t.paddingLeft } -> std::same_as<std::optional<float>&>;
+    };
 
     DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx);
     ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx);
@@ -180,6 +186,37 @@ namespace NewArch {
             return *this;
         }
 
+                NodeBuilder<E,P>& paddingTop(float padding) requires HasPadding<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.paddingTop = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingRight(float padding) requires HasPadding<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.paddingRight = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingBottom(float padding) requires HasPadding<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.paddingBottom = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingLeft(float padding) requires HasPadding<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.paddingLeft = padding;
+            return *this;
+        }
 
         using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
     };

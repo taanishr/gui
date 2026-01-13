@@ -79,9 +79,9 @@ namespace NewArch {
 
         lr.childConstraints = {
             .origin = absolutePosition,
-            .cursor = absolutePosition + layoutInput.padding,
-            .maxWidth = resolvedWidth - 2 * layoutInput.padding,
-            .maxHeight = resolvedHeight - 2 * layoutInput.padding,
+            .cursor = {absolutePosition.x + layoutInput.paddingLeft, absolutePosition.y + layoutInput.paddingTop},
+            .maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight,
+            .maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom,
             .frameInfo = constraints.frameInfo
         };
 
@@ -140,9 +140,9 @@ namespace NewArch {
 
         lr.childConstraints = {
             .origin = viewportOrigin,
-            .cursor = fixedPosition + layoutInput.padding,                  
-            .maxWidth = resolvedWidth - 2 * layoutInput.padding,
-            .maxHeight = resolvedHeight - 2 * layoutInput.padding,
+            .cursor = {fixedPosition.x + layoutInput.paddingLeft, fixedPosition.y + layoutInput.paddingTop},                  
+            .maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight,
+            .maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom,
             .frameInfo = constraints.frameInfo
         };
 
@@ -183,7 +183,8 @@ namespace NewArch {
         float resolvedWidth = 0;
         float resolvedHeight = 0;
         childConstraints.origin = currentCursor;
-        childConstraints.cursor = newCursor + layoutInput.padding;
+        childConstraints.cursor.x += layoutInput.paddingLeft;
+        childConstraints.cursor.y += layoutInput.paddingTop;
         childConstraints.frameInfo = constraints.frameInfo;
             
     
@@ -205,8 +206,8 @@ namespace NewArch {
 
         lr.consumedHeight = resolvedHeight;
                 
-        childConstraints.maxHeight = resolvedHeight - 2 * layoutInput.padding;
-        childConstraints.maxWidth = resolvedWidth - 2 * layoutInput.padding;
+        childConstraints.maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
+        childConstraints.maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
 
         lr.childConstraints = childConstraints;
         lr.atomOffsets = atomOffsets;
@@ -216,7 +217,6 @@ namespace NewArch {
 
         lr.siblingCursor = newCursor;
         
-
         return lr;
     }
 
@@ -269,9 +269,9 @@ namespace NewArch {
             totalHeight
         };
         
-        lr.childConstraints.cursor = {minX + layoutInput.padding, currentCursor.y + layoutInput.padding};
-        lr.childConstraints.maxWidth = totalWidth - 2 * layoutInput.padding;
-        lr.childConstraints.maxHeight = totalHeight - 2 * layoutInput.padding;
+        lr.childConstraints.cursor = {minX + layoutInput.paddingLeft, currentCursor.y + layoutInput.paddingTop};
+        lr.childConstraints.maxWidth = totalWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
+        lr.childConstraints.maxHeight = totalHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
         lr.childConstraints.frameInfo = constraints.frameInfo;
         
         lr.atomOffsets = atomOffsets;

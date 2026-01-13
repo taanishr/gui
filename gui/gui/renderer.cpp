@@ -59,11 +59,12 @@ void Renderer::makeResources()
     FT_Init_FreeType(&(this->ft));
 
     auto firstChild = NewArch::div(ctx, tree, 200, 200, simd_float4{0,1,0,1}).position(NewArch::Position::Absolute).left(100).top(200)
+    .paddingLeft(20.0)
     (
         NewArch::div(ctx, tree, 50, 50, simd_float4{1,1,1,1}), // inconsistent z-buffering? sometimes disappears
         // NO ITS NOT Z-BUFFERING; MY BUFFERS NEED TO STORE 2 FRAMES OF INFORMATION OOPS LOLOLOL
         NewArch::text(ctx, tree, "hello \nworld", 64.0).color(simd_float4{0.0,0.0,1.0,1.0})
-    );    
+    );
 }
 
 void Renderer::draw() {

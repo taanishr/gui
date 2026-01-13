@@ -8,16 +8,11 @@
 #pragma once
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
-#include "printers.hpp"
-#include "image.hpp"
-#include "metal_imports.hpp"
 #include "freetype.hpp"
 #include "glyphs.hpp"
-#include "frame_info.hpp"
 #include "glyphCache.hpp"
 #include <mutex>
 #include <print>
-#include <ranges>
 #include "new_arch.hpp"
 
 namespace NewArch {
@@ -45,7 +40,7 @@ namespace NewArch {
         std::string font;
         simd_float4 color;
         float fontSize;
-
+        
         Display display;
         Position position;
     };
@@ -56,19 +51,6 @@ namespace NewArch {
     };
 
     struct TextStorage {
-        // TextStorage(UIContext& ctx):
-        //     atomsBuffer{ ctx.allocator.allocate(6 * sizeof(TextPoint) * 4) },
-        //     placementsBuffer{ ctx.allocator.allocate(sizeof(simd_float2) * 4) },
-        //     uniformsBuffer{ ctx.allocator.allocate(sizeof(TextUniforms)) },
-        //     metadataBuffer{ ctx.allocator.allocate(sizeof(int) * 16) }
-        // {}
-
-        // DrawableBuffer atomsBuffer;
-        // DrawableBuffer placementsBuffer;
-        // DrawableBuffer uniformsBuffer;
-
-        // DrawableBuffer metadataBuffer;
-
         TextStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6 * sizeof(TextPoint) * 4, MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2) * 4, MaxOutstandingFrameCount},
@@ -293,36 +275,11 @@ namespace NewArch {
 
             if (!allAtomPoints.empty()) {
                 size_t neededAtomsBytes = allAtomPoints.size() * sizeof(TextPoint);
-                // auto atomsBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
-
-                // if (neededAtomsBytes > atomsBuf->length()) {
-                //     ctx.allocator.resize(fragment.fragmentStorage.atomsBuffer, neededAtomsBytes);
-                //     atomsBuf = fragment.fragmentStorage.atomsBuffer.get();
-                // }
-
-                // std::memcpy(
-                //     reinterpret_cast<std::byte*>(atomsBuf->contents()),
-                //     allAtomPoints.data(),
-                //     neededAtomsBytes
-                // );
 
                 fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, allAtomPoints.data(), neededAtomsBytes);
             }
 
             size_t neededMetaBytes = metadata.size() * sizeof(int);
-
-            // auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
-
-            // if (neededMetaBytes > metaBuf->length()) {
-            //     ctx.allocator.resize(fragment.fragmentStorage.metadataBuffer, neededMetaBytes);
-            //     metaBuf = fragment.fragmentStorage.metadataBuffer.get();
-            // }
-
-            // std::memcpy(
-            //     reinterpret_cast<std::byte*>(metaBuf->contents()),
-            //     metadata.data(),
-            //     neededMetaBytes
-            // );
 
             if (!metadata.empty()) {
                 fragment.fragmentStorage.metadataBuffer.write(ctx.frameIndex, metadata.data(), neededMetaBytes);
@@ -335,6 +292,7 @@ namespace NewArch {
             LayoutInput li;
             li.display = desc.display;
             li.position = desc.position;
+
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
             return lr;
@@ -345,16 +303,8 @@ namespace NewArch {
             
             auto offsets = lr.atomOffsets;
 
-            // auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
-            
-            
-            // if (bufferLen > placementsBuffer->length()) {
-            //     ctx.allocator.resize(fragment.fragmentStorage.placementsBuffer, bufferLen*2);
-            //     placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
-            // }
-            
-            // std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
 
             fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
         
@@ -414,13 +364,10 @@ namespace NewArch {
 
         }
         
-        ~TextProcessor() {
-//            FT_Done_Face(face);
-        }
+        ~TextProcessor() {}
 
         // shared glyph cache wrapper?
         // retrivial methods, stores buffer with all glyphs/ligatures, standardizes everything, etc... Turn this into a struct later
-//        FT_Face face; // share library/face?
         GlyphCache glyphCache;
         size_t lastGlyphsBufferOffset;
         std::unordered_map<GlyphQuery, size_t, GlyphQueryHash> glyphBufferOffsets;

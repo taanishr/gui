@@ -42,6 +42,8 @@ namespace NewArch {
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
+        float padding;
+        std::optional<float> paddingLeft, paddingRight, paddingTop, paddingBottom;
         float top, left;
 
         Display display;
@@ -66,16 +68,6 @@ namespace NewArch {
     };
 
     struct DivStorage {
-        // DivStorage(UIContext& ctx):
-        // atomsBuffer{ctx.allocator.allocate(6*sizeof(DivPoint))},
-        // placementsBuffer{ctx.allocator.allocate(sizeof(simd_float2))},
-        // uniformsBuffer{ctx.allocator.allocate(sizeof(DivUniforms))}
-        // {}
-        
-        // DrawableBuffer atomsBuffer;
-        // DrawableBuffer placementsBuffer;
-        // DrawableBuffer uniformsBuffer;
-
         DivStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(DivPoint), MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},
@@ -210,7 +202,6 @@ namespace NewArch {
             float height = measured.explicitHeight;
             
             // prepare buffer
-            // auto atomsBuffer = fragment.fragmentStorage.atomsBuffer.get();
             size_t bufferLen = 6*sizeof(DivPoint);
             
             std::array<DivPoint, 6> atomPoints {{
@@ -248,6 +239,17 @@ namespace NewArch {
 
             li.top = desc.top;
             li.left = desc.left;
+
+            li.paddingTop = desc.padding;
+            li.paddingRight = desc.padding;
+            li.paddingBottom = desc.padding;
+            li.paddingLeft = desc.padding;
+            
+            if (desc.paddingTop.has_value()) li.paddingTop = *desc.paddingTop;
+            if (desc.paddingRight.has_value()) li.paddingRight = *desc.paddingRight;
+            if (desc.paddingBottom.has_value()) li.paddingBottom = *desc.paddingBottom;
+            if (desc.paddingLeft.has_value()) li.paddingLeft = *desc.paddingLeft;
+
             
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
@@ -262,9 +264,7 @@ namespace NewArch {
             
             
             // copy placements into buffer
-            // auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
             size_t bufferLen = offsets.size()*sizeof(simd_float2);
-            // std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
             fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
             
             // make the actual placement

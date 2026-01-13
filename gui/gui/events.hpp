@@ -7,30 +7,54 @@
 
 #pragma once
 #include <variant>
+#include "metal_imports.hpp"
+
+// enum class EventType {
+//     KeyboardDown,
+//     Click,
+// };
+
+// struct MousePayload {
+//     float x;
+//     float y;
+// };
+
+// struct KeyboardPayload {
+//     char ch;
+// };
+
+// using EventPayload = std::variant<MousePayload, KeyboardPayload>;
+
+// struct Event {
+//     EventType type;
+//     EventPayload payload;
+// };
+
+// template<EventType E> struct event_payload;
+// template<> struct event_payload<EventType::KeyboardDown > { using type = KeyboardPayload; };
+// template<> struct event_payload<EventType::Click> { using type = MousePayload; };
+// template<EventType E> using event_payload_t = typename event_payload<E>::type;
 
 enum class EventType {
-    KeyboardDown,
-    Click,
+    MouseDown,
+    KeyDown
 };
-
-struct MousePayload {
-    float x;
-    float y;
-};
-
-struct KeyboardPayload {
-    char ch;
-};
-
-using EventPayload = std::variant<MousePayload, KeyboardPayload>;
 
 struct Event {
     EventType type;
-    EventPayload payload;
+    
+    // Mouse events
+    simd_float2 mousePosition{0, 0};
+    int mouseButton = 0;  // 0 = left, 1 = right, 2 = middle
+    
+    // Keyboard events
+    int keyCode = 0;
+    bool shiftPressed = false;
+    bool ctrlPressed = false;
+    bool altPressed = false;
+    
+    // Propagation control
+    bool propagationStopped = false;
+    
+    void stopPropagation() { propagationStopped = true; }
 };
-
-template<EventType E> struct event_payload;
-template<> struct event_payload<EventType::KeyboardDown > { using type = KeyboardPayload; };
-template<> struct event_payload<EventType::Click> { using type = MousePayload; };
-template<EventType E> using event_payload_t = typename event_payload<E>::type;
-

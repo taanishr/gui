@@ -6,5 +6,6 @@ NewArch::DivDescriptor::DivDescriptor():
     position{Position::Relative},
     top{0},
     left{0},
-    cornerRadius{0}
+    cornerRadius{0},
+    padding{0}
 {}

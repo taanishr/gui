@@ -9,6 +9,7 @@
 #include "frame_info.hpp"
 #include <simd/vector_types.h>
 #include "parallel.hpp"
+#include "events.hpp"
 
 namespace NewArch {
     template<typename E>
@@ -50,6 +51,10 @@ namespace NewArch {
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
+        virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout) {
+            return true; 
+        }
+
         virtual ~ElementBase() = 0;
     };
 
@@ -94,6 +99,10 @@ namespace NewArch {
         P& processor;
     };
 
+    struct TreeNode;
+
+    using EventHandler = std::function<void(TreeNode*, const Event&)>;
+
     struct TreeNode {
         // using DivElem  = Element<Div<DivStorage>,  DivProcessor<...>, DivStorage, DivDescriptor, DivUniforms>;
         // using TextElem = Element<Text<...>, TextProcessor<...>, ...>;
@@ -112,6 +121,24 @@ namespace NewArch {
         {}
 
 
+        void addEventListener(EventType type, EventHandler handler) {
+            eventHandlers[type].push_back(std::move(handler));
+        }
+
+        void dispatch(Event& event) {
+            auto it = eventHandlers.find(event.type);
+            if (it != eventHandlers.end()) {
+                for (auto& handler : it->second) {
+                    if (event.propagationStopped) break;
+                    handler(this, event); 
+                }
+            }
+            
+            if (!event.propagationStopped && parent) {
+                parent->dispatch(event);
+            }
+        }
+
         void calculateGlobalZIndex(unsigned int parentGlobal) {
             globalZIndex = parentGlobal + localZIndex;
             
@@ -126,6 +153,19 @@ namespace NewArch {
             children.push_back(std::move(child));
         }
 
+        bool contains(simd_float2 point) const {
+            if (!layout.has_value()) return false;
+            
+            auto& box = layout->computedBox;
+            if (point.x < box.x || point.x > box.x + box.width ||
+                point.y < box.y || point.y > box.y + box.height) {
+                return false;
+            }
+
+            return element->preciseHitTest(point, layout.value());
+        }
+
+        
         std::unique_ptr<ElementBase> element;
         TreeNode* parent = nullptr;
         std::vector<std::unique_ptr<TreeNode>> children;
@@ -137,6 +177,7 @@ namespace NewArch {
         std::optional<Atomized> atomized;
         std::optional<LayoutResult> layout;
         std::optional<Placed> placed;
+        std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
         
     private:
