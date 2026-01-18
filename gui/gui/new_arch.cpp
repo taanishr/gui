@@ -86,8 +86,8 @@ namespace NewArch {
         };
 
         lr.computedBox = {
-            .x = constraints.cursor.x,
-            .y = constraints.cursor.y,
+            .x = absolutePosition.x,
+            .y = absolutePosition.y,
             .width = resolvedWidth,
             .height = resolvedHeight
         };
@@ -198,7 +198,7 @@ namespace NewArch {
         // add resolved width check (not sure what behavior should be)
 
         lr.computedBox = {
-            constraints.cursor.x,
+            currentCursor.x,
             currentCursor.y,
             resolvedWidth,
             resolvedHeight

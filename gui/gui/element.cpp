@@ -1,6 +1,7 @@
 #include "element.hpp"
 #include "printers.hpp"
 #include <print>
+#include <simd/vector_types.h>
 
 
     
@@ -169,4 +170,30 @@ namespace NewArch {
         node->finalized = finalized;
     }
 
+    TreeNode* RenderTree::hitTestRecursive(TreeNode* node, simd_float2 point) {
+        if (!node) return nullptr;
+        
+        std::vector<TreeNode*> sortedChildren;
+        for (auto& child : node->children) {
+            sortedChildren.push_back(child.get());
+        }
+        std::sort(sortedChildren.begin(), sortedChildren.end(), 
+            [](TreeNode* a, TreeNode* b) {
+                if (a->globalZIndex != b->globalZIndex) {
+                    return a->globalZIndex > b->globalZIndex;
+                }
+                return a->id > b->id;
+            });
+        
+        for (auto* child : sortedChildren) {
+            TreeNode* hit = hitTestRecursive(child, point);
+            if (hit) return hit;
+        }
+        
+        if (node->contains(point)) {
+            return node;
+        }
+        
+        return nullptr;
+    }
 }

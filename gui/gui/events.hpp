@@ -40,21 +40,64 @@ enum class EventType {
     KeyDown
 };
 
+// struct Event {
+//     EventType type;
+    
+//     // Mouse events
+//     simd_float2 mousePosition{0, 0};
+//     int mouseButton = 0;  // 0 = left, 1 = right, 2 = middle
+    
+//     // Keyboard events
+//     int keyCode = 0;
+//     bool shiftPressed = false;
+//     bool ctrlPressed = false;
+//     bool altPressed = false;
+    
+//     // Propagation control
+//     bool propagationStopped = false;
+    
+//     void stopPropagation() { propagationStopped = true; }
+// };
+
+enum class MouseButton {
+    Left,
+    Middle,
+    Right
+};
+
+struct MousePayload {
+    simd_float2 position;
+    MouseButton button;
+};
+
+struct KeyboardPayload {
+    int keyCode;
+    bool shiftPressed;
+    bool ctrlPressed;
+    bool altPressed;
+};
+
+using EventPayload = std::variant<MousePayload, KeyboardPayload>;
+
+template<EventType E> struct event_payload;
+template<> struct event_payload<EventType::MouseDown> { using type = MousePayload; };
+template<> struct event_payload<EventType::KeyDown> { using type = KeyboardPayload; };
+template<EventType E> using event_payload_t = typename event_payload<E>::type;
+
 struct Event {
     EventType type;
-    
-    // Mouse events
-    simd_float2 mousePosition{0, 0};
-    int mouseButton = 0;  // 0 = left, 1 = right, 2 = middle
-    
-    // Keyboard events
-    int keyCode = 0;
-    bool shiftPressed = false;
-    bool ctrlPressed = false;
-    bool altPressed = false;
-    
-    // Propagation control
+    EventPayload payload;
     bool propagationStopped = false;
     
     void stopPropagation() { propagationStopped = true; }
+    
+    template<EventType E>
+    auto& get() {
+        return std::get<event_payload_t<E>>(payload);
+    }
+    
+    template<EventType E>
+    const auto& get() const {
+        return std::get<event_payload_t<E>>(payload);
+    }
 };

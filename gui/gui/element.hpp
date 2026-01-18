@@ -7,9 +7,11 @@
 #include <cstdint>
 #include <algorithm>
 #include "frame_info.hpp"
+#include <print>
 #include <simd/vector_types.h>
 #include "parallel.hpp"
 #include "events.hpp"
+#include "printers.hpp"
 
 namespace NewArch {
     template<typename E>
@@ -100,8 +102,8 @@ namespace NewArch {
     };
 
     struct TreeNode;
-
-    using EventHandler = std::function<void(TreeNode*, const Event&)>;
+    
+    using EventHandler = std::function<void(const Event&)>;
 
     struct TreeNode {
         // using DivElem  = Element<Div<DivStorage>,  DivProcessor<...>, DivStorage, DivDescriptor, DivUniforms>;
@@ -130,7 +132,7 @@ namespace NewArch {
             if (it != eventHandlers.end()) {
                 for (auto& handler : it->second) {
                     if (event.propagationStopped) break;
-                    handler(this, event); 
+                    handler(event);
                 }
             }
             
@@ -157,6 +159,11 @@ namespace NewArch {
             if (!layout.has_value()) return false;
             
             auto& box = layout->computedBox;
+            // std::println("point: {}", point);
+            
+            // std::println("box.width: {}, box.height: {}", box.width, box.height);
+            
+            // std::println("topLeft: {} bottomRight: {}", simd_float2{box.x, box.y}, simd_float2{box.x + box.width , box.y+box.height});
             if (point.x < box.x || point.x > box.x + box.width ||
                 point.y < box.y || point.y > box.y + box.height) {
                 return false;
@@ -198,8 +205,9 @@ namespace NewArch {
         TreeNode* getRoot() { return elementTree.get(); }
         
         void update(const FrameInfo& frameInfo);
-        void render(MTL::RenderCommandEncoder* encoder);        
-
+        void render(MTL::RenderCommandEncoder* encoder); 
+        
+        TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
     private:
         Constraints rootConstraints; // root constraints;
         simd_float2 rootCursor; // root cursor

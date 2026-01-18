@@ -2,11 +2,13 @@
 
 #include "element.hpp"
 #include "div.hpp"
+#include "events.hpp"
 #include "image.hpp"
 #include "text.hpp"
 #include "new_arch.hpp"
 #include <algorithm>
 #include <memory>
+#include <print>
 
 namespace NewArch {
     template<typename T>
@@ -186,7 +188,7 @@ namespace NewArch {
             return *this;
         }
 
-                NodeBuilder<E,P>& paddingTop(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& paddingTop(float padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -215,6 +217,20 @@ namespace NewArch {
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
             desc.paddingLeft = padding;
+            return *this;
+        }
+
+        using NodeBuilderEventHandler = std::function<void(NodeBuilder<E,P>& NodeBuilder, const Event& event)>;
+
+        NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
+            std::println("node: {}", reinterpret_cast<void*>(node));
+            auto func = [](const Event& event){ 
+                // handler(*this, event);
+                // std::println("this: {}", reinterpret_cast<void*>(this));
+                // std::println("node: {}", reinterpret_cast<void*>(node));
+            };
+
+            node->addEventListener(type, func);
             return *this;
         }
 

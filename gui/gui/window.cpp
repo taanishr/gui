@@ -9,7 +9,10 @@
 
 #include "window.hpp"
 #include "AppKit_Extensions.hpp"
+#include "events.hpp"
 #include "index.hpp"
+#include <print>
+#include "metal_imports.hpp"
 
 // refactor objective c into a cleaner interface? maybe a struct with key funcs?
 HandlerState hs {};
@@ -27,6 +30,8 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     auto chars = f(event, sel_registerName("characters"));
     
     char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
+
+    std::println("writing...");
     
     hs.keyboardHandler(inputChar);
 }
@@ -100,21 +105,34 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     hs.keyboardHandler = [this](char ch){
         Event e;
-        e.type = EventType::KeyboardDown;
+        e.type = EventType::KeyDown;
         e.payload = KeyboardPayload{
-            .ch = ch
+            .keyCode = static_cast<int>(ch)
         };
-//        this->viewDelegate->renderer->renderTree.dispatch(e);
+
+       this->viewDelegate->renderer->tree.getRoot()->dispatch(e);
     };
     
     hs.mouseDownHandler = [this](float x, float y){
+        auto frameInfo = this->viewDelegate->renderer->getFrameInfo();
+        auto testPoint = simd_float2{x,frameInfo.height - y};
+
         Event e;
-        e.type = EventType::Click;
+        e.type = EventType::MouseDown;
+        // std::println("mouse down click!");
+        e.type = EventType::MouseDown;
         e.payload = MousePayload{
-            .x = x,
-            .y = viewDelegate->renderer->getFrameInfo().height - y
+            .position = testPoint,
+            .button = MouseButton::Left
         };
-//        this->viewDelegate->renderer->renderTree.dispatch(e);
+
+        auto root = this->viewDelegate->renderer->tree.getRoot();
+        auto htnode = this->viewDelegate->renderer->tree.hitTestRecursive(root, testPoint);
+
+        if (!htnode)
+            return;        
+
+        htnode->dispatch(e);
     };
     
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
