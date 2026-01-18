@@ -220,14 +220,24 @@ namespace NewArch {
             return *this;
         }
 
-        using NodeBuilderEventHandler = std::function<void(NodeBuilder<E,P>& NodeBuilder, const Event& event)>;
+        using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, const Event& event)>;
 
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
             std::println("node: {}", reinterpret_cast<void*>(node));
-            auto func = [](const Event& event){ 
+            auto stableNode = node;
+
+            auto func = [stableNode, handler](const Event& event){ 
                 // handler(*this, event);
                 // std::println("this: {}", reinterpret_cast<void*>(this));
                 // std::println("node: {}", reinterpret_cast<void*>(node));
+
+                auto elem = static_cast<ElemT*>(stableNode->element.get());
+                auto& desc = elem->element.getDescriptor();
+
+                handler(desc, event);
+                // desc.color =  {1, 1, 1, 1};
+
+                
             };
 
             node->addEventListener(type, func);
