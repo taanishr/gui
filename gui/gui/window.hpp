@@ -39,5 +39,6 @@ public:
     NS::Window* window;
     MTK::View* view;
     MTL::Device* device;
+    NewArch::TreeNode* focused = nullptr;
     std::unique_ptr<MTKViewDelegate> viewDelegate;
 };

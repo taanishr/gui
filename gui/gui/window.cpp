@@ -104,6 +104,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     // adding input!!!
     id objcInstance = reinterpret_cast<id>(view);
     Class cls = object_getClass(objcInstance);
+
     
     hs.keyboardHandler = [this](char ch){
         Event e;
@@ -112,9 +113,13 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .keyCode = static_cast<int>(ch)
         };
 
-        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        auto currTree = TreeManager::getTree(currTreeHandle);
-        currTree->getRoot()->dispatch(e);
+        // auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        // auto currTree = TreeManager::getTree(currTreeHandle);
+        // currTree->getRoot()->dispatch(e);
+
+        if (this->focused) {
+            this->focused->dispatch(e);
+        }
     };
     
     hs.mouseDownHandler = [this](float x, float y){
@@ -136,8 +141,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         auto htnode = currTree->hitTestRecursive(root, testPoint);
 
         if (!htnode)
-            return;        
-
+            return;      
+        
+        this->focused = htnode;
         htnode->dispatch(e);
     };
     
