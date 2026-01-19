@@ -1,44 +1,11 @@
 #include "node_builder.hpp"
 #include "div.hpp"
+#include "tree_manager.hpp"
 
 namespace NewArch {
-    DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx) {
-        std::once_flag initFlag;
-        static std::optional<DivProcessor<DivStorage, DivUniforms>> div_proc;
-
-        std::call_once(initFlag, [&](){
-            div_proc.emplace(ctx);
-        });
-
-        return *div_proc;
-    }
-
-    ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx) {
-        std::once_flag initFlag;
-        static std::optional<ImageProcessor<ImageStorage, ImageUniforms>> img_proc;
-
-        std::call_once(initFlag, [&](){
-            img_proc.emplace(ctx);
-        });
-
-        return *img_proc;
-    }
-
-    TextProcessor<TextStorage, TextUniforms>& getTextProcessor(UIContext& ctx) {
-        std::once_flag initFlag;
-        static std::optional<TextProcessor<TextStorage, TextUniforms>> txt_proc;
-
-        std::call_once(initFlag, [&](){
-            txt_proc.emplace(ctx);
-        });
-
-        return *txt_proc;
-    }
-
-    
-
-    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(UIContext& ctx, RenderTree& tree, float width, float height, simd_float4 color)
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(float width, float height, simd_float4 color)
     {
+        auto& ctx = ContextManager::getContext();
         auto& proc = getDivProcessor(ctx);
         Div elem {ctx};
         auto& desc = elem.getDescriptor();
@@ -46,13 +13,19 @@ namespace NewArch {
         desc.height = height;
         desc.color = color;
         // alter descriptor and fragment via elem.getDescriptor() and elem.getFragment() (mutable references)
-        return NodeBuilder(ctx, tree, std::move(elem), proc);
+
+
+        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        auto currTree = TreeManager::getTree(currTreeHandle);
+
+        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }
 
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(UIContext& ctx, RenderTree& tree, const std::string& text, 
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
                  float fontSize, simd_float4 color, 
                  const std::string& font)
     {
+        auto& ctx = ContextManager::getContext();
         auto& proc = getTextProcessor(ctx);
         Text elem{ctx};
         auto& desc = elem.getDescriptor();
@@ -61,12 +34,17 @@ namespace NewArch {
         desc.color = color;
         desc.font = font;
         
-        return NodeBuilder(ctx, tree, std::move(elem), proc);
+
+        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        auto currTree = TreeManager::getTree(currTreeHandle);
+        
+        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }
 
-    NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(UIContext& ctx, RenderTree& tree, const std::string& path,
+    NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
                     float width, float height)
     {
+        auto& ctx = ContextManager::getContext();
         auto& proc = getImageProcessor(ctx);
         Image elem{ctx};
         auto& desc = elem.getDescriptor();
@@ -74,6 +52,9 @@ namespace NewArch {
         desc.width = width;
         desc.height = height;
         
-        return NodeBuilder(ctx, tree, std::move(elem), proc);
+        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        auto currTree = TreeManager::getTree(currTreeHandle);
+
+        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }
 }

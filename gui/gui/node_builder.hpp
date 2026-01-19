@@ -8,7 +8,7 @@
 #include "new_arch.hpp"
 #include <algorithm>
 #include <memory>
-#include <print>
+#include "context_manager.hpp"
 
 namespace NewArch {
     template<typename T>
@@ -53,10 +53,6 @@ namespace NewArch {
         { t.paddingLeft } -> std::same_as<std::optional<float>&>;
     };
 
-    DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx);
-    ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx);
-    TextProcessor<TextStorage, TextUniforms>& getTextProcessor(UIContext& ctx);
-
     template <ElementType E, typename P>
         requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
     struct NodeBuilder {
@@ -79,6 +75,7 @@ namespace NewArch {
 
             root->attach_child(std::move(n));
         }
+        
         
         static void reparent(TreeNode* newParent, TreeNode* child) {
             auto& siblings = child->parent->children;
@@ -223,21 +220,13 @@ namespace NewArch {
         using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, const Event& event)>;
 
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
-            std::println("node: {}", reinterpret_cast<void*>(node));
             auto stableNode = node;
 
             auto func = [stableNode, handler](const Event& event){ 
-                // handler(*this, event);
-                // std::println("this: {}", reinterpret_cast<void*>(this));
-                // std::println("node: {}", reinterpret_cast<void*>(node));
-
                 auto elem = static_cast<ElemT*>(stableNode->element.get());
                 auto& desc = elem->element.getDescriptor();
 
-                handler(desc, event);
-                // desc.color =  {1, 1, 1, 1};
-
-                
+                handler(desc, event);                
             };
 
             node->addEventListener(type, func);
@@ -247,10 +236,10 @@ namespace NewArch {
         using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
     };
 
-    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(UIContext& ctx, RenderTree& tree, float width, float height, simd_float4 color);
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(UIContext& ctx, RenderTree& tree, const std::string& text, 
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(float width, float height, simd_float4 color);
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
                  float fontSize = 24.0f, simd_float4 color = {1, 1, 1, 1}, 
                  const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
-    NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(UIContext& ctx, RenderTree& tree, const std::string& path,
+    NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
                     float width = 0.0f, float height = 0.0f);
 }

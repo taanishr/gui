@@ -10,6 +10,8 @@
 #include "window.hpp"
 #include "AppKit_Extensions.hpp"
 #include "events.hpp"
+#include "renderer.hpp"
+#include "renderer_constants.hpp"
 #include "index.hpp"
 #include <print>
 #include "metal_imports.hpp"
@@ -93,8 +95,8 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     view->setColorPixelFormat(MTL::PixelFormat::PixelFormatRGBA8Unorm);
 //    view->setClearColor(MTL::ClearColor::Make(0,0,0,1));
-    // view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
-    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), 2);
+    view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
+    AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), MaxOutstandingFrameCount);
     
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
     view->setDelegate(viewDelegate.get());
@@ -110,7 +112,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .keyCode = static_cast<int>(ch)
         };
 
-       this->viewDelegate->renderer->tree.getRoot()->dispatch(e);
+        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        auto currTree = TreeManager::getTree(currTreeHandle);
+        currTree->getRoot()->dispatch(e);
     };
     
     hs.mouseDownHandler = [this](float x, float y){
@@ -126,8 +130,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .button = MouseButton::Left
         };
 
-        auto root = this->viewDelegate->renderer->tree.getRoot();
-        auto htnode = this->viewDelegate->renderer->tree.hitTestRecursive(root, testPoint);
+        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
+        auto currTree = TreeManager::getTree(currTreeHandle);
+        auto root = currTree->getRoot();
+        auto htnode = currTree->hitTestRecursive(root, testPoint);
 
         if (!htnode)
             return;        
@@ -142,8 +148,8 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     
     // run some tests (no visual updates)
-    UIContext ctx {this->device, this->view};
-    index(ctx);
+    // UIContext ctx {this->device, this->view};
+    // index(ctx);
 
     window->setContentView(view);
     
@@ -152,7 +158,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     window->makeKeyAndOrderFront(nullptr);
     
     AppKit_Extensions::setTitleBarTransparent(reinterpret_cast<void*>(window));
-    AppKit_Extensions::setWindowTransparent(reinterpret_cast<void*>(window));
+    // AppKit_Extensions::setWindowTransparent(reinterpret_cast<void*>(window));
     
 
     NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());

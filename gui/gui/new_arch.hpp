@@ -253,7 +253,7 @@ namespace NewArch {
         DrawableBufferAllocator allocator;
         LayoutEngine layoutEngine;
         DrawableBuffer frameInfoBuffer;
-        uint64_t frameIndex;
+        std::atomic<uint64_t> frameIndex{0};
     };
 
     template <typename S>

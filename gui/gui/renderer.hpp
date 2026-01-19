@@ -6,21 +6,17 @@
 //
 
 #pragma once
-#include "metal_imports.hpp"
-#include "freetype.hpp"
 #include <semaphore>
-#include <iostream>
-#include <ranges>
 #include "frame_info.hpp"
 #include "new_arch.hpp"
 #include "div.hpp"
 #include "image.hpp"
 #include <chrono>
-#include "glyphCache.hpp"
 #include "text.hpp"
 #include "element.hpp"
-#include "node_builder.hpp"
 #include "renderer_constants.hpp"
+#include "context_manager.hpp"
+#include "tree_manager.hpp"
 
 class Renderer {
 public:
@@ -41,7 +37,7 @@ public:
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
-    NewArch::UIContext ctx;
+    NewArch::UIContext& ctx;
     NewArch::LayoutEngine layoutEngine;
     NewArch::DivProcessor<> divProcessor;
     NewArch::ImageProcessor<> imgProcessor;
@@ -49,9 +45,8 @@ public:
     NewArch::Div<> div;
     NewArch::Image<> img;
     NewArch::Text<> txt;
-    NewArch::RenderTree tree;
-
-
+    // NewArch::RenderTree tree;
+    TreeContextGuard treeGuard;
 
     std::chrono::high_resolution_clock clock {};
     
