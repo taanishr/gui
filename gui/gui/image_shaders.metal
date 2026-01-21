@@ -48,8 +48,8 @@ vertex ImageVertexOut vertex_image(
 
     in.position += offsets[in.atom_id];
 
-    float2 adjustedPosition = toNDC(in.position, frameInfo->width, frameInfo->height);
-    out.position = float4(adjustedPosition, 0.0, 1.0) * frameInfo->scale;
+    float2 adjustedPosition = toNDC(in.position, frameInfo->width * frameInfo->scale, frameInfo->height * frameInfo->scale);
+    out.position = float4(adjustedPosition, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
     out.texCords = in.texCords;
 

@@ -249,6 +249,8 @@ namespace NewArch {
     struct UIContext {
         UIContext(MTL::Device* device, MTK::View* view);
 
+        void updateView();
+
         MTL::Device* device;
         MTK::View* view;
         DrawableBufferAllocator allocator;

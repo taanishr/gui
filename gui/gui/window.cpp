@@ -10,9 +10,11 @@
 #include "window.hpp"
 #include "AppKit_Extensions.hpp"
 #include "events.hpp"
+#include "context_manager.hpp"
 #include "renderer.hpp"
 #include "renderer_constants.hpp"
 #include "index.hpp"
+#include <CoreFoundation/CFCGTypes.h>
 #include <print>
 #include "metal_imports.hpp"
 
@@ -21,7 +23,6 @@ HandlerState hs {};
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 using MouseDownFunc = CGPoint(*)(id, SEL);
-
 
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
@@ -43,7 +44,6 @@ extern "C" void mouseDown(id self, SEL _cmd, id event) {
     hs.mouseDownHandler(point.x, point.y);
 }
 
-
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     view{view},
     renderer{new Renderer{device, view}}
@@ -51,10 +51,15 @@ MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     renderer->makeCurrent();
 }
 
+void MTKViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize frameSize) {
+    ContextManager::getContext().updateView();
+}  
+
 void MTKViewDelegate::drawInMTKView(MTK::View* view)
 {
      renderer->draw();
 }
+
 
 
 AppDelegate::~AppDelegate()
@@ -96,6 +101,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), MaxOutstandingFrameCount);
     
+    NewArch::ContextManager::initContext(device, view);
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
     view->setDelegate(viewDelegate.get());
     
@@ -139,16 +145,23 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         this->focused = htnode;
         htnode->dispatch(e);
     };
-    
+
+    hs.resizeHandler = [this]() {
+        // ContextManager::getContext().updateView();
+    };
+
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
+
+
     
     
     // run some tests (no visual updates)
     // UIContext ctx {this->device, this->view};
     // index(ctx);
+    
 
     window->setContentView(view);
     

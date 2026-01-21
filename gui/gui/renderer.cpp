@@ -23,7 +23,7 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     view{view},
     commandQueue(device->newCommandQueue()),
     frameSemaphore{MaxOutstandingFrameCount},
-    ctx{NewArch::ContextManager::initContext(device, view)},
+    ctx{NewArch::ContextManager::getContext()},
     layoutEngine{},
     divProcessor{ctx},
     div{ctx},

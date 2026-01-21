@@ -9,6 +9,7 @@
 
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
+#include <print>
 #include <simd/vector_types.h>
 
 namespace NewArch {
@@ -30,6 +31,17 @@ namespace NewArch {
         std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
     };
 
+    void UIContext::updateView() {
+        auto frameDimensions = this->view->drawableSize();
+
+        std::println("width: {} height: {}", frameDimensions.width, frameDimensions.width);
+
+        auto scale = AppKit_Extensions::getContentScaleFactor(reinterpret_cast<void*>(view));
+
+        FrameInfo frameInfo {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = scale};
+        
+        std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
+    }
 
     // absolute needs:
     /*

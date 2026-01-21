@@ -17,6 +17,7 @@
 struct HandlerState {
     std::function<void(char ch)> keyboardHandler;
     std::function<void(float x, float y)> mouseDownHandler;
+    std::function<void()> resizeHandler;
 };
 
 
@@ -24,6 +25,7 @@ class MTKViewDelegate : public MTK::ViewDelegate {
 public:
     MTKViewDelegate(MTL::Device* device, MTK::View* view);
     void drawInMTKView(MTK::View* view) override;
+    void drawableSizeWillChange(MTK::View* view, CGSize frameSize) override;
     MTK::View* view;
     std::unique_ptr<Renderer> renderer;
 };
