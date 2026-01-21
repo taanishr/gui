@@ -32,8 +32,6 @@ extern "C" void keyDown(id self, SEL _cmd, id event) {
     auto chars = f(event, sel_registerName("characters"));
     
     char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
-
-    std::println("writing...");
     
     hs.keyboardHandler(inputChar);
 }
@@ -113,10 +111,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .keyCode = static_cast<int>(ch)
         };
 
-        // auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        // auto currTree = TreeManager::getTree(currTreeHandle);
-        // currTree->getRoot()->dispatch(e);
-
         if (this->focused) {
             this->focused->dispatch(e);
         }
@@ -135,10 +129,9 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .button = MouseButton::Left
         };
 
-        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        auto currTree = TreeManager::getTree(currTreeHandle);
-        auto root = currTree->getRoot();
-        auto htnode = currTree->hitTestRecursive(root, testPoint);
+        auto& currTree = this->viewDelegate->renderer->rootTree;
+        auto root = currTree.getRoot();
+        auto htnode = currTree.hitTestRecursive(root, testPoint);
 
         if (!htnode)
             return;      

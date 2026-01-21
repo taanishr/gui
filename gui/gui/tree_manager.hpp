@@ -1,29 +1,26 @@
+#pragma once
+
 #include "element.hpp"
-#include <cstdint>
-#include <map>
+#include <print>
+#include <vector>
 
-using TreeHandle = uint64_t;
-
-struct TreeContextGuard {
-    TreeContextGuard(); // reg tree
-
-    ~TreeContextGuard(); // dereg tree
-
-    TreeHandle handle;
-    NewArch::RenderTree tree;
-};
-
-struct TreeManager {
-    TreeManager() = delete;
-
-    static TreeHandle addTree(NewArch::RenderTree* tree);
-    static void deleteTree(TreeHandle handle);
-
-    static NewArch::RenderTree* getTree(TreeHandle handle);
-    static TreeHandle getCurrentTreeHandle();
-
-    static std::map<TreeHandle, NewArch::RenderTree*> trees;
-
-    static TreeHandle currHandle;
-    static TreeHandle nextHandle;
-};
+namespace NewArch {
+    struct TreeStack {
+        static void pushTree(RenderTree* tree) {
+            treeStack.push_back(tree);
+        }
+        
+        static void popTree() {
+            // std::println("popping");
+            assert(!treeStack.empty());
+            treeStack.pop_back();
+        }
+        
+        static RenderTree* getCurrentTree() {
+            assert(!treeStack.empty());
+            return treeStack.back();
+        }
+        
+        static thread_local std::vector<RenderTree*> treeStack;
+    };
+}

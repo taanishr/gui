@@ -36,7 +36,7 @@ vertex TextVertexOut vertex_text(
     
     float2 adjustedPos = (in.position)/64.0f + offsets[in.atom_id];
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
-    out.position = float4(ndcPos, 0.0, 1.0);
+    out.position = float4(ndcPos, 0.0, 1.0) * frameInfo->scale;
     out.worldPosition = float4(in.position, 0.0, 1.0);
     out.metadataIndex = in.metadataIndex;
     

@@ -17,6 +17,7 @@
 #include "renderer_constants.hpp"
 #include "context_manager.hpp"
 #include "tree_manager.hpp"
+#include "AppKit_Extensions.hpp"
 
 class Renderer {
 public:
@@ -45,8 +46,7 @@ public:
     NewArch::Div<> div;
     NewArch::Image<> img;
     NewArch::Text<> txt;
-    // NewArch::RenderTree tree;
-    TreeContextGuard treeGuard;
+    NewArch::RenderTree rootTree;
 
     std::chrono::high_resolution_clock clock {};
     

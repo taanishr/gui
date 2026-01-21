@@ -46,3 +46,14 @@ public func setSyncEnabled(viewPtr: UnsafeMutableRawPointer, enabled: CBool) {
         CAMetalLayer.displaySyncEnabled = enabled;
     }
 }
+
+@_cdecl("getContentScaleFactor")
+public func getContentScaleFactor(viewPtr: UnsafeMutableRawPointer) -> CFloat {
+    let view = Unmanaged<MTKView>.fromOpaque(viewPtr).takeUnretainedValue();
+    
+    if let window = view.window {
+        return CFloat(window.backingScaleFactor);
+    }
+    
+    return 1.0; // default fall through
+}

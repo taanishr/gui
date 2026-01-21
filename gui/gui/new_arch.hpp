@@ -14,6 +14,7 @@
 #include <ranges>
 #include "MTKTexture_loader.hpp"
 #include <format>
+#include "AppKit_Extensions.hpp"
 
 using namespace std::ranges::views;
 

@@ -3,6 +3,7 @@
 #include "element.hpp"
 #include "div.hpp"
 #include "events.hpp"
+#include "renderer.hpp"
 #include "image.hpp"
 #include "text.hpp"
 #include "new_arch.hpp"
@@ -93,7 +94,9 @@ namespace NewArch {
 
         template <typename... Children>
         NodeBuilder& operator()(Children&&... args) {
-           (reparent(this->node, args.node), ...);
+            TreeStack::pushTree(&this->renderTree);
+            (reparent(this->node, args.node), ...);
+            TreeStack::popTree();
             return *this;
         }
 

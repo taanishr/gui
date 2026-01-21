@@ -15,8 +15,8 @@ namespace NewArch {
         // alter descriptor and fragment via elem.getDescriptor() and elem.getFragment() (mutable references)
 
 
-        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        auto currTree = TreeManager::getTree(currTreeHandle);
+
+        auto currTree = TreeStack::getCurrentTree();
 
         return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }
@@ -35,8 +35,7 @@ namespace NewArch {
         desc.font = font;
         
 
-        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        auto currTree = TreeManager::getTree(currTreeHandle);
+        auto currTree = TreeStack::getCurrentTree();
         
         return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }
@@ -52,8 +51,7 @@ namespace NewArch {
         desc.width = width;
         desc.height = height;
         
-        auto currTreeHandle = TreeManager::getCurrentTreeHandle();
-        auto currTree = TreeManager::getTree(currTreeHandle);
+        auto currTree = TreeStack::getCurrentTree();
 
         return NodeBuilder(ctx, *currTree, std::move(elem), proc);
     }

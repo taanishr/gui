@@ -23,8 +23,9 @@ namespace NewArch {
         frameIndex{0}
     {
         auto frameDimensions = this->view->drawableSize();
+        auto scale = AppKit_Extensions::getContentScaleFactor(reinterpret_cast<void*>(view));
 
-        FrameInfo frameInfo {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
+        FrameInfo frameInfo {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = scale};
         
         std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
     };

@@ -8,6 +8,8 @@
 #include "renderer.hpp"
 #include "element.hpp"
 #include "events.hpp"
+#include "printers.hpp"
+#include "tree_manager.hpp"
 #include "node_builder.hpp"
 #include "new_arch.hpp"
 #include <print>
@@ -29,18 +31,18 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     txtProcessor{ctx},
     img{ctx},
     txt{ctx},
-    treeGuard{}
+    rootTree{}
 {
-    auto rootElem = NewArch::Div(ctx);
+    auto rootElem = Div(ctx);
     auto& desc = rootElem.getDescriptor();
     desc.width = ctx.view->drawableSize().width / 2.0f;
     desc.height = ctx.view->drawableSize().height / 2.0f;
-    desc.color = simd_float4{1,0,0,1};
+    desc.color = simd_float4{1,1,1,1};
     desc.cornerRadius = 0;
 
 
     
-    treeGuard.tree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
+    rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
     makeResources();
 }
 
@@ -63,18 +65,7 @@ void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
 
-    // NewArch::div(200, 200, simd_float4{0,1,0,1}).position(NewArch::Position::Absolute).left(100).top(200)
-    // .paddingLeft(20.0).addEventListener(EventType::MouseDown, [](auto& desc, const Event& event){ 
-    //         std::println("hello world!!");
-    //         desc.color = simd_float4{0,0.5,0,0.5};
-    //     })
-    // (
-    //     NewArch::div(50, 50, simd_float4{1,1,1,1}),
-    //     NewArch::text("hello \nworld", 64.0).color(simd_float4{0.0,0.0,1.0,1.0}).addEventListener(EventType::MouseDown, [](auto& desc, const Event& event){ 
-    //         std::println("hello world!!");
-    //         desc.text = "omg";
-    //     })
-    // );
+    TreeStack::pushTree(&rootTree);
 
     index();
 }
@@ -90,8 +81,8 @@ void Renderer::draw() {
     // renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
 
     auto ts1 = clock.now();
-    treeGuard.tree.update(getFrameInfo());
-    treeGuard.tree.render(renderCommandEncoder);
+    rootTree.update(getFrameInfo());
+    rootTree.render(renderCommandEncoder);
     
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
@@ -129,8 +120,9 @@ FrameInfo Renderer::getFramePixelSize() {
 
 FrameInfo Renderer::getFrameInfo() {
     auto frameDimensions = this->view->drawableSize();
+    auto scale = AppKit_Extensions::getContentScaleFactor(reinterpret_cast<void*>(this->view));
 
-    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f};
+    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = 1.0};
 }
 
 void Renderer::makeCurrent() {

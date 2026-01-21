@@ -13,6 +13,7 @@ using namespace metal;
 struct FrameInfo {
     float width;
     float height;
+    float scale;
 };
 
 inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f) {
