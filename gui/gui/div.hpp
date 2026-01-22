@@ -10,9 +10,11 @@
 #include "fragment_types.hpp"
 #include <format>
 #include <mutex>
+#include <print>
 #include "new_arch.hpp"
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
+#include "sizing.hpp"
 
 namespace NewArch {
     struct DivPoint {
@@ -35,8 +37,8 @@ namespace NewArch {
     struct DivDescriptor {
         DivDescriptor();
 
-        float width;
-        float height;
+        Size width;
+        Size height;
         
         simd_float4 color;
         float cornerRadius;
@@ -179,12 +181,14 @@ namespace NewArch {
         
         // placement/encoder/etc...
         Measured measure(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
-            Measured measured;
-            
+            Measured measured {};
+
+            // std::println("div node: {} constraints.width: {} constraints.height: {}", reinterpret_cast<void*>(&desc), constraints.maxWidth, constraints.maxHeight);
+
             // starting with just one type of measurement; for now, we keep it simple, just desc width and height
             measured.id = fragment.id;
-            measured.explicitWidth = desc.width;
-            measured.explicitHeight = desc.height;
+            measured.explicitWidth = desc.width.resolve(constraints.maxWidth);
+            measured.explicitHeight = desc.height.resolve(constraints.maxHeight);
             
             return measured;
         }
@@ -250,11 +254,13 @@ namespace NewArch {
             if (desc.paddingBottom.has_value()) li.paddingBottom = *desc.paddingBottom;
             if (desc.paddingLeft.has_value()) li.paddingLeft = *desc.paddingLeft;
 
-            
+
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
             return lr;
         }
+        
+        // OHHH!  Do I need to alter my later passes to have a computed size? Computed width? Ok, makes sense.
         
         // TODO: Cache all this
         Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) // also needs to take in constraints
@@ -282,6 +288,8 @@ namespace NewArch {
             };
         }
         
+
+        
         // finalizes uniforms and makes final object
         Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
         {
@@ -296,11 +304,11 @@ namespace NewArch {
             };
             
             // geometry uniforms
-            DivGeometryUniforms geometryUniforms;
+            DivGeometryUniforms geometryUniforms {};
             
             if (placed.placements.size() > 0) {
                 auto offset = placed.placements.front();
-                simd_float2 halfExtent { desc.width / 2.0f, desc.height / 2.0f };
+                simd_float2 halfExtent { measured.explicitWidth / 2.0f, measured.explicitHeight / 2.0f };
                 simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
                 
                 geometryUniforms.halfExtent = halfExtent;

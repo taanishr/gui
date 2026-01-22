@@ -34,17 +34,19 @@ namespace NewArch {
         rootConstraints = Constraints{
             .origin = simd_float2{0,0},
             .cursor = rootCursor,
-            .maxWidth = frameInfo.height,
-            .maxHeight = frameInfo.width,
+            .maxWidth = frameInfo.width,
+            .maxHeight = frameInfo.height,
             .frameInfo = frameInfo,
         };
 
         // AHH APPLE CLANG DOESN'T SUPPORT EXECUTION POLICIES YET EXECUTE ME
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                node->measured = node->element->measure(rootConstraints);
-            }
-        );
+        // Parallel::for_each(allNodes.begin(), allNodes.end(),
+        //     [&](TreeNode* node) {
+        //         node->measured = node->element->measure(rootConstraints);
+        //     }
+        // );
+
+        measurePhase(root, rootConstraints);
         
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
@@ -90,8 +92,16 @@ namespace NewArch {
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {
         auto measured = node->element->measure(constraints);
-        // renderCache.measured[node->id] = measured;
         node->measured = measured;
+        
+        Constraints childConstraints {};
+
+        childConstraints.maxWidth = measured.explicitWidth;
+        childConstraints.maxHeight = measured.explicitHeight;
+
+        for (auto& child : node->children) {
+            measurePhase(child.get(), childConstraints);
+        }
     }
 
 

@@ -3,7 +3,7 @@
 #include "tree_manager.hpp"
 
 namespace NewArch {
-    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(float width, float height, simd_float4 color)
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color)
     {
         auto& ctx = ContextManager::getContext();
         auto& proc = getDivProcessor(ctx);

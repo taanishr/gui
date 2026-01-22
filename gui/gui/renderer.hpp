@@ -18,6 +18,8 @@
 #include "context_manager.hpp"
 #include "tree_manager.hpp"
 #include "AppKit_Extensions.hpp"
+#include "sizing.hpp"
+
 
 class Renderer {
 public:

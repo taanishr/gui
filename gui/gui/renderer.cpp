@@ -7,12 +7,9 @@
 
 #include "renderer.hpp"
 #include "element.hpp"
-#include "events.hpp"
-#include "printers.hpp"
+#include "div.hpp"
 #include "tree_manager.hpp"
-#include "node_builder.hpp"
 #include "new_arch.hpp"
-#include <print>
 #include <simd/vector_types.h>
 #include "index.hpp"
 
@@ -35,13 +32,12 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
 {
     auto rootElem = Div(ctx);
     auto& desc = rootElem.getDescriptor();
-    desc.width = ctx.view->drawableSize().width / 2.0f;
-    desc.height = ctx.view->drawableSize().height / 2.0f;
+    desc.width = NewArch::Size::percent(1.0);
+    desc.height = NewArch::Size::percent(1.0);
     desc.color = simd_float4{1,1,1,1};
     desc.cornerRadius = 0;
 
 
-    
     rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
     makeResources();
 }

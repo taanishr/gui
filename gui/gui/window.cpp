@@ -52,6 +52,7 @@ MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
 }
 
 void MTKViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize frameSize) {
+    std::println("changing?");
     ContextManager::getContext().updateView();
 }  
 
@@ -144,10 +145,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         
         this->focused = htnode;
         htnode->dispatch(e);
-    };
-
-    hs.resizeHandler = [this]() {
-        // ContextManager::getContext().updateView();
     };
 
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),

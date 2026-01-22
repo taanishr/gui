@@ -175,8 +175,11 @@ namespace NewArch {
         
         Measured measure(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc) {
             Measured measured;
+
+                        
+            // std::println("text node: {} constraints.width: {} constraints.height: {}", reinterpret_cast<void*>(&desc), constraints.maxWidth, constraints.maxHeight);
+
             measured.id = fragment.id;
-            
             measured.explicitWidth  = 0.0;
             measured.explicitHeight = 0.0;
 
@@ -226,6 +229,7 @@ namespace NewArch {
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;
+                
 
                 // highly unoptimized coarse lock, for now
                 {

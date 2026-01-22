@@ -1,6 +1,7 @@
 #include "index.hpp"
 #include "context_manager.hpp"
 #include "events.hpp"
+#include "sizing.hpp"
 #include "new_arch.hpp"
 #include <print>
 #include <simd/vector_types.h>
@@ -26,16 +27,12 @@
 const std::string ArialBold = "/System/Library/Fonts/Supplemental/Arial Bold.ttf";
 
 auto index() -> void {
-
-    auto frameHeight = (float)ContextManager::getContext().view->drawableSize().height;
-    auto frameWidth = (float)ContextManager::getContext().view->drawableSize().width;
-
     auto onClick = [](auto& desc, const Event& event){
         std::println("hello world");
     };
 
-    div(frameHeight, frameWidth, simd_float4{1.0,1.0,1.0,1.0})(
-         div(60, 30, simd_float4{0.498,0.0,1.0,1.0})
+    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})(
+         div(NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.498,0.0,1.0,1.0})
             .position(NewArch::Absolute).left(20)
             .top(30)
             .cornerRadius(7.5)
