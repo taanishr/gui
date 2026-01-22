@@ -1,11 +1,21 @@
 #include "div.hpp"
 #include "new_arch.hpp"
 
-NewArch::DivDescriptor::DivDescriptor():
-    display{Display::Block},
-    position{Position::Relative},
-    top{0},
-    left{0},
-    cornerRadius{0},
-    padding{0}
-{}
+NewArch::DivDescriptor::DivDescriptor()
+    : width{Size::px(0)}
+    , height{Size::px(0)}
+    , color{0.0f, 0.0f, 0.0f, 1.0f}          
+    , cornerRadius{0.0f}
+    , borderWidth{0.0f}
+    , borderColor{0.0f, 0.0f, 0.0f, 1.0f}   
+    , padding{0.0f}
+    , paddingLeft{std::nullopt}
+    , paddingRight{std::nullopt}
+    , paddingTop{std::nullopt}
+    , paddingBottom{std::nullopt}
+    , top{0.0f}
+    , left{0.0f}
+    , display{Display::Block}
+    , position{Position::Relative}
+{
+}
