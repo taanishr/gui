@@ -217,6 +217,38 @@ namespace NewArch {
         
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
+
+        /*
+        Margin System Overview:
+
+        Vertical margins are represented as edges (margin-bottom of previous ↔ margin-top of current). 
+        Only in-flow elements emit vertical flow participants and participate in vertical margin negotiation. 
+
+        Out-of-flow elements (Position::Absolute or Fixed) do not participate in vertical margin negotiation 
+        with in-flow siblings, but their own margins are applied relative to their nearest positioned ancestor. 
+        If an out-of-flow element creates a boundary, it prevents margin collapse between adjacent in-flow elements.
+
+        layoutInlineNormalFlow:
+        - Horizontal margins are applied locally to the cursor.
+        - Vertical margins are aggregated into line boxes, which emit a single vertical edge for negotiation.
+
+        layoutBlockNormalFlow:
+        - Produces vertical margin intents for the block participant.
+        - Does not negotiate edges.
+
+        layoutPhase:
+        - Resolves vertical margin edges between flow participants.
+        - Applies collapse, isolation, or suppression rules.
+        - Out-of-flow boundaries break adjacency chains but do not themselves participate in collapse.
+
+        resolve / resolveNormalFlow:
+        - Produces margin intents (start/end) for a single element.
+        - Does not perform edge negotiation; vertical margins are consumed by layoutPhase.
+
+        This model ensures deterministic vertical margin behavior, proper aggregation of inline vertical margins via line boxes, 
+        and correct handling of margins for absolute/fixed elements without affecting in-flow margin negotiation.
+        */
+
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);

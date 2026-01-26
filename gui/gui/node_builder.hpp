@@ -76,6 +76,7 @@ namespace NewArch {
 
             root->attach_child(std::move(n));
         }
+
         
         
         static void reparent(TreeNode* newParent, TreeNode* child) {

@@ -135,6 +135,10 @@ namespace NewArch {
 
         childConstraints.origin = constraints.origin; // add static check later
 
+        // start with prev = parent
+        // increasingly change prev as we see in flow elements
+        // generate margin negoatiations function
+
         for (auto& child : node->children) {
             auto childAsPtr = child.get();
             layoutPhase(childAsPtr, frameInfo, childConstraints);
