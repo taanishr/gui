@@ -197,12 +197,14 @@ namespace NewArch {
         float startingX = constraints.origin.x;
         float startingY = constraints.cursor.y;
         
-        if (constraints.edgeIntent.collapsable) {
-            startingY += std::max(constraints.edgeIntent.intent, layoutInput.marginTop);
-        }else {
-            startingY += constraints.edgeIntent.intent + layoutInput.marginTop;
+        if (constraints.edgeIntent.edgeDisplayMode == Display::Block) {
+            if (constraints.edgeIntent.collapsable) {
+                startingY += std::max(constraints.edgeIntent.intent, layoutInput.marginTop);
+            }else {
+                startingY += constraints.edgeIntent.intent + layoutInput.marginTop;
+            }
         }
-
+        
         startingX += layoutInput.marginLeft;
 
 
@@ -249,6 +251,7 @@ namespace NewArch {
         lr.siblingCursor = newCursor;
 
         lr.edgeIntent = {
+            .edgeDisplayMode = Display::Block,
             .intent = layoutInput.marginBottom,
             .collapsable = true,
         };

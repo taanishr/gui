@@ -160,7 +160,19 @@ namespace NewArch {
 
     
 
+    enum Position {
+        Absolute,
+        Fixed,
+        Relative,
+    };
+
+    enum Display {
+        Block,
+        Inline
+    };
+
     struct EdgeIntent {
+        Display edgeDisplayMode{Display::Block};
         float intent{};
         bool collapsable {};
     };
@@ -175,17 +187,6 @@ namespace NewArch {
 
         EdgeIntent edgeIntent{};
         // TODO: include padding details (in form of available width/height)
-    };
-
-    enum Position {
-        Absolute,
-        Fixed,
-        Relative,
-    };
-
-    enum Display {
-        Block,
-        Inline
     };
 
     struct LayoutInput {
