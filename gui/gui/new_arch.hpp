@@ -160,15 +160,20 @@ namespace NewArch {
 
     
 
-    struct Constraints {
+    struct InFlowEdgeIntent {
+        float intent{};
+        bool collapsable {};
+    };
 
+    struct Constraints {
         simd_float2 origin{};
         simd_float2 cursor{};
         float maxWidth{};
         float maxHeight{};
     
         FrameInfo frameInfo{}; // viewport size (for fixed)
-        
+
+        InFlowEdgeIntent inflowEdgeIntent{};
         // TODO: include padding details (in form of available width/height)
     };
 

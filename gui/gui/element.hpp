@@ -277,6 +277,8 @@ namespace NewArch {
         */
 
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+
+
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     };

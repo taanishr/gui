@@ -90,13 +90,17 @@ namespace NewArch {
         lr.siblingCursor = currentCursor;
         lr.consumedHeight = 0;
 
+        // std::println("resolvedWidth: {}", resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight);
+
         lr.childConstraints = {
-            .origin = absolutePosition,
+            .origin = {absolutePosition.x + layoutInput.paddingLeft, absolutePosition.y + layoutInput.paddingTop},
             .cursor = {absolutePosition.x + layoutInput.paddingLeft, absolutePosition.y + layoutInput.paddingTop},
             .maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight,
             .maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom,
             .frameInfo = constraints.frameInfo
         };
+
+        // std::println("lr.childConstraints.origin.x: {} lr.childConstraints.origin.y: {}", (float)lr.childConstraints.origin.x, (float)lr.childConstraints.origin.y);
 
         lr.computedBox = {
             .x = absolutePosition.x,
@@ -195,9 +199,9 @@ namespace NewArch {
         
         float resolvedWidth = 0;
         float resolvedHeight = 0;
-        childConstraints.origin = currentCursor;
         childConstraints.cursor.x += layoutInput.paddingLeft;
         childConstraints.cursor.y += layoutInput.paddingTop;
+        childConstraints.origin = childConstraints.cursor;
         childConstraints.frameInfo = constraints.frameInfo;
             
     
@@ -245,7 +249,7 @@ namespace NewArch {
         std::vector<simd_float2> atomOffsets;
         simd_float2 newCursor = currentCursor;
         
-        lr.childConstraints.origin = currentCursor;
+        lr.childConstraints.origin = currentCursor; // double check this
         float lineHeight = 0;
         float totalWidth = 0;
         float totalHeight = 0;
@@ -253,11 +257,12 @@ namespace NewArch {
         float maxX = currentCursor.x;
 
         // std::println("constraints.maxWidth: {}", constraints.maxWidth);
+        // std::println("origin.x: {}", (float)constraints.origin.x);    
         // std::println("newCursor.x: {}", (float)newCursor.x);
 
         for (auto& atom : atomized.atoms) {
 
-            std::println("constraints.maxWidth: {}", constraints.origin.x + constraints.maxWidth);
+            // std::println("constraints.maxWidth: {}", constraints.origin.x + constraints.maxWidth);
             // std::println("newCursor.x + atom.width: {}", (float)newCursor.x + atom.width);
             if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
                 || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
@@ -326,8 +331,6 @@ namespace NewArch {
     LayoutResult LayoutEngine::resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized)
     {
         LayoutResult lr;
-        
-       simd_float2 cursor = constraints.cursor;
         
         if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {
             lr = resolveOutOfFlow(constraints, constraints.cursor, layoutInput, atomized);

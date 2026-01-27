@@ -1,4 +1,5 @@
 #include "element.hpp"
+#include "gui/new_arch.hpp"
 #include "printers.hpp"
 #include <print>
 #include <simd/vector_types.h>
@@ -127,18 +128,19 @@ namespace NewArch {
             
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
-
+        
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
 
         auto childConstraints =  layout.childConstraints;
 
-        childConstraints.origin = constraints.origin; // add static check later
+        // childConstraints.origin = constraints.origin; // add static check later
 
         // start with prev = parent
         // increasingly change prev as we see in flow elements
         // generate margin negoatiations function
 
+        // std::println("in layoutPhase: layout.childConstraints.origin.x: {}", (float)layout.childConstraints.origin.x);
         for (auto& child : node->children) {
             auto childAsPtr = child.get();
             layoutPhase(childAsPtr, frameInfo, childConstraints);
