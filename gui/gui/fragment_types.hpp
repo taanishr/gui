@@ -27,7 +27,8 @@ struct Atom {
         length{0},
         width{0},
         height{0},
-        placeOnNewLine{false}
+        placeOnNewLine{false},
+        canPlaceOnNewLine{false}
     {}
 
     BufferHandle atomBufferHandle; // local position buffer
@@ -37,6 +38,7 @@ struct Atom {
     float width;
     float height;
 
+    bool canPlaceOnNewLine;
     bool placeOnNewLine;
 };
 

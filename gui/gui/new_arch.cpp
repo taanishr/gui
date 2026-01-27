@@ -204,7 +204,7 @@ namespace NewArch {
                 startingY += constraints.edgeIntent.intent + layoutInput.marginTop;
             }
         }
-        
+
         startingX += layoutInput.marginLeft;
 
 
@@ -270,25 +270,34 @@ namespace NewArch {
         
         std::vector<simd_float2> atomOffsets;
         simd_float2 newCursor = currentCursor;
-        
+        // newCursor.x += layoutInput.marginLeft;
+        if (constraints.edgeIntent.edgeDisplayMode == Block) {
+            if (constraints.edgeIntent.collapsable) {
+                newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
+            }else {
+                newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
+            }
+
+            newCursor.x += layoutInput.marginLeft;
+        }else if (constraints.edgeIntent.edgeDisplayMode == Inline){
+            if (constraints.edgeIntent.collapsable) {
+                newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+            }else {
+                newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+            }
+        }
+
         lr.childConstraints.origin = currentCursor; // double check this
         float lineHeight = 0;
         float totalWidth = 0;
         float totalHeight = 0;
         float minX = currentCursor.x;
         float maxX = currentCursor.x;
-
-        // std::println("constraints.maxWidth: {}", constraints.maxWidth);
-        // std::println("origin.x: {}", (float)constraints.origin.x);    
-        // std::println("newCursor.x: {}", (float)newCursor.x);
-
+        
         for (auto& atom : atomized.atoms) {
-
-            // std::println("constraints.maxWidth: {}", constraints.origin.x + constraints.maxWidth);
-            // std::println("newCursor.x + atom.width: {}", (float)newCursor.x + atom.width);
+            // hmtl css only breaks on white space. I need to change this to preprocess line boxes? Idk
             if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
                 || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
-                
                 newCursor.x = constraints.origin.x;
                 newCursor.y += lineHeight;
                 totalHeight += lineHeight;
@@ -321,9 +330,6 @@ namespace NewArch {
         
         lr.atomOffsets = atomOffsets;
         lr.consumedHeight = totalHeight;
-
-
-        // std::println("cursor x after traversal: {}", (float)newCursor.x);
         
         if (newCursor.x >= constraints.origin.x + constraints.maxWidth) {
             lr.siblingCursor = {constraints.origin.x, newCursor.y + lineHeight};
@@ -331,10 +337,12 @@ namespace NewArch {
             lr.siblingCursor = {newCursor.x, newCursor.y};
         }
 
-        // c1x = lr.siblingCursor.x;
-        // c2x = lr.siblingCursor.y;
-        // std::println("sibling cursor x: {} sibling cursor y: {}", c1x,c2x);
-        
+        lr.edgeIntent = {
+            .edgeDisplayMode = Inline,
+            .intent = layoutInput.marginRight,
+            .collapsable = false,
+        };
+
         return lr;
     }
 

@@ -38,7 +38,13 @@ auto index() -> void {
                 .borderWidth(1.0)
                 .addEventListener(EventType::MouseDown, onClick)
             (
-                text("Start")
+                text("Startfsd")
+                    .fontSize(16.0)
+                    .font(ArialBold)
+                    .marginLeft(10)
+                    .marginRight(10),
+
+                    text("fsdfsdf")
                     .fontSize(16.0)
                     .font(ArialBold)
             ),
