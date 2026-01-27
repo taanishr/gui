@@ -252,12 +252,17 @@ namespace NewArch {
         float minX = currentCursor.x;
         float maxX = currentCursor.x;
 
+        // std::println("constraints.maxWidth: {}", constraints.maxWidth);
+        // std::println("newCursor.x: {}", (float)newCursor.x);
+
         for (auto& atom : atomized.atoms) {
 
-            if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.cursor.x + constraints.maxWidth)
+            std::println("constraints.maxWidth: {}", constraints.origin.x + constraints.maxWidth);
+            // std::println("newCursor.x + atom.width: {}", (float)newCursor.x + atom.width);
+            if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
                 || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
                 
-                newCursor.x = constraints.cursor.x;
+                newCursor.x = constraints.origin.x;
                 newCursor.y += lineHeight;
                 totalHeight += lineHeight;
                 lineHeight = 0;
@@ -289,12 +294,19 @@ namespace NewArch {
         
         lr.atomOffsets = atomOffsets;
         lr.consumedHeight = totalHeight;
+
+
+        // std::println("cursor x after traversal: {}", (float)newCursor.x);
         
-        if (newCursor.x >= constraints.cursor.x + constraints.maxWidth) {
-            lr.siblingCursor = {constraints.cursor.x, newCursor.y + lineHeight};
+        if (newCursor.x >= constraints.origin.x + constraints.maxWidth) {
+            lr.siblingCursor = {constraints.origin.x, newCursor.y + lineHeight};
         } else {
             lr.siblingCursor = {newCursor.x, newCursor.y};
         }
+
+        // c1x = lr.siblingCursor.x;
+        // c2x = lr.siblingCursor.y;
+        // std::println("sibling cursor x: {} sibling cursor y: {}", c1x,c2x);
         
         return lr;
     }
@@ -316,15 +328,6 @@ namespace NewArch {
         LayoutResult lr;
         
        simd_float2 cursor = constraints.cursor;
-       
-    //    for (auto i = 0; i < atomized.atoms.size(); ++i) {
-    //        auto& curr_atom = atomized.atoms[i];
-
-    //        atomOffsets.push_back(cursor);
-    //        cursor.x += curr_atom.width;
-    //    }
-    
-
         
         if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {
             lr = resolveOutOfFlow(constraints, constraints.cursor, layoutInput, atomized);

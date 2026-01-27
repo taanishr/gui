@@ -145,7 +145,7 @@ namespace NewArch {
             auto childLayout = *childAsPtr->layout;
 
             if (!childLayout.outOfFlow) {
-                childConstraints.origin = childLayout.siblingCursor;
+                childConstraints.cursor = childLayout.siblingCursor;
             }
         }
     }

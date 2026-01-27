@@ -221,32 +221,59 @@ namespace NewArch {
         /*
         Margin System Overview:
 
-        Vertical margins are represented as edges (margin-bottom of previous ↔ margin-top of current). 
-        Only in-flow elements emit vertical flow participants and participate in vertical margin negotiation. 
+        Vertical margins are negotiated only among in-flow elements.
+        They are represented as ordered edge interactions
+        (previous margin-bottom ↔ next margin-top) within a parent.
 
-        Out-of-flow elements (Position::Absolute or Fixed) do not participate in vertical margin negotiation 
-        with in-flow siblings, but their own margins are applied relative to their nearest positioned ancestor. 
-        If an out-of-flow element creates a boundary, it prevents margin collapse between adjacent in-flow elements.
+        Two independent data channels exist at the tree level:
+
+        1) In-flow edge channel
+        - Emitted only by in-flow elements.
+        - Captures vertical margin intent for adjacency resolution.
+        - Consumed exclusively by layoutPhase to perform collapse,
+            suppression, and isolation rules.
+        - Out-of-flow elements never appear in this channel and never
+            affect adjacency or collapse ordering.
+
+        2) Out-of-flow ancestor channel
+        - Provided by the nearest positioned ancestor.
+        - Describes the ancestor’s effective reference edges
+            (content/padding offsets and resolved percent bases).
+        - Read by absolute/fixed elements to compute their own margins
+            and offsets relative to that ancestor.
+        - This channel is independent of sibling relationships and
+            is never consulted during in-flow margin negotiation.
 
         layoutInlineNormalFlow:
-        - Horizontal margins are applied locally to the cursor.
-        - Vertical margins are aggregated into line boxes, which emit a single vertical edge for negotiation.
+        - Horizontal margins are applied locally during line layout.
+        - Vertical margins are accumulated per line box.
+        - Each line box emits exactly one in-flow vertical margin intent.
 
         layoutBlockNormalFlow:
-        - Produces vertical margin intents for the block participant.
-        - Does not negotiate edges.
-
-        layoutPhase:
-        - Resolves vertical margin edges between flow participants.
-        - Applies collapse, isolation, or suppression rules.
-        - Out-of-flow boundaries break adjacency chains but do not themselves participate in collapse.
+        - Emits a single in-flow vertical margin intent for the block.
+        - Does not resolve adjacency or collapse.
 
         resolve / resolveNormalFlow:
-        - Produces margin intents (start/end) for a single element.
-        - Does not perform edge negotiation; vertical margins are consumed by layoutPhase.
+        - Resolves element margins into either:
+        (a) an in-flow margin intent, or
+        (b) an ancestor-relative margin application (out-of-flow).
+        - Does not perform margin negotiation.
 
-        This model ensures deterministic vertical margin behavior, proper aggregation of inline vertical margins via line boxes, 
-        and correct handling of margins for absolute/fixed elements without affecting in-flow margin negotiation.
+        layoutPhase:
+        - Operates only on the in-flow edge channel.
+        - Resolves vertical adjacency via collapse rules.
+        - Advances vertical layout cursors accordingly.
+        - Ignores out-of-flow elements entirely.
+
+        Key invariants:
+        - Absolute/fixed elements never influence in-flow margin collapse.
+        - In-flow elements never require ancestor-relative edge knowledge.
+        - Inline vertical margins affect layout only through line boxes.
+        - Margin resolution is strictly separated from margin negotiation.
+
+        This separation yields deterministic behavior, preserves CSS-style
+        margin semantics, and avoids coupling absolute positioning to
+        in-flow adjacency logic.
         */
 
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
