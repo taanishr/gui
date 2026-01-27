@@ -26,8 +26,11 @@ auto index() -> void {
     (
          div(NewArch::Size::percent(0.2), NewArch::Size::percent(1.0), simd_float4{1.0,0.5,1.0,0.8})(
             div(NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.498,0.0,1.0,1.0})
-                .position(NewArch::Absolute).left(20)
-                .top(30)
+                // .position(NewArch::Absolute).left(20)
+                // .top(30)
+                .marginTop(30)
+                .marginBottom(20)
+                .marginLeft(20)
                 .cornerRadius(7.5)
                 .paddingLeft(9.0)
                 .paddingTop(4.5)
@@ -38,10 +41,10 @@ auto index() -> void {
                 text("Start")
                     .fontSize(16.0)
                     .font(ArialBold)
-                // ,text("Hello world")
-                //     .fontSize(16.0)
-                //     .font(ArialBold)
-            )
+            ),
+            div(
+                NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}
+            ).marginTop(10)
          )
     );
 }

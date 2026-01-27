@@ -46,6 +46,9 @@ namespace NewArch {
         simd_float4 borderColor;
         float padding;
         std::optional<float> paddingLeft, paddingRight, paddingTop, paddingBottom;
+        float margin;
+        std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
+
         float top, left;
 
         Display display;
@@ -254,6 +257,16 @@ namespace NewArch {
             if (desc.paddingBottom.has_value()) li.paddingBottom = *desc.paddingBottom;
             if (desc.paddingLeft.has_value()) li.paddingLeft = *desc.paddingLeft;
 
+            
+            li.marginTop = desc.margin;
+            li.marginRight = desc.margin;
+            li.marginBottom = desc.margin;
+            li.marginLeft = desc.margin;
+            
+            if (desc.marginTop.has_value()) li.marginTop = *desc.marginTop;
+            if (desc.marginRight.has_value()) li.marginRight = *desc.marginRight;
+            if (desc.marginBottom.has_value()) li.marginBottom = *desc.marginBottom;
+            if (desc.marginLeft.has_value()) li.marginLeft = *desc.marginLeft;
 
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 

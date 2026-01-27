@@ -1,5 +1,5 @@
 #include "element.hpp"
-#include "gui/new_arch.hpp"
+#include "new_arch.hpp"
 #include "printers.hpp"
 #include <print>
 #include <simd/vector_types.h>
@@ -148,6 +148,7 @@ namespace NewArch {
 
             if (!childLayout.outOfFlow) {
                 childConstraints.cursor = childLayout.siblingCursor;
+                childConstraints.edgeIntent = childLayout.edgeIntent;
             }
         }
     }

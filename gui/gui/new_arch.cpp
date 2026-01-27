@@ -9,6 +9,7 @@
 
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
+#include <algorithm>
 #include <print>
 #include <simd/vector_types.h>
 
@@ -192,15 +193,28 @@ namespace NewArch {
         LayoutResult lr;
         std::vector<simd_float2> atomOffsets;
         Constraints childConstraints;
-        simd_float2 newCursor {constraints.cursor.x, currentCursor.y};
+
+        float startingX = constraints.origin.x;
+        float startingY = constraints.cursor.y;
+        
+        if (constraints.edgeIntent.collapsable) {
+            startingY += std::max(constraints.edgeIntent.intent, layoutInput.marginTop);
+        }else {
+            startingY += constraints.edgeIntent.intent + layoutInput.marginTop;
+        }
+
+        startingX += layoutInput.marginLeft;
+
+
+        simd_float2 newCursor {startingX, startingY};
 
 
         lr.outOfFlow = false;
         
         float resolvedWidth = 0;
         float resolvedHeight = 0;
-        childConstraints.cursor.x += layoutInput.paddingLeft;
-        childConstraints.cursor.y += layoutInput.paddingTop;
+        childConstraints.cursor.x = startingX + layoutInput.paddingLeft;
+        childConstraints.cursor.y = startingY + layoutInput.paddingTop;
         childConstraints.origin = childConstraints.cursor;
         childConstraints.frameInfo = constraints.frameInfo;
             
@@ -215,8 +229,8 @@ namespace NewArch {
         // add resolved width check (not sure what behavior should be)
 
         lr.computedBox = {
-            currentCursor.x,
-            currentCursor.y,
+            startingX,
+            startingY,
             resolvedWidth,
             resolvedHeight
         };
@@ -230,9 +244,14 @@ namespace NewArch {
         lr.atomOffsets = atomOffsets;
 
         newCursor.y += resolvedHeight;
-        newCursor.x = constraints.cursor.x;
+        newCursor.x = constraints.origin.x;
 
         lr.siblingCursor = newCursor;
+
+        lr.edgeIntent = {
+            .intent = layoutInput.marginBottom,
+            .collapsable = true,
+        };
         
         return lr;
     }
@@ -322,7 +341,7 @@ namespace NewArch {
         if (layoutInput.display == Display::Block) {
             lr = layoutBlockNormalFlow(constraints, current_cursor, layoutInput, atomized);
         }else {
-            lr =layoutInlineNormalFlow(constraints, current_cursor, layoutInput, atomized);
+            lr = layoutInlineNormalFlow(constraints, current_cursor, layoutInput, atomized);
         }
 
         return lr;

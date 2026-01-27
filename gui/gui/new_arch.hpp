@@ -160,7 +160,7 @@ namespace NewArch {
 
     
 
-    struct InFlowEdgeIntent {
+    struct EdgeIntent {
         float intent{};
         bool collapsable {};
     };
@@ -173,7 +173,7 @@ namespace NewArch {
     
         FrameInfo frameInfo{}; // viewport size (for fixed)
 
-        InFlowEdgeIntent inflowEdgeIntent{};
+        EdgeIntent edgeIntent{};
         // TODO: include padding details (in form of available width/height)
     };
 
@@ -196,7 +196,7 @@ namespace NewArch {
         
         float width, height; // width and height of total box?
         float top, left, bottom, right; // for absolute positioning
-        float margin;
+        float margin, marginLeft, marginRight, marginTop, marginBottom;
         float padding, paddingLeft, paddingRight, paddingTop, paddingBottom;
     };
 
@@ -223,6 +223,7 @@ namespace NewArch {
     
         simd_float2 siblingCursor;
         bool outOfFlow; // don't change siblings
+        EdgeIntent edgeIntent;
     };
     
     struct LayoutEngine {
