@@ -1,4 +1,5 @@
 #include "element.hpp"
+#include "gui/text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
 #include <print>
@@ -141,6 +142,21 @@ namespace NewArch {
         // generate margin negoatiations function
 
         // std::println("in layoutPhase: layout.childConstraints.origin.x: {}", (float)layout.childConstraints.origin.x);
+
+        // precompute lineboxes
+        std::vector<Line> lineBoxes;
+        for (auto& child : node->children) {
+            // LineRequest lr {
+            //     .atomized = atomized,
+            //     // .descriptor = node->
+            // };
+
+            // if (node->element->request(std::any &payload)) {
+
+            // }
+
+        }
+
         for (auto& child : node->children) {
             auto childAsPtr = child.get();
             layoutPhase(childAsPtr, frameInfo, childConstraints);

@@ -9,14 +9,11 @@
 #include "fragment_types.hpp"
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
-#include "printers.hpp"
-#include "metal_imports.hpp"
-#include "frame_info.hpp"
-#include <ranges>
 #include "MTKTexture_loader.hpp"
 #include <format>
 #include <simd/vector_types.h>
 #include "new_arch.hpp"
+#include <any>
 
 namespace NewArch {
     struct ImagePoint {
@@ -343,6 +340,10 @@ namespace NewArch {
                 .placed = placed,
                 .uniforms = uniforms
             };
+        }
+
+        std::any request(std::any payload) {
+            return std::nullopt;
         }
 
         void encode(MTL::RenderCommandEncoder* encoder, Fragment<S>& fragment, Finalized<U>& finalized) {

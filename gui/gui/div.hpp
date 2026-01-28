@@ -15,6 +15,7 @@
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
 #include "sizing.hpp"
+#include <any>
 
 namespace NewArch {
     struct DivPoint {
@@ -343,6 +344,10 @@ namespace NewArch {
                 .placed = placed,
                 .uniforms = uniforms
             };
+        }
+
+        std::any request(std::any payload) {
+            return std::nullopt;
         }
         
         void encode(MTL::RenderCommandEncoder* encoder, Fragment<S>& fragment, Finalized<U>& finalized) {

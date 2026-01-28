@@ -14,6 +14,7 @@
 #include <mutex>
 #include <print>
 #include "new_arch.hpp"
+#include <any>
 
 namespace NewArch {
     struct TextPoint {
@@ -48,6 +49,15 @@ namespace NewArch {
         std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
     };
 
+    struct LineRequest {
+        TextDescriptor& descriptor;
+        Atomized& atomized;
+    };
+
+    struct Line {
+        float width;
+        bool collapsable;
+    };
 
     struct TextUniforms {
         simd_float4 color;
@@ -381,6 +391,37 @@ namespace NewArch {
             const auto& atoms = finalized.atomized.atoms;
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), atoms.size()*6);
 
+        }
+
+        std::any request(std::any payload) {
+            if (LineRequest* req = std::any_cast<LineRequest>(&payload)) {
+                std::vector<Line> lines;
+
+                float runningWidth = 0.0;
+
+                for (auto [ch, atom] : zip(req->descriptor.text, req->atomized.atoms)) {
+                    if (ch == ' ') {
+                        lines.push_back({
+                            .width = runningWidth,
+                            .collapsable = false
+                        });
+                        runningWidth = 0.0;
+                    }
+
+                    runningWidth += atom.width;
+                }               
+
+                if (runningWidth > 0.0) {
+                    lines.push_back({
+                        .width = runningWidth,
+                        .collapsable = true
+                    });
+                }
+
+                return lines;
+            }
+
+            return std::nullopt;
         }
         
         ~TextProcessor() {}

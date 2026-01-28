@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <algorithm>
 #include "frame_info.hpp"
+#include <optional>
 #include <print>
 #include <simd/vector_types.h>
 #include "parallel.hpp"
@@ -35,6 +36,7 @@ namespace NewArch {
         Placed& placed,
         Finalized<U>& finalized,
         LayoutResult layout,
+        std::any payload,
         MTL::RenderCommandEncoder* encoder
     ) {
         { proc.measure(fragment, constraints, desc) } -> std::same_as<Measured>;
@@ -42,6 +44,7 @@ namespace NewArch {
         { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
         { proc.finalize(fragment, constraints, desc, measured, atomized, placed) } -> std::same_as<Finalized<U>>;
+        { proc.request(payload) } -> std::same_as<std::any>;
         proc.encode(encoder, fragment, finalized);
     };
 
@@ -52,6 +55,7 @@ namespace NewArch {
         virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
+        virtual std::any request(std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
         virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout) {
             return true; 
@@ -90,6 +94,10 @@ namespace NewArch {
             return finalizedErased;
         }
 
+        std::any request(std::any& payload) override {
+            return std::nullopt;
+        };
+
         void encode(MTL::RenderCommandEncoder* encoder, std::any& finalizedErased) override {
             auto finalized = std::any_cast<Finalized<typename E::UniformsType>>(finalizedErased);
             return processor.encode(encoder, element.getFragment(), finalized);
@@ -106,12 +114,6 @@ namespace NewArch {
     using EventHandler = std::function<void(const Event&)>;
 
     struct TreeNode {
-        // using DivElem  = Element<Div<DivStorage>,  DivProcessor<...>, DivStorage, DivDescriptor, DivUniforms>;
-        // using TextElem = Element<Text<...>, TextProcessor<...>, ...>;
-        // using ImageElem= Element<Image<...>, ImageProcessor<...>, ...>;
-        // using ElementVariant = std::variant<DivElem, TextElem, ImageElem>;
-
-
         template<ElementType E, typename P>
             requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
         TreeNode(UIContext& ctx, E&& elem, P& processor)
@@ -159,11 +161,7 @@ namespace NewArch {
             if (!layout.has_value()) return false;
             
             auto& box = layout->computedBox;
-            // std::println("point: {}", point);
-            
-            // std::println("box.width: {}, box.height: {}", box.width, box.height);
-            
-            // std::println("topLeft: {} bottomRight: {}", simd_float2{box.x, box.y}, simd_float2{box.x + box.width , box.y+box.height});
+
             if (point.x < box.x || point.x > box.x + box.width ||
                 point.y < box.y || point.y > box.y + box.height) {
                 return false;
