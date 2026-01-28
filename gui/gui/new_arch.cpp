@@ -69,9 +69,8 @@ namespace NewArch {
 
         simd_float2 absolutePosition = constraints.origin;
 
-
-        absolutePosition.x += layoutInput.left;
-        absolutePosition.y += layoutInput.top;
+        absolutePosition.x += layoutInput.left + layoutInput.marginLeft; // add rules for bottom/right later. They are effecitvely useless unless you use bot-0 right-0, which I havent implemented yet
+        absolutePosition.y += layoutInput.top + layoutInput.marginTop;
 
         simd_float2 newCursor = absolutePosition;
 
@@ -136,8 +135,8 @@ namespace NewArch {
         simd_float2 fixedPosition = viewportOrigin;
     
 
-        fixedPosition.x += layoutInput.left;
-        fixedPosition.y += layoutInput.top;
+        fixedPosition.x += layoutInput.left + layoutInput.marginLeft;
+        fixedPosition.y += layoutInput.top + layoutInput.marginTop;
         
         simd_float2 newCursor = fixedPosition;
         float resolvedHeight = 0.0f;
