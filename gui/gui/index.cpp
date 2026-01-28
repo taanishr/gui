@@ -26,20 +26,31 @@ auto index() -> void {
     (
          div(NewArch::Size::percent(0.2), NewArch::Size::percent(1.0), simd_float4{1.0,0.5,1.0,0.8})(
             div(NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.498,0.0,1.0,1.0})
-                .position(NewArch::Absolute).left(20)
-                .top(30)
+                // .position(NewArch::Absolute)
+                // .top(30)
+                .marginTop(30)
+                .marginBottom(20)
+                .marginLeft(20)
                 .cornerRadius(7.5)
-                .paddingLeft(9.5)
+                .paddingLeft(9.0)
                 .paddingTop(4.5)
                 .borderColor(simd_float4{0.77,0.71,1.0,1.0})
                 .borderWidth(1.0)
                 .addEventListener(EventType::MouseDown, onClick)
             (
-                text("Start")
-                    .fontSize(18.0)
+                text("Startfsd")
+                    .fontSize(16.0)
+                    .font(ArialBold)
+                    .marginLeft(10)
+                    .marginRight(10),
+
+                    text("fsdfsdf")
+                    .fontSize(16.0)
                     .font(ArialBold)
             ),
-            div(NewArch::Size::percent(0.5), NewArch::Size::percent(1.0), simd_float4{0.0,1.0,1.0,0.8})
+            div(
+                NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}
+            ).marginTop(10)
          )
     );
 }

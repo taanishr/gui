@@ -50,6 +50,7 @@ namespace NewArch {
         U uniforms;
     };
 
+
     /* layout stuff */
     // --------------------------- Layout / positioning constraints ---------------------------
     //
@@ -157,17 +158,7 @@ namespace NewArch {
     // ------------------------------------------------------------------------------------------
 
 
-    struct Constraints {
-
-        simd_float2 origin{};
-        simd_float2 cursor{};
-        float maxWidth{};
-        float maxHeight{};
     
-        FrameInfo frameInfo{}; // viewport size (for fixed)
-        
-        // TODO: include padding details (in form of available width/height)
-    };
 
     enum Position {
         Absolute,
@@ -180,6 +171,24 @@ namespace NewArch {
         Inline
     };
 
+    struct EdgeIntent {
+        Display edgeDisplayMode{Display::Block};
+        float intent{};
+        bool collapsable {};
+    };
+
+    struct Constraints {
+        simd_float2 origin{};
+        simd_float2 cursor{};
+        float maxWidth{};
+        float maxHeight{};
+    
+        FrameInfo frameInfo{}; // viewport size (for fixed)
+
+        EdgeIntent edgeIntent{};
+        // TODO: include padding details (in form of available width/height)
+    };
+
     struct LayoutInput {
         Position position;
         Display display;
@@ -188,7 +197,7 @@ namespace NewArch {
         
         float width, height; // width and height of total box?
         float top, left, bottom, right; // for absolute positioning
-        float margin;
+        float margin, marginLeft, marginRight, marginTop, marginBottom;
         float padding, paddingLeft, paddingRight, paddingTop, paddingBottom;
     };
 
@@ -215,6 +224,7 @@ namespace NewArch {
     
         simd_float2 siblingCursor;
         bool outOfFlow; // don't change siblings
+        EdgeIntent edgeIntent;
     };
     
     struct LayoutEngine {

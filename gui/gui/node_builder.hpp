@@ -54,6 +54,16 @@ namespace NewArch {
         { t.paddingLeft } -> std::same_as<std::optional<float>&>;
     };
 
+    template <typename T>
+    concept HasMargin = requires(T& t) { 
+        { t.margin } -> std::convertible_to<float>;
+        { t.marginTop } -> std::same_as<std::optional<float>&>;
+        { t.marginRight } -> std::same_as<std::optional<float>&>;
+        { t.marginBottom } -> std::same_as<std::optional<float>&>;
+        { t.marginLeft } -> std::same_as<std::optional<float>&>;
+    };
+
+
     template <ElementType E, typename P>
         requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
     struct NodeBuilder {
@@ -76,6 +86,7 @@ namespace NewArch {
 
             root->attach_child(std::move(n));
         }
+
         
         
         static void reparent(TreeNode* newParent, TreeNode* child) {
@@ -219,6 +230,49 @@ namespace NewArch {
             desc.paddingLeft = padding;
             return *this;
         }
+
+        // margin
+
+        NodeBuilder<E,P>& margin(float margin) requires HasMargin<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.margin = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginTop(float margin) requires HasMargin<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.marginTop = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginRight(float margin) requires HasMargin<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.marginRight = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginBottom(float margin) requires HasMargin<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.marginBottom = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginLeft(float margin) requires HasMargin<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.marginLeft = margin;
+            return *this;
+        }
+        
 
         using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, const Event& event)>;
 

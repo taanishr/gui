@@ -43,6 +43,9 @@ namespace NewArch {
         
         Display display;
         Position position;
+
+        float margin;
+        std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
     };
 
 
@@ -222,6 +225,8 @@ namespace NewArch {
                     
                     atoms.push_back(atom);
                     continue;
+                }else if (ch == ' '){
+                    atom.canPlaceOnNewLine = true;
                 }
 
 
@@ -296,6 +301,16 @@ namespace NewArch {
             LayoutInput li;
             li.display = desc.display;
             li.position = desc.position;
+
+            li.marginTop = desc.margin;
+            li.marginRight = desc.margin;
+            li.marginBottom = desc.margin;
+            li.marginLeft = desc.margin;
+            
+            if (desc.marginTop.has_value()) li.marginTop = *desc.marginTop;
+            if (desc.marginRight.has_value()) li.marginRight = *desc.marginRight;
+            if (desc.marginBottom.has_value()) li.marginBottom = *desc.marginBottom;
+            if (desc.marginLeft.has_value()) li.marginLeft = *desc.marginLeft;
 
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
