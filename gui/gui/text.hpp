@@ -7,6 +7,7 @@
 
 #pragma once
 #include "frame_buffered_buffer.hpp"
+#include "element.hpp"
 #include "renderer_constants.hpp"
 #include "freetype.hpp"
 #include "glyphs.hpp"
@@ -44,6 +45,10 @@ namespace NewArch {
         
         Display display;
         Position position;
+
+        std::any request(std::any payload) {
+            return std::nullopt;
+        }
 
         float margin;
         std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
@@ -94,6 +99,11 @@ namespace NewArch {
         {
             return fragment;
         }
+
+        std::any request(RequestTarget target, std::any payload) {
+            return std::nullopt;
+        }
+        
         
         TextDescriptor desc;
         Fragment<S> fragment;

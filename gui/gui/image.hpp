@@ -8,6 +8,7 @@
 #pragma once
 #include "fragment_types.hpp"
 #include "frame_buffered_buffer.hpp"
+#include "element.hpp"
 #include "renderer_constants.hpp"
 #include "MTKTexture_loader.hpp"
 #include <format>
@@ -24,6 +25,11 @@ namespace NewArch {
 
     struct ImageDescriptor {
         ImageDescriptor();
+
+        std::any request(std::any payload) {
+            return std::nullopt;
+        }
+        
 
         float width  = 0.0f;
         float height = 0.0f;
@@ -94,7 +100,12 @@ namespace NewArch {
         {
             return fragment;
         }
+
+        std::any request(RequestTarget target, std::any payload) {
+            return std::nullopt;
+        }
         
+
         ImageDescriptor desc;
         Fragment<S> fragment;
 

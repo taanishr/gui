@@ -10,7 +10,9 @@
 #include "fragment_types.hpp"
 #include <format>
 #include <mutex>
+#include <optional>
 #include <print>
+#include "element.hpp"
 #include "new_arch.hpp"
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
@@ -37,6 +39,12 @@ struct std::formatter<NewArch::DivPoint> : std::formatter<float>
 namespace NewArch {
     struct DivDescriptor {
         DivDescriptor();
+
+
+        std::any request(std::any payload) {
+            return std::nullopt;
+        }
+        
 
         Size width;
         Size height;
@@ -101,7 +109,11 @@ namespace NewArch {
         {
             return fragment;
         }
-        
+
+        std::any request(RequestTarget target, std::any payload) {
+            return std::nullopt;
+        }
+
         DivDescriptor desc;
         Fragment<S> fragment;
 

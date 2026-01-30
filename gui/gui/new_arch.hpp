@@ -10,11 +10,13 @@
 #include "printers.hpp"
 #include "metal_imports.hpp"
 #include "frame_info.hpp"
+#include <concepts>
 #include <cstdint>
 #include <ranges>
 #include "MTKTexture_loader.hpp"
 #include <format>
 #include "AppKit_Extensions.hpp"
+#include <any>
 
 using namespace std::ranges::views;
 
@@ -158,7 +160,15 @@ namespace NewArch {
     // ------------------------------------------------------------------------------------------
 
 
-    
+
+    template<typename D>
+    concept DescriptorType = requires(
+        D d,
+        std::any payload
+    ) 
+    {
+        { d.request(payload) } -> std::same_as<std::any>;
+    };
 
     enum Position {
         Absolute,

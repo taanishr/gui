@@ -1,5 +1,5 @@
 #include "element.hpp"
-#include "gui/text.hpp"
+#include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
 #include <print>
