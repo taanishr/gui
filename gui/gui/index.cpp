@@ -43,8 +43,7 @@ auto index() -> void {
                     .font(ArialBold)
                     .marginLeft(10)
                     .marginRight(10),
-
-                    text("fsdfsdfsdadadssdsfsdsds")
+                text("fsdfsdfsda   dadssdsfsdsds")
                     .fontSize(16.0)
                     .font(ArialBold)
             ),

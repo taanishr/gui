@@ -42,7 +42,7 @@ namespace NewArch {
 
 
         std::any request(std::any payload) {
-            return std::nullopt;
+            return std::any{};
         }
         
 
@@ -111,7 +111,15 @@ namespace NewArch {
         }
 
         std::any request(RequestTarget target, std::any payload) {
-            return std::nullopt;
+            switch (target) {
+                case RequestTarget::Descriptor: 
+                {
+                    return desc.request(payload);
+                }
+                default: {
+                    return std::any{};
+                }
+            }
         }
 
         DivDescriptor desc;
@@ -356,10 +364,6 @@ namespace NewArch {
                 .placed = placed,
                 .uniforms = uniforms
             };
-        }
-
-        std::any request(std::any payload) {
-            return std::nullopt;
         }
         
         void encode(MTL::RenderCommandEncoder* encoder, Fragment<S>& fragment, Finalized<U>& finalized) {

@@ -22,7 +22,7 @@ namespace NewArch {
 
 
     template<typename E>
-    concept ElementType = requires(E& e, RequestTarget target, std::any payload) {
+    concept ElementType = requires(E& e, RequestTarget target, std::any& payload) {
         e.getDescriptor();
         e.getFragment();
         { e.request(target, payload) } -> std::same_as<std::any>;
@@ -43,7 +43,6 @@ namespace NewArch {
         Placed& placed,
         Finalized<U>& finalized,
         LayoutResult layout,
-        std::any payload,
         MTL::RenderCommandEncoder* encoder
     ) {
         { proc.measure(fragment, constraints, desc) } -> std::same_as<Measured>;
@@ -51,7 +50,6 @@ namespace NewArch {
         { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
         { proc.finalize(fragment, constraints, desc, measured, atomized, placed) } -> std::same_as<Finalized<U>>;
-        { proc.request(payload) } -> std::same_as<std::any>;
         proc.encode(encoder, fragment, finalized);
     };
 
@@ -62,7 +60,7 @@ namespace NewArch {
         virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
-        virtual std::any request(std::any& payload) = 0;
+        virtual std::any request(RequestTarget target, std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
         virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout) {
             return true; 
@@ -101,8 +99,8 @@ namespace NewArch {
             return finalizedErased;
         }
 
-        std::any request(std::any& payload) override {
-            return std::nullopt;
+        std::any request(RequestTarget target, std::any& payload) override {
+            return element.request(target, payload);
         };
 
         void encode(MTL::RenderCommandEncoder* encoder, std::any& finalizedErased) override {
