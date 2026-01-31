@@ -2,6 +2,7 @@
 #include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
+#include <cstdint>
 #include <print>
 #include <simd/vector_types.h>
 
@@ -126,39 +127,93 @@ namespace NewArch {
             "layoutPhase called before measurePhase");
         assert(node->atomized.has_value() && 
             "layoutPhase called before atomizePhase");
-            
+
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
         
+
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
 
         auto childConstraints =  layout.childConstraints;
 
-        // childConstraints.origin = constraints.origin; // add static check later
-
-        // start with prev = parent
-        // increasingly change prev as we see in flow elements
-        // generate margin negoatiations function
-
-        // std::println("in layoutPhase: layout.childConstraints.origin.x: {}", (float)layout.childConstraints.origin.x);
-
         // precompute lineboxes
-        std::vector<Line> lineBoxes;
-        for (auto& child : node->children) {
-            // LineRequest lr {
-            //     .atomized = atomized,
-            //     // .descriptor = node->
-            // };
+        std::vector<std::vector<Line>> childrenLineboxes;
 
-            // if (node->element->request(std::any &payload)) {
+        for (uint64_t i = 0; i < node->children.size(); ++i) {
+            auto& child = node->children[i];
 
-            // }
+            std::vector<Line> childLineboxes;
 
+            // request
+            DescriptorPayload rawPayload {
+                GetField{
+                    .name="text"
+                },
+            };
+            std::any payload = rawPayload;
+            auto resp = child->element->request(RequestTarget::Descriptor, payload);
+
+            // value check
+            if (resp.has_value()) {
+                auto text = std::any_cast<std::string>(resp);
+
+                float runningWidth = 0.0;
+                size_t runningAtomCount = 0;
+                bool isFirstLinebox = true;
+
+                auto& atoms = child->atomized->atoms;
+                size_t idx = 0;
+
+                while (idx < text.size() && idx < atoms.size()) {
+                    char ch = text[idx];
+
+                    if (ch != ' ') {
+                        // Non-space: accumulate
+                        runningWidth += atoms[idx].width;
+                        runningAtomCount++;
+                        idx++;
+                    } else {
+                        // Space: add all consecutive spaces to current linebox
+                        while (idx < text.size() && text[idx] == ' ') {
+                            runningWidth += atoms[idx].width;
+                            runningAtomCount++;
+                            idx++;
+                        }
+                        // Push linebox with trailing spaces
+                        if (runningAtomCount > 0) {
+                            childLineboxes.push_back({
+                                .width = runningWidth,
+                                .atomCount = runningAtomCount,
+                                .collapsable = isFirstLinebox
+                            });
+                            isFirstLinebox = false;
+                        }
+                        runningWidth = 0.0;
+                        runningAtomCount = 0;
+                    }
+                }
+
+                // Push final linebox if any
+                if (runningAtomCount > 0) {
+                    childLineboxes.push_back({
+                        .width = runningWidth,
+                        .atomCount = runningAtomCount,
+                        .collapsable = isFirstLinebox
+                    });
+                }
+            }
+
+            childrenLineboxes.push_back(childLineboxes);
         }
-
-        for (auto& child : node->children) {
+        
+        for (uint64_t i = 0; i < node->children.size(); ++i) {
+            auto& child = node->children[i];
             auto childAsPtr = child.get();
+
+            // Pass precomputed lineboxes to child
+            childConstraints.lineboxes = childrenLineboxes[i];
+
             layoutPhase(childAsPtr, frameInfo, childConstraints);
             auto childLayout = *childAsPtr->layout;
 

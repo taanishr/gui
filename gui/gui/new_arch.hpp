@@ -13,7 +13,6 @@
 #include <concepts>
 #include <cstdint>
 #include <ranges>
-#include "MTKTexture_loader.hpp"
 #include <format>
 #include "AppKit_Extensions.hpp"
 #include <any>
@@ -41,8 +40,14 @@ namespace NewArch {
         std::vector<AtomPlacement> placements;
     };
 
-    struct FinalizedBase {
+    struct Line {
+        float width;
+        size_t atomCount;
+        bool collapsable;
     };
+
+
+    struct FinalizedBase {};
 
     template <typename U>
     struct Finalized : FinalizedBase {
@@ -170,6 +175,10 @@ namespace NewArch {
         { d.request(payload) } -> std::same_as<std::any>;
     };
 
+    struct GetFull {};
+    struct GetField { std::string name; };
+    using DescriptorPayload = std::variant<GetFull, GetField>;
+
     enum Position {
         Absolute,
         Fixed,
@@ -196,6 +205,8 @@ namespace NewArch {
         FrameInfo frameInfo{}; // viewport size (for fixed)
 
         EdgeIntent edgeIntent{};
+
+        std::vector<Line> lineboxes {};
         // TODO: include padding details (in form of available width/height)
     };
 

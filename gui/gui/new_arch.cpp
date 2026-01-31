@@ -188,7 +188,6 @@ namespace NewArch {
 
     // relative, block/inline
     LayoutResult LayoutEngine::layoutBlockNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized) {
-        // TODO: reset cursor if to default position ??
         LayoutResult lr;
         std::vector<simd_float2> atomOffsets;
         Constraints childConstraints;
@@ -259,82 +258,140 @@ namespace NewArch {
     }
 
     LayoutResult LayoutEngine::layoutInlineNormalFlow(
-        Constraints& constraints, 
-        simd_float2 currentCursor, 
-        LayoutInput& layoutInput, 
+        Constraints& constraints,
+        simd_float2 currentCursor,
+        LayoutInput& layoutInput,
         Atomized& atomized
     ) {
         LayoutResult lr;
         lr.outOfFlow = false;
-        
+
         std::vector<simd_float2> atomOffsets;
         simd_float2 newCursor = currentCursor;
-        // newCursor.x += layoutInput.marginLeft;
-        if (constraints.edgeIntent.edgeDisplayMode == Block) {
-            if (constraints.edgeIntent.collapsable) {
-                newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
-            }else {
-                newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
-            }
 
-            newCursor.x += layoutInput.marginLeft;
-        }else if (constraints.edgeIntent.edgeDisplayMode == Inline){
-            if (constraints.edgeIntent.collapsable) {
-                newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
-            }else {
-                newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
-            }
-        }
-
-        lr.childConstraints.origin = currentCursor; // double check this
+        lr.childConstraints.origin = currentCursor;
         float lineHeight = 0;
-        float totalWidth = 0;
         float totalHeight = 0;
         float minX = currentCursor.x;
         float maxX = currentCursor.x;
-        
-        for (auto& atom : atomized.atoms) {
-            // hmtl css only breaks on white space. I need to change this to preprocess line boxes? Idk
-            if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
-                || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
-                newCursor.x = constraints.origin.x;
-                newCursor.y += lineHeight;
-                totalHeight += lineHeight;
-                lineHeight = 0;
-            }
-            
-            atomOffsets.push_back(newCursor);
-            newCursor.x += atom.width;
 
-            lineHeight = std::max(lineHeight, atom.height);
-            
-            minX = std::min(minX, newCursor.x - atom.width);
-            maxX = std::max(maxX, newCursor.x);
+        size_t atomIndex = 0;
+
+        if (constraints.lineboxes.empty()) {
+            if (constraints.edgeIntent.edgeDisplayMode == Block) {
+                if (constraints.edgeIntent.collapsable) {
+                    newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
+                } else {
+                    newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
+                }
+                newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+            } else {
+                if (constraints.edgeIntent.collapsable) {
+                    newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                } else {
+                    newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                }
+            }
+
+            for (auto& atom : atomized.atoms) {
+                if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
+                    || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
+                    newCursor.x = constraints.origin.x;
+                    newCursor.y += lineHeight;
+                    totalHeight += lineHeight;
+                    lineHeight = 0;
+                }
+
+                atomOffsets.push_back(newCursor);
+                newCursor.x += atom.width;
+                lineHeight = std::max(lineHeight, atom.height);
+                minX = std::min(minX, atomOffsets.back().x);
+                maxX = std::max(maxX, newCursor.x);
+            }
+        } else {
+            for (size_t lineIdx = 0; lineIdx < constraints.lineboxes.size(); ++lineIdx) {
+                const Line& line = constraints.lineboxes[lineIdx];
+
+                if (lineIdx == 0) {
+                    if (constraints.edgeIntent.edgeDisplayMode == Inline) {
+                        if (line.collapsable) {
+                            if (constraints.edgeIntent.collapsable) {
+                                newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                            } else {
+                                newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                            }
+                        } else {
+                            if (newCursor.x + line.width > constraints.origin.x + constraints.maxWidth) {
+                                newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+                                newCursor.y += lineHeight;
+                                totalHeight += lineHeight;
+                                lineHeight = 0;
+                            } else {
+                                if (constraints.edgeIntent.collapsable) {
+                                    newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                                } else {
+                                    newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                                }
+                            }
+                        }
+                    } else {
+                        if (constraints.edgeIntent.collapsable) {
+                            newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
+                        } else {
+                            newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
+                        }
+                        newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+                    }
+                } else {
+                    if (line.collapsable) {
+                    } else {
+                        if (newCursor.x + line.width > constraints.origin.x + constraints.maxWidth) {
+                            newCursor.x = constraints.origin.x;
+                            newCursor.y += lineHeight;
+                            totalHeight += lineHeight;
+                            lineHeight = 0;
+                        }
+                    }
+                }
+
+                for (size_t i = 0; i < line.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
+                    auto& atom = atomized.atoms[atomIndex];
+
+                    if (atom.placeOnNewLine) {
+                        newCursor.x = constraints.origin.x;
+                        newCursor.y += lineHeight;
+                        totalHeight += lineHeight;
+                        lineHeight = 0;
+                    }
+
+                    atomOffsets.push_back(newCursor);
+                    newCursor.x += atom.width;
+                    lineHeight = std::max(lineHeight, atom.height);
+                    minX = std::min(minX, atomOffsets.back().x);
+                    maxX = std::max(maxX, newCursor.x);
+                }
+            }
         }
-        
+
         totalHeight += lineHeight;
-        totalWidth = maxX - minX;
-        
+        float totalWidth = maxX - minX;
+
         lr.computedBox = {
             minX,
             currentCursor.y,
             totalWidth,
             totalHeight
         };
-        
+
         lr.childConstraints.cursor = {minX + layoutInput.paddingLeft, currentCursor.y + layoutInput.paddingTop};
         lr.childConstraints.maxWidth = totalWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
         lr.childConstraints.maxHeight = totalHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
         lr.childConstraints.frameInfo = constraints.frameInfo;
-        
+
         lr.atomOffsets = atomOffsets;
         lr.consumedHeight = totalHeight;
-        
-        if (newCursor.x >= constraints.origin.x + constraints.maxWidth) {
-            lr.siblingCursor = {constraints.origin.x, newCursor.y + lineHeight};
-        } else {
-            lr.siblingCursor = {newCursor.x, newCursor.y};
-        }
+
+        lr.siblingCursor = newCursor;
 
         lr.edgeIntent = {
             .edgeDisplayMode = Inline,

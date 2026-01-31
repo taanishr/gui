@@ -13,8 +13,10 @@
 #include "glyphs.hpp"
 #include "glyphCache.hpp"
 #include <mutex>
+#include <optional>
 #include <print>
 #include "new_arch.hpp"
+#include "overloaded.hpp"
 #include <any>
 
 namespace NewArch {
@@ -22,6 +24,10 @@ namespace NewArch {
         simd_float2 point;
         int metadataIndex;
         int id;
+    };
+
+    struct TextRequestPayload {
+        
     };
 }
 
@@ -46,27 +52,36 @@ namespace NewArch {
         Display display;
         Position position;
 
-        std::any request(std::any payload) {
-            return std::nullopt;
+        std::any request(std::any const& payloadAny) {
+            if (!payloadAny.has_value()) return std::any{};
+
+            if (auto payloadPtr = std::any_cast<DescriptorPayload>(&payloadAny)) {
+                return std::visit(Overloaded{
+                    [this](GetFull const&) -> std::any {
+                        return std::any(*this);
+                    },
+
+                    [this](GetField const& f) -> std::any {
+                        if (f.name == "text")     return this->text;
+                        if (f.name == "font")     return this->font;
+                        if (f.name == "fontSize") return this->fontSize;
+                        if (f.name == "color")    return this->color;
+                        return std::any{};
+                    }
+                }, *payloadPtr);
+            }
+
+            return std::any{};
         }
 
         float margin;
         std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
     };
-
-    struct LineRequest {
-        TextDescriptor& descriptor;
-        Atomized& atomized;
-    };
-
-    struct Line {
-        float width;
-        bool collapsable;
-    };
-
+    
     struct TextUniforms {
         simd_float4 color;
     };
+
 
     struct TextStorage {
         TextStorage(UIContext& ctx):
@@ -100,11 +115,18 @@ namespace NewArch {
             return fragment;
         }
 
-        std::any request(RequestTarget target, std::any payload) {
-            return std::nullopt;
+        std::any request(RequestTarget target, std::any& payload) {
+            switch (target) {
+                case RequestTarget::Descriptor: 
+                {
+                    return desc.request(payload);
+                }
+                default: {
+                    return std::any{};
+                }
+            }
         }
-        
-        
+    
         TextDescriptor desc;
         Fragment<S> fragment;
 
@@ -403,37 +425,6 @@ namespace NewArch {
 
         }
 
-        std::any request(std::any payload) {
-            if (LineRequest* req = std::any_cast<LineRequest>(&payload)) {
-                std::vector<Line> lines;
-
-                float runningWidth = 0.0;
-
-                for (auto [ch, atom] : zip(req->descriptor.text, req->atomized.atoms)) {
-                    if (ch == ' ') {
-                        lines.push_back({
-                            .width = runningWidth,
-                            .collapsable = false
-                        });
-                        runningWidth = 0.0;
-                    }
-
-                    runningWidth += atom.width;
-                }               
-
-                if (runningWidth > 0.0) {
-                    lines.push_back({
-                        .width = runningWidth,
-                        .collapsable = true
-                    });
-                }
-
-                return lines;
-            }
-
-            return std::nullopt;
-        }
-        
         ~TextProcessor() {}
 
         // shared glyph cache wrapper?
