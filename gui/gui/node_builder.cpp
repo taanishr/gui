@@ -41,7 +41,7 @@ namespace NewArch {
     }
 
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
-                    float width, float height)
+                    Size width, Size height)
     {
         auto& ctx = ContextManager::getContext();
         auto& proc = getImageProcessor(ctx);
@@ -50,7 +50,7 @@ namespace NewArch {
         desc.path = path;
         desc.width = width;
         desc.height = height;
-        
+
         auto currTree = TreeStack::getCurrentTree();
 
         return NodeBuilder(ctx, *currTree, std::move(elem), proc);

@@ -1,4 +1,5 @@
 #include "index.hpp"
+#include "sizing.hpp"
 #include <print>
 #include <simd/vector_types.h>
 
@@ -29,8 +30,10 @@ auto index() -> void {
                 // .position(NewArch::Absolute)
                 // .top(30)
                 .marginTop(30)
-                .marginBottom(20)
-                .marginLeft(20)
+                .marginLeft(NewArch::Size::autoSize())
+                .marginRight(NewArch::Size::autoSize())
+                // .marginBottom(20)
+                // .marginLeft(20)
                 .cornerRadius(7.5)
                 .paddingLeft(9.0)
                 .paddingTop(4.5)
@@ -42,10 +45,13 @@ auto index() -> void {
                     .fontSize(16.0)
                     .font(ArialBold)
                     .marginLeft(10)
-                    .marginRight(10),
-                text("fsdfsdfsda   dadssdsfsdsds")
+                    .marginRight(10)
+                    .color(simd_float4{0,0,0,1})
+                    ,
+                text("fsdfsdfsda   dads sdsfsdsds")
                     .fontSize(16.0)
                     .font(ArialBold)
+                    .color(simd_float4{0,0,0,1})
             ),
             div(
                 NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}

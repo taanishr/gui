@@ -15,6 +15,52 @@
 
 namespace NewArch {
 
+    // Resolve auto margins for centering
+    LayoutEngine::ResolvedMargins LayoutEngine::resolveAutoMargins(
+        const LayoutInput& li,
+        float availableWidth,
+        float contentWidth
+    ) {
+        ResolvedMargins margins;
+
+        // Vertical margins: auto resolves to 0
+        margins.top = li.marginTop.resolveOr(0.0f, 0.0f);
+        margins.bottom = li.marginBottom.resolveOr(0.0f, 0.0f);
+
+        // Horizontal margins: check for auto centering
+        bool leftAuto = li.marginLeft.isAuto();
+        bool rightAuto = li.marginRight.isAuto();
+
+        if (leftAuto && rightAuto) {
+            // Both auto: center horizontally
+            float remainingSpace = availableWidth - contentWidth;
+            if (remainingSpace > 0) {
+                float autoMargin = remainingSpace / 2.0f;
+                margins.left = autoMargin;
+                margins.right = autoMargin;
+            } else {
+                // No space: auto resolves to 0
+                margins.left = 0.0f;
+                margins.right = 0.0f;
+            }
+        } else if (leftAuto) {
+            // Only left auto: push to right (absorb remaining space)
+            margins.right = li.marginRight.resolveOr(availableWidth, 0.0f);
+            float remainingSpace = availableWidth - contentWidth - margins.right;
+            margins.left = std::max(0.0f, remainingSpace);
+        } else if (rightAuto) {
+            // Only right auto: resolves to 0 (default left alignment)
+            margins.left = li.marginLeft.resolveOr(availableWidth, 0.0f);
+            margins.right = 0.0f;
+        } else {
+            // Neither auto: resolve normally
+            margins.left = li.marginLeft.resolveOr(availableWidth, 0.0f);
+            margins.right = li.marginRight.resolveOr(availableWidth, 0.0f);
+        }
+
+        return margins;
+    }
+
     // pipeline specific
     UIContext::UIContext(MTL::Device* device, MTK::View* view):
         device{device},
@@ -69,8 +115,12 @@ namespace NewArch {
 
         simd_float2 absolutePosition = constraints.origin;
 
-        absolutePosition.x += layoutInput.left + layoutInput.marginLeft; // add rules for bottom/right later. They are effecitvely useless unless you use bot-0 right-0, which I havent implemented yet
-        absolutePosition.y += layoutInput.top + layoutInput.marginTop;
+        // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
+        float marginLeft = layoutInput.marginLeft.resolveOr(constraints.maxWidth, 0.0f);
+        float marginTop = layoutInput.marginTop.resolveOr(constraints.maxHeight, 0.0f);
+
+        absolutePosition.x += layoutInput.left + marginLeft;
+        absolutePosition.y += layoutInput.top + marginTop;
 
         simd_float2 newCursor = absolutePosition;
 
@@ -123,9 +173,9 @@ namespace NewArch {
         - Position and final atom placement are independent of scrolling of any containing block.
     */
     LayoutResult LayoutEngine::layoutFixed(
-        Constraints& constraints, 
-        simd_float2 currentCursor, 
-        LayoutInput& layoutInput, 
+        Constraints& constraints,
+        simd_float2 currentCursor,
+        LayoutInput& layoutInput,
         Atomized& atomized
     ) {
         LayoutResult lr;
@@ -133,10 +183,13 @@ namespace NewArch {
 
         simd_float2 viewportOrigin = {0.0f, 0.0f};
         simd_float2 fixedPosition = viewportOrigin;
-    
 
-        fixedPosition.x += layoutInput.left + layoutInput.marginLeft;
-        fixedPosition.y += layoutInput.top + layoutInput.marginTop;
+        // Resolve margins (Auto resolves to 0 for fixed positioning)
+        float marginLeft = layoutInput.marginLeft.resolveOr(constraints.frameInfo.width, 0.0f);
+        float marginTop = layoutInput.marginTop.resolveOr(constraints.frameInfo.height, 0.0f);
+
+        fixedPosition.x += layoutInput.left + marginLeft;
+        fixedPosition.y += layoutInput.top + marginTop;
         
         simd_float2 newCursor = fixedPosition;
         float resolvedHeight = 0.0f;
@@ -192,41 +245,54 @@ namespace NewArch {
         std::vector<simd_float2> atomOffsets;
         Constraints childConstraints;
 
+        // First compute content dimensions from atoms
+        float contentWidth = 0;
+        float contentHeight = 0;
+        for (auto& atom : atomized.atoms) {
+            contentWidth += atom.width;
+            contentHeight = std::max(contentHeight, atom.height);
+        }
+
+        // If explicit width specified, use that for margin calculation
+        if (layoutInput.width > 0) {
+            contentWidth = layoutInput.width;
+        }
+
+        // Resolve auto margins for potential centering
+        auto margins = resolveAutoMargins(layoutInput, constraints.maxWidth, contentWidth);
+
         float startingX = constraints.origin.x;
         float startingY = constraints.cursor.y;
-        
+
+        // Handle vertical margin collapse
         if (constraints.edgeIntent.edgeDisplayMode == Display::Block) {
-            if (constraints.edgeIntent.collapsable) {
-                startingY += std::max(constraints.edgeIntent.intent, layoutInput.marginTop);
-            }else {
-                startingY += constraints.edgeIntent.intent + layoutInput.marginTop;
+            if (constraints.edgeIntent.collapsable && !layoutInput.marginTop.isAuto()) {
+                startingY += std::max(constraints.edgeIntent.intent, margins.top);
+            } else {
+                startingY += constraints.edgeIntent.intent + margins.top;
             }
         }
 
-        startingX += layoutInput.marginLeft;
-
+        // Apply left margin (now potentially auto-computed for centering)
+        startingX += margins.left;
 
         simd_float2 newCursor {startingX, startingY};
 
-
         lr.outOfFlow = false;
-        
+
         float resolvedWidth = 0;
         float resolvedHeight = 0;
         childConstraints.cursor.x = startingX + layoutInput.paddingLeft;
         childConstraints.cursor.y = startingY + layoutInput.paddingTop;
         childConstraints.origin = childConstraints.cursor;
         childConstraints.frameInfo = constraints.frameInfo;
-            
-    
+
         for (auto& atom : atomized.atoms) {
             atomOffsets.push_back(newCursor);
             newCursor.x += atom.width;
             resolvedWidth += atom.width;
             resolvedHeight = std::max(resolvedHeight, atom.height);
         }
-
-        // add resolved width check (not sure what behavior should be)
 
         lr.computedBox = {
             startingX,
@@ -236,7 +302,7 @@ namespace NewArch {
         };
 
         lr.consumedHeight = resolvedHeight;
-                
+
         childConstraints.maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
         childConstraints.maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
 
@@ -248,12 +314,13 @@ namespace NewArch {
 
         lr.siblingCursor = newCursor;
 
+        // Auto margins don't participate in margin collapse
         lr.edgeIntent = {
             .edgeDisplayMode = Display::Block,
-            .intent = layoutInput.marginBottom,
-            .collapsable = true,
+            .intent = margins.bottom,
+            .collapsable = !layoutInput.marginBottom.isAuto(),
         };
-        
+
         return lr;
     }
 
@@ -265,6 +332,12 @@ namespace NewArch {
     ) {
         LayoutResult lr;
         lr.outOfFlow = false;
+
+        // For inline elements, auto margins resolve to 0
+        float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
+        float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
+        float marginBottom = layoutInput.marginBottom.resolveOr(0.0f, 0.0f);
+        float marginLeft = layoutInput.marginLeft.resolveOr(0.0f, 0.0f);
 
         std::vector<simd_float2> atomOffsets;
         simd_float2 newCursor = currentCursor;
@@ -280,16 +353,16 @@ namespace NewArch {
         if (constraints.lineboxes.empty()) {
             if (constraints.edgeIntent.edgeDisplayMode == Block) {
                 if (constraints.edgeIntent.collapsable) {
-                    newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
+                    newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
                 } else {
-                    newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
+                    newCursor.y += marginTop + constraints.edgeIntent.intent;
                 }
-                newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+                newCursor.x = constraints.origin.x + marginLeft;
             } else {
                 if (constraints.edgeIntent.collapsable) {
-                    newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                    newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
                 } else {
-                    newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                    newCursor.x += marginLeft + constraints.edgeIntent.intent;
                 }
             }
 
@@ -316,31 +389,31 @@ namespace NewArch {
                     if (constraints.edgeIntent.edgeDisplayMode == Inline) {
                         if (line.collapsable) {
                             if (constraints.edgeIntent.collapsable) {
-                                newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                                newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
                             } else {
-                                newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                                newCursor.x += marginLeft + constraints.edgeIntent.intent;
                             }
                         } else {
                             if (newCursor.x + line.width > constraints.origin.x + constraints.maxWidth) {
-                                newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+                                newCursor.x = constraints.origin.x + marginLeft;
                                 newCursor.y += lineHeight;
                                 totalHeight += lineHeight;
                                 lineHeight = 0;
                             } else {
                                 if (constraints.edgeIntent.collapsable) {
-                                    newCursor.x += std::max(layoutInput.marginLeft, constraints.edgeIntent.intent);
+                                    newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
                                 } else {
-                                    newCursor.x += layoutInput.marginLeft + constraints.edgeIntent.intent;
+                                    newCursor.x += marginLeft + constraints.edgeIntent.intent;
                                 }
                             }
                         }
                     } else {
                         if (constraints.edgeIntent.collapsable) {
-                            newCursor.y += std::max(layoutInput.marginTop, constraints.edgeIntent.intent);
+                            newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
                         } else {
-                            newCursor.y += layoutInput.marginTop + constraints.edgeIntent.intent;
+                            newCursor.y += marginTop + constraints.edgeIntent.intent;
                         }
-                        newCursor.x = constraints.origin.x + layoutInput.marginLeft;
+                        newCursor.x = constraints.origin.x + marginLeft;
                     }
                 } else {
                     if (line.collapsable) {
@@ -395,7 +468,7 @@ namespace NewArch {
 
         lr.edgeIntent = {
             .edgeDisplayMode = Inline,
-            .intent = layoutInput.marginRight,
+            .intent = marginRight,
             .collapsable = false,
         };
 
