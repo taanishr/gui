@@ -278,21 +278,6 @@ namespace NewArch {
         LayoutResult layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult layoutFixed(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-
-        // break into lines
-        std::vector<LineBox> breakIntoLines(
-            const std::vector<Atom>& atoms,
-            float availableWidth,
-            float startY
-        );
-
-        // using atom_indices, apply the offsets
-        void placeAtomsInLines(
-            const std::vector<LineBox>& lines,
-            const std::vector<Atom>& atoms,
-            std::vector<simd_float2>& outOffsets
-        );
-
         LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
     };
 
