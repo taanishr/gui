@@ -44,19 +44,21 @@ namespace NewArch {
         std::any request(std::any payload) {
             return std::any{};
         }
-        
+
 
         Size width;
         Size height;
-        
+
         simd_float4 color;
         float cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
         float padding;
         std::optional<float> paddingLeft, paddingRight, paddingTop, paddingBottom;
-        float margin;
-        std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
+
+        // Margins use Size to support Auto for centering
+        Size margin;
+        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
 
         float top, left;
 
@@ -207,13 +209,11 @@ namespace NewArch {
         Measured measure(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
             Measured measured {};
 
-            // std::println("div node: {} constraints.width: {} constraints.height: {}", reinterpret_cast<void*>(&desc), constraints.maxWidth, constraints.maxHeight);
-
             // starting with just one type of measurement; for now, we keep it simple, just desc width and height
             measured.id = fragment.id;
-            measured.explicitWidth = desc.width.resolve(constraints.maxWidth);
-            measured.explicitHeight = desc.height.resolve(constraints.maxHeight);
-            
+            measured.explicitWidth = desc.width.resolveOr(constraints.maxWidth, 0.0f);
+            measured.explicitHeight = desc.height.resolveOr(constraints.maxHeight, 0.0f);
+
             return measured;
         }
         // resolve percents as explicit width/height, also resolve explicit width/height (like divs default 100% width?)
@@ -268,26 +268,25 @@ namespace NewArch {
             li.top = desc.top;
             li.left = desc.left;
 
+            // Pass explicit width/height for margin auto centering calculation
+            li.width = measured.explicitWidth;
+            li.height = measured.explicitHeight;
+
             li.paddingTop = desc.padding;
             li.paddingRight = desc.padding;
             li.paddingBottom = desc.padding;
             li.paddingLeft = desc.padding;
-            
+
             if (desc.paddingTop.has_value()) li.paddingTop = *desc.paddingTop;
             if (desc.paddingRight.has_value()) li.paddingRight = *desc.paddingRight;
             if (desc.paddingBottom.has_value()) li.paddingBottom = *desc.paddingBottom;
             if (desc.paddingLeft.has_value()) li.paddingLeft = *desc.paddingLeft;
 
-            
-            li.marginTop = desc.margin;
-            li.marginRight = desc.margin;
-            li.marginBottom = desc.margin;
-            li.marginLeft = desc.margin;
-            
-            if (desc.marginTop.has_value()) li.marginTop = *desc.marginTop;
-            if (desc.marginRight.has_value()) li.marginRight = *desc.marginRight;
-            if (desc.marginBottom.has_value()) li.marginBottom = *desc.marginBottom;
-            if (desc.marginLeft.has_value()) li.marginLeft = *desc.marginLeft;
+            // Margins use Size to support Auto
+            li.marginTop = desc.marginTop.value_or(desc.margin);
+            li.marginRight = desc.marginRight.value_or(desc.margin);
+            li.marginBottom = desc.marginBottom.value_or(desc.margin);
+            li.marginLeft = desc.marginLeft.value_or(desc.margin);
 
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 

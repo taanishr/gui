@@ -55,12 +55,12 @@ namespace NewArch {
     };
 
     template <typename T>
-    concept HasMargin = requires(T& t) { 
-        { t.margin } -> std::convertible_to<float>;
-        { t.marginTop } -> std::same_as<std::optional<float>&>;
-        { t.marginRight } -> std::same_as<std::optional<float>&>;
-        { t.marginBottom } -> std::same_as<std::optional<float>&>;
-        { t.marginLeft } -> std::same_as<std::optional<float>&>;
+    concept HasMargin = requires(T& t) {
+        { t.margin } -> std::same_as<Size&>;
+        { t.marginTop } -> std::same_as<std::optional<Size>&>;
+        { t.marginRight } -> std::same_as<std::optional<Size>&>;
+        { t.marginBottom } -> std::same_as<std::optional<Size>&>;
+        { t.marginLeft } -> std::same_as<std::optional<Size>&>;
     };
 
 
@@ -231,9 +231,13 @@ namespace NewArch {
             return *this;
         }
 
-        // margin
+        // margin - accepts float (converts to Size::px) or Size directly
 
         NodeBuilder<E,P>& margin(float margin) requires HasMargin<typename E::DescriptorType> {
+            return this->margin(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& margin(Size margin) requires HasMargin<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -242,6 +246,10 @@ namespace NewArch {
         }
 
         NodeBuilder<E,P>& marginTop(float margin) requires HasMargin<typename E::DescriptorType> {
+            return this->marginTop(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginTop(Size margin) requires HasMargin<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -250,6 +258,10 @@ namespace NewArch {
         }
 
         NodeBuilder<E,P>& marginRight(float margin) requires HasMargin<typename E::DescriptorType> {
+            return this->marginRight(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginRight(Size margin) requires HasMargin<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -258,6 +270,10 @@ namespace NewArch {
         }
 
         NodeBuilder<E,P>& marginBottom(float margin) requires HasMargin<typename E::DescriptorType> {
+            return this->marginBottom(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginBottom(Size margin) requires HasMargin<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -266,13 +282,17 @@ namespace NewArch {
         }
 
         NodeBuilder<E,P>& marginLeft(float margin) requires HasMargin<typename E::DescriptorType> {
+            return this->marginLeft(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginLeft(Size margin) requires HasMargin<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
             desc.marginLeft = margin;
             return *this;
         }
-        
+
 
         using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, const Event& event)>;
 
@@ -298,5 +318,5 @@ namespace NewArch {
                  float fontSize = 24.0f, simd_float4 color = {1, 1, 1, 1}, 
                  const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
-                    float width = 0.0f, float height = 0.0f);
+                    Size width = Size::px(0), Size height = Size::px(0));
 }

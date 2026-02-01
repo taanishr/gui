@@ -29,17 +29,21 @@ namespace NewArch {
         std::any request(std::any payload) {
             return std::any{};
         }
-        
 
-        float width  = 0.0f;
-        float height = 0.0f;
+
+        Size width;
+        Size height;
         std::string path;
         float cornerRadius = 0.0f;
         float borderWidth = 0.0f;
         simd_float4 borderColor = {0,0,0,1};
 
         Display display;
-        Position position; 
+        Position position;
+
+        // Margins use Size to support Auto
+        Size margin;
+        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
     };
 
     struct ImageStyleUniforms {
@@ -232,7 +236,7 @@ namespace NewArch {
 
         }
 
-        Measured measure(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc) {
+        Measured measure(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc) {
             Measured measured;
             measured.id = fragment.id;
 
@@ -240,9 +244,14 @@ namespace NewArch {
                 initializeTexture(fragment, desc.path);
             }
 
-            float width = desc.width;
-            float height = desc.height;
+            // Resolve width/height, falling back to intrinsic size if Auto or 0
+            auto resolvedWidth = desc.width.resolve(constraints.maxWidth);
+            auto resolvedHeight = desc.height.resolve(constraints.maxHeight);
 
+            float width = resolvedWidth.value_or(0.0f);
+            float height = resolvedHeight.value_or(0.0f);
+
+            // Fall back to intrinsic size if not specified
             if (width == 0.0f || height == 0.0f) {
                 auto intrinsic = fragment.fragmentStorage.intrinsicSize;
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
@@ -293,6 +302,17 @@ namespace NewArch {
             LayoutInput li;
             li.display = desc.display;
             li.position = desc.position;
+
+            // Pass explicit width/height for margin auto centering calculation
+            li.width = measured.explicitWidth;
+            li.height = measured.explicitHeight;
+
+            // Margins use Size to support Auto
+            li.marginTop = desc.marginTop.value_or(desc.margin);
+            li.marginRight = desc.marginRight.value_or(desc.margin);
+            li.marginBottom = desc.marginBottom.value_or(desc.margin);
+            li.marginLeft = desc.marginLeft.value_or(desc.margin);
+
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 
             return lr;

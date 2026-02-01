@@ -74,10 +74,11 @@ namespace NewArch {
             return std::any{};
         }
 
-        float margin;
-        std::optional<float> marginLeft, marginRight, marginTop, marginBottom;
+        // Margins use Size to support Auto
+        Size margin;
+        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
     };
-    
+
     struct TextUniforms {
         simd_float4 color;
     };
@@ -344,15 +345,15 @@ namespace NewArch {
             li.display = desc.display;
             li.position = desc.position;
 
-            li.marginTop = desc.margin;
-            li.marginRight = desc.margin;
-            li.marginBottom = desc.margin;
-            li.marginLeft = desc.margin;
-            
-            if (desc.marginTop.has_value()) li.marginTop = *desc.marginTop;
-            if (desc.marginRight.has_value()) li.marginRight = *desc.marginRight;
-            if (desc.marginBottom.has_value()) li.marginBottom = *desc.marginBottom;
-            if (desc.marginLeft.has_value()) li.marginLeft = *desc.marginLeft;
+            // Pass explicit width/height (text is content-sized)
+            li.width = measured.explicitWidth;
+            li.height = measured.explicitHeight;
+
+            // Margins use Size to support Auto
+            li.marginTop = desc.marginTop.value_or(desc.margin);
+            li.marginRight = desc.marginRight.value_or(desc.margin);
+            li.marginBottom = desc.marginBottom.value_or(desc.margin);
+            li.marginLeft = desc.marginLeft.value_or(desc.margin);
 
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
 

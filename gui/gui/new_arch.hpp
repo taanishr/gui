@@ -10,6 +10,7 @@
 #include "printers.hpp"
 #include "metal_imports.hpp"
 #include "frame_info.hpp"
+#include "sizing.hpp"
 #include <concepts>
 #include <cstdint>
 #include <ranges>
@@ -213,13 +214,20 @@ namespace NewArch {
     struct LayoutInput {
         Position position;
         Display display;
-        
-        // TODO: include padding details (in form of paddingLeft/paddingRight etc...)
-        
-        float width, height; // width and height of total box?
-        float top, left, bottom, right; // for absolute positioning
-        float margin, marginLeft, marginRight, marginTop, marginBottom;
-        float padding, paddingLeft, paddingRight, paddingTop, paddingBottom;
+
+        float width, height; // resolved width and height of total box
+        float top, left, bottom, right; // resolved values for absolute positioning
+
+        // Margins use Size to support Auto for centering
+        Size marginTop, marginRight, marginBottom, marginLeft;
+
+        // Padding (resolved, no Auto support)
+        float paddingTop, paddingRight, paddingBottom, paddingLeft;
+
+        // Helper to check if horizontal margins are both auto (for centering)
+        bool hasHorizontalAutoMargins() const {
+            return marginLeft.isAuto() && marginRight.isAuto();
+        }
     };
 
     struct LineBox {
@@ -249,30 +257,42 @@ namespace NewArch {
     };
     
     struct LayoutEngine {
+        // Resolved margins after handling Auto
+        struct ResolvedMargins {
+            float top, right, bottom, left;
+        };
+
+        // Resolve auto margins for centering
+        ResolvedMargins resolveAutoMargins(
+            const LayoutInput& li,
+            float availableWidth,
+            float contentWidth
+        );
+
         // relative, block/inline
         LayoutResult layoutBlockNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult layoutInlineNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult resolveNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        
+
         // fixed and absolute, block/inline
         LayoutResult layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult layoutFixed(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
         LayoutResult resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        
+
         // break into lines
         std::vector<LineBox> breakIntoLines(
             const std::vector<Atom>& atoms,
             float availableWidth,
             float startY
         );
-        
+
         // using atom_indices, apply the offsets
         void placeAtomsInLines(
             const std::vector<LineBox>& lines,
             const std::vector<Atom>& atoms,
             std::vector<simd_float2>& outOffsets
         );
-    
+
         LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
     };
 
