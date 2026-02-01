@@ -13,21 +13,31 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include <objc/runtime.h>
 #include "events.hpp"
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 
 struct HandlerState {
     std::function<void(char ch)> keyboardHandler;
     std::function<void(float x, float y)> mouseDownHandler;
-    std::function<void()> resizeHandler;
 };
 
 
 class MTKViewDelegate : public MTK::ViewDelegate {
 public:
     MTKViewDelegate(MTL::Device* device, MTK::View* view);
+    ~MTKViewDelegate();
+
+    void resizeWatcher();
+
     void drawInMTKView(MTK::View* view) override;
     void drawableSizeWillChange(MTK::View* view, CGSize frameSize) override;
     MTK::View* view;
     std::unique_ptr<Renderer> renderer;
+    std::condition_variable cv;
+    std::mutex m;
+    bool ready;
+    std::thread resizeThread;
 };
 
 class AppDelegate : public NS::ApplicationDelegate {

@@ -46,15 +46,43 @@ extern "C" void mouseDown(id self, SEL _cmd, id event) {
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     view{view},
-    renderer{new Renderer{device, view}}
+    renderer{new Renderer{device, view}},
+    cv{},
+    m{},
+    ready{false}
 {
     renderer->makeCurrent();
+    resizeThread = std::thread(&MTKViewDelegate::resizeWatcher, this);
+}
+
+void MTKViewDelegate::resizeWatcher() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(m);
+
+        cv.wait_for(lock, std::chrono::milliseconds(100), [&] { return ready; });
+        if (!ready) continue;
+
+        ready = false;
+        lock.unlock();
+        ContextManager::getContext().updateView();
+    }
+
 }
 
 void MTKViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize frameSize) {
-    std::println("changing?");
-    ContextManager::getContext().updateView();
-}  
+    std::lock_guard<std::mutex> lock(m);
+    ready = true;
+    cv.notify_one();
+}
+
+
+MTKViewDelegate::~MTKViewDelegate() {
+
+    if (resizeThread.joinable()) {
+        resizeThread.join();
+    }
+}
+
 
 void MTKViewDelegate::drawInMTKView(MTK::View* view)
 {
