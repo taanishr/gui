@@ -19,7 +19,9 @@ namespace NewArch {
         Descriptor,
     };
 
-
+    struct TreeConstraints {
+        bool collapseWithAncestor;
+    };  
 
     template<typename E>
     concept ElementType = requires(E& e, RequestTarget target, std::any& payload) {
@@ -182,6 +184,7 @@ namespace NewArch {
         uint64_t id;
         uint64_t localZIndex;
         uint64_t globalZIndex;
+        TreeConstraints treeLayoutConstraints {}; // wrap in tree
 
         std::optional<Measured> measured;
         std::optional<Atomized> atomized;
@@ -221,6 +224,7 @@ namespace NewArch {
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
 
+        void layoutPreprocess(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 
 

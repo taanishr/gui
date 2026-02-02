@@ -208,7 +208,9 @@ namespace NewArch {
         EdgeIntent edgeIntent{};
 
         std::vector<Line> lineboxes {};
-        // TODO: include padding details (in form of available width/height)
+        
+        // todo: add margin overwrites
+        Size overwrittenMargin{}; // overwritten margins
     };
 
     struct LayoutInput {
