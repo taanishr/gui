@@ -33,7 +33,7 @@ auto index() -> void {
                 .marginTop(30)
                 .marginLeft(NewArch::Size::autoSize())
                 .marginRight(NewArch::Size::autoSize())
-                .cornerRadius(NewArch::Size::px(7.5))
+                .cornerRadius(NewArch::Size::percent(7.5))
                 .paddingLeft(NewArch::Size::px(9.0))
                 .paddingTop(NewArch::Size::px(4.5))
                 .borderColor(simd_float4{0.77,0.71,1.0,1.0})

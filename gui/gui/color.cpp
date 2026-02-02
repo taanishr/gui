@@ -19,6 +19,15 @@ simd_float4 RGB::get() const
     return normalized;
 }
 
+/*
+inline float rounded_rect_sdf(float2 pt, float2 halfExtent, float r)
+{
+    r = clamp(r, 0.0, min(halfExtent.x, halfExtent.y));
+    float2 q = abs(pt) - halfExtent + r;
+    return length(max(q, 0.0)) + min(max(q.x,q.y),0.0) - r;
+}
+*/
+
 Hex::Hex(int hexCode)
 {
     int r = std::clamp((hexCode >> 16) & 0xff, 0, 255);

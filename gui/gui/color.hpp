@@ -28,6 +28,8 @@ struct Hex {
     simd_float4 normalized;
 };
 
+
+
 template <typename T>
 concept ColorType = requires(T t) {
     { t.get() } -> std::convertible_to<simd_float4>;
