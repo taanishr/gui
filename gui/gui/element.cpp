@@ -2,6 +2,7 @@
 #include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
+#include <any>
 #include <cstdint>
 #include <print>
 #include <simd/vector_types.h>
@@ -121,6 +122,60 @@ namespace NewArch {
         node->atomized = atomized;
     }
 
+    void RenderTree::layoutPreprocess(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
+        // do asserts here
+        
+        TreeNode* firstInFlowChild = nullptr;
+
+        TreeNode* lastInFlowChild = nullptr;
+
+        DescriptorPayload rawPayload {
+            GetField{
+                .name="Position"
+            },
+        };
+
+        std::any payload {rawPayload};
+
+        for (auto& child : node->children) {
+            // if request says in flow (not absolute/fixed)
+                // if firstInFlowChild == nullptr; set
+                // set lastInFlowChild (want last one)
+
+
+            auto resp = child->element->request(RequestTarget::Descriptor, payload);
+
+            if (resp.has_value()) {
+                auto flow = std::any_cast<Position>(resp);
+
+                if (flow == Position::Relative) {
+                    if (firstInFlowChild == nullptr) firstInFlowChild = child.get();
+                    lastInFlowChild = child.get();
+                }
+            }
+        }
+
+        // if firstInFlowChild == nullptr (both are null)
+            // check if size == 0 (useless condition, here for clarity)
+                // if in flow
+                    // this->collapseWithAncestor = true
+                // return
+            // otherwise, still preprocess children
+                // find first/last child; preprocess
+                // this->collapseWithAncestor = false
+                // return
+
+        
+        if (firstInFlowChild) {
+            firstInFlowChild->treeConstraints.collapseWithAncestor = true;
+            lastInFlowChild->treeConstraints.collapseWithAncestor = true;
+        }
+
+        for (auto& child : node->children) {
+            layoutPreprocess(child.get(), frameInfo, constraints);
+        }
+    }
+
     // DONE SERIALLY
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         assert(node->measured.has_value() && 
@@ -132,6 +187,11 @@ namespace NewArch {
         auto& atomized = *node->atomized;
         
 
+        // check constraints.parentMarginCollapses (only true if relative)
+            // if true 
+            // set first child's parentCollapses to true
+
+
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
 
@@ -139,6 +199,11 @@ namespace NewArch {
 
         // precompute lineboxes
         std::vector<std::vector<Line>> childrenLineboxes;
+
+        // check first child
+            // request margin ?
+
+        // update margin ? of child and parent if it has margin and parent has no padding?
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
@@ -153,6 +218,8 @@ namespace NewArch {
             };
             std::any payload = rawPayload;
             auto resp = child->element->request(RequestTarget::Descriptor, payload);
+
+            
 
             // value check
             if (resp.has_value()) {
