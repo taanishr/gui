@@ -50,17 +50,17 @@ namespace NewArch {
         Size height;
 
         simd_float4 color;
-        float cornerRadius;
-        float borderWidth;
+        Size cornerRadius;
+        Size borderWidth;
         simd_float4 borderColor;
-        float padding;
-        std::optional<float> paddingLeft, paddingRight, paddingTop, paddingBottom;
+        Size padding;
+        std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
 
         // Margins use Size to support Auto for centering
         Size margin;
         std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
 
-        float top, left;
+        Size top, left;
 
         Display display;
         Position position;
@@ -327,12 +327,18 @@ namespace NewArch {
         Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
         {
             // finalizes uniforms and return finalized object
+
+            float borderWidth = 0.0;
+
+            if (desc.borderWidth.unit == Unit::Px) {
+                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for
+            }
             
             // style uniforms
             DivStyleUniforms styleUniforms{
                 .color = desc.color,
-                .cornerRadius = desc.cornerRadius,
-                .borderWidth = desc.borderWidth,
+                .cornerRadius = desc.cornerRadius.resolveOr(constraints.maxWidth), // eventually have it in two directions
+                .borderWidth = borderWidth,
                 .borderColor = desc.borderColor
             };
             

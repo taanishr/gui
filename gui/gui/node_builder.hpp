@@ -47,11 +47,11 @@ namespace NewArch {
 
     template <typename T>
     concept HasPadding = requires(T& t) { 
-        { t.padding } -> std::convertible_to<float>;
-        { t.paddingTop } -> std::same_as<std::optional<float>&>;
-        { t.paddingRight } -> std::same_as<std::optional<float>&>;
-        { t.paddingBottom } -> std::same_as<std::optional<float>&>;
-        { t.paddingLeft } -> std::same_as<std::optional<float>&>;
+        { t.padding } -> std::convertible_to<Size>;
+        { t.paddingTop } -> std::same_as<std::optional<Size>&>;
+        { t.paddingRight } -> std::same_as<std::optional<Size>&>;
+        { t.paddingBottom } -> std::same_as<std::optional<Size>&>;
+        { t.paddingLeft } -> std::same_as<std::optional<Size>&>;
     };
 
     template <typename T>
@@ -151,7 +151,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& fontSize(float size) requires HasFontSize<typename E::DescriptorType> {
+        NodeBuilder<E,P>& fontSize(Size size) requires HasFontSize<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -159,7 +159,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& cornerRadius(float radius) requires HasCornerRadius<typename E::DescriptorType> {
+        NodeBuilder<E,P>& cornerRadius(Size radius) requires HasCornerRadius<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -167,7 +167,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& borderWidth(float width) requires HasBorderWidth<typename E::DescriptorType> {
+        NodeBuilder<E,P>& borderWidth(Size width) requires HasBorderWidth<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -175,7 +175,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& top(float top) requires HasTop<typename E::DescriptorType> {
+        NodeBuilder<E,P>& top(Size top) requires HasTop<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -183,7 +183,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& left(float left) requires HasLeft<typename E::DescriptorType> {
+        NodeBuilder<E,P>& left(Size left) requires HasLeft<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -191,7 +191,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& padding(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& padding(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -199,7 +199,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& paddingTop(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& paddingTop(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -207,7 +207,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& paddingRight(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& paddingRight(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -215,7 +215,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& paddingBottom(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& paddingBottom(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -223,7 +223,7 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& paddingLeft(float padding) requires HasPadding<typename E::DescriptorType> {
+        NodeBuilder<E,P>& paddingLeft(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
@@ -315,7 +315,7 @@ namespace NewArch {
 
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color);
     NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
-                 float fontSize = 24.0f, simd_float4 color = {1, 1, 1, 1}, 
+                 Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 
                  const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
                     Size width = Size::px(0), Size height = Size::px(0));

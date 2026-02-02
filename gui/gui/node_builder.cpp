@@ -22,7 +22,7 @@ namespace NewArch {
     }
 
     NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
-                 float fontSize, simd_float4 color, 
+                 Size fontSize, simd_float4 color, 
                  const std::string& font)
     {
         auto& ctx = ContextManager::getContext();
