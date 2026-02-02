@@ -47,7 +47,7 @@ namespace NewArch {
         std::string text;
         std::string font;
         simd_float4 color;
-        float fontSize;
+        Size fontSize;
         
         Display display;
         Position position;
@@ -272,8 +272,13 @@ namespace NewArch {
                     atom.canPlaceOnNewLine = true;
                 }
 
+                float fontSize = 0.0;
 
-                GlyphQuery glyphQuery { ch, desc.font, desc.fontSize };
+                if (desc.fontSize.unit == Unit::Pt) {
+                    fontSize = desc.fontSize.resolveOr(0.0);
+                }
+
+                GlyphQuery glyphQuery { ch, desc.font, fontSize };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;

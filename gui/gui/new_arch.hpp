@@ -216,13 +216,13 @@ namespace NewArch {
         Display display;
 
         float width, height; // resolved width and height of total box
-        float top, left, bottom, right; // resolved values for absolute positioning
+        Size top, left, bottom, right; // resolved values for absolute positioning
 
         // Margins use Size to support Auto for centering
         Size marginTop, marginRight, marginBottom, marginLeft;
 
         // Padding (resolved, no Auto support)
-        float paddingTop, paddingRight, paddingBottom, paddingLeft;
+        Size paddingTop, paddingRight, paddingBottom, paddingLeft;
 
         // Helper to check if horizontal margins are both auto (for centering)
         bool hasHorizontalAutoMargins() const {

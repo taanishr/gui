@@ -81,8 +81,6 @@ namespace NewArch {
     void UIContext::updateView() {
         auto frameDimensions = this->view->drawableSize();
 
-        std::println("width: {} height: {}", frameDimensions.width, frameDimensions.width);
-
         auto scale = AppKit_Extensions::getContentScaleFactor(reinterpret_cast<void*>(view));
 
         FrameInfo frameInfo {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = scale};
@@ -119,8 +117,12 @@ namespace NewArch {
         float marginLeft = layoutInput.marginLeft.resolveOr(constraints.maxWidth, 0.0f);
         float marginTop = layoutInput.marginTop.resolveOr(constraints.maxHeight, 0.0f);
 
-        absolutePosition.x += layoutInput.left + marginLeft;
-        absolutePosition.y += layoutInput.top + marginTop;
+
+        float left = layoutInput.left.resolveOr(constraints.maxWidth);
+        float top = layoutInput.top.resolveOr(constraints.maxHeight);
+        
+        absolutePosition.x += left + marginLeft;
+        absolutePosition.y += top + marginTop;
 
         simd_float2 newCursor = absolutePosition;
 
@@ -142,11 +144,16 @@ namespace NewArch {
 
         // std::println("resolvedWidth: {}", resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight);
 
+        float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
+        float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
+        float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
+        float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
+
         lr.childConstraints = {
-            .origin = {absolutePosition.x + layoutInput.paddingLeft, absolutePosition.y + layoutInput.paddingTop},
-            .cursor = {absolutePosition.x + layoutInput.paddingLeft, absolutePosition.y + layoutInput.paddingTop},
-            .maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight,
-            .maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom,
+            .origin = {absolutePosition.x + paddingLeft, absolutePosition.y + paddingTop},
+            .cursor = {absolutePosition.x + paddingLeft, absolutePosition.y + paddingTop},
+            .maxWidth = resolvedWidth - paddingLeft - paddingRight,
+            .maxHeight = resolvedHeight - paddingTop - paddingBottom,
             .frameInfo = constraints.frameInfo
         };
 
@@ -188,8 +195,11 @@ namespace NewArch {
         float marginLeft = layoutInput.marginLeft.resolveOr(constraints.frameInfo.width, 0.0f);
         float marginTop = layoutInput.marginTop.resolveOr(constraints.frameInfo.height, 0.0f);
 
-        fixedPosition.x += layoutInput.left + marginLeft;
-        fixedPosition.y += layoutInput.top + marginTop;
+        float left = layoutInput.left.resolveOr(constraints.maxWidth);
+        float top = layoutInput.top.resolveOr(constraints.maxHeight);
+        
+        fixedPosition.x += left + marginLeft;
+        fixedPosition.y += top + marginTop;
         
         simd_float2 newCursor = fixedPosition;
         float resolvedHeight = 0.0f;
@@ -208,11 +218,16 @@ namespace NewArch {
         lr.siblingCursor = currentCursor;
         lr.consumedHeight = 0;
 
+        float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
+        float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
+        float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
+        float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
+
         lr.childConstraints = {
             .origin = viewportOrigin,
-            .cursor = {fixedPosition.x + layoutInput.paddingLeft, fixedPosition.y + layoutInput.paddingTop},                  
-            .maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight,
-            .maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom,
+            .cursor = {fixedPosition.x + paddingLeft, fixedPosition.y + paddingTop},                  
+            .maxWidth = resolvedWidth - paddingLeft - paddingRight,
+            .maxHeight = resolvedHeight - paddingTop - paddingBottom,
             .frameInfo = constraints.frameInfo
         };
 
@@ -282,8 +297,14 @@ namespace NewArch {
 
         float resolvedWidth = 0;
         float resolvedHeight = 0;
-        childConstraints.cursor.x = startingX + layoutInput.paddingLeft;
-        childConstraints.cursor.y = startingY + layoutInput.paddingTop;
+
+        float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
+        float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
+        float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
+        float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
+
+        childConstraints.cursor.x = startingX + paddingLeft;
+        childConstraints.cursor.y = startingY + paddingTop;
         childConstraints.origin = childConstraints.cursor;
         childConstraints.frameInfo = constraints.frameInfo;
 
@@ -303,8 +324,8 @@ namespace NewArch {
 
         lr.consumedHeight = resolvedHeight;
 
-        childConstraints.maxHeight = resolvedHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
-        childConstraints.maxWidth = resolvedWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
+        childConstraints.maxHeight = resolvedHeight - paddingTop - paddingBottom;
+        childConstraints.maxWidth = resolvedWidth - paddingLeft - paddingRight;
 
         lr.childConstraints = childConstraints;
         lr.atomOffsets = atomOffsets;
@@ -456,9 +477,14 @@ namespace NewArch {
             totalHeight
         };
 
-        lr.childConstraints.cursor = {minX + layoutInput.paddingLeft, currentCursor.y + layoutInput.paddingTop};
-        lr.childConstraints.maxWidth = totalWidth - layoutInput.paddingLeft - layoutInput.paddingRight;
-        lr.childConstraints.maxHeight = totalHeight - layoutInput.paddingTop - layoutInput.paddingBottom;
+        float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
+        float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
+        float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
+        float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
+
+        lr.childConstraints.cursor = {minX + paddingLeft, currentCursor.y + paddingTop};
+        lr.childConstraints.maxWidth = totalWidth - paddingLeft - paddingRight;
+        lr.childConstraints.maxHeight = totalHeight - paddingTop - paddingBottom;
         lr.childConstraints.frameInfo = constraints.frameInfo;
 
         lr.atomOffsets = atomOffsets;
