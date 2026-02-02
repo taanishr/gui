@@ -68,7 +68,7 @@ namespace NewArch {
 
     struct DivStyleUniforms {
         simd_float4 color;
-        float cornerRadius;
+        simd_float2 cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
     };
@@ -333,6 +333,11 @@ namespace NewArch {
             if (desc.borderWidth.unit == Unit::Px) {
                 borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for
             }
+
+            simd_float2 cornerRadius {
+                desc.cornerRadius.resolveOr(constraints.maxWidth),
+                desc.cornerRadius.resolveOr(constraints.maxHeight)
+            };
             
             // style uniforms
             DivStyleUniforms styleUniforms{

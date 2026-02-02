@@ -21,10 +21,10 @@ struct DivVertexOut {
 };
 
 struct DivStyleUniforms {
-    simd_float4 color;
-    float cornerRadius;
+    float4 color;
+    float2 cornerRadius;
     float borderWidth;
-    simd_float4 borderColor;
+    float4 borderColor;
 };
 
 struct DivGeometryUniforms {

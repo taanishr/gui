@@ -34,8 +34,8 @@ namespace NewArch {
         Size width;
         Size height;
         std::string path;
-        float cornerRadius = 0.0f;
-        float borderWidth = 0.0f;
+        Size cornerRadius {};
+        Size borderWidth {};
         simd_float4 borderColor = {0,0,0,1};
 
         Display display;
@@ -47,7 +47,7 @@ namespace NewArch {
     };
 
     struct ImageStyleUniforms {
-        float cornerRadius;
+        simd_float2 cornerRadius;
         float borderWidth;
         simd_float4 borderColor;
     };
@@ -347,10 +347,22 @@ namespace NewArch {
             return Placed{ .id = fragment.id, .placements = placements };
         }
 
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed) {
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed) {
+            float borderWidth = 0.0;
+
+            if (desc.borderWidth.unit == Unit::Px) {
+                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for
+            }
+
+            
+            simd_float2 cornerRadius {
+                desc.cornerRadius.resolveOr(constraints.maxWidth),
+                desc.cornerRadius.resolveOr(constraints.maxHeight)
+            };
+
             ImageStyleUniforms styleUniforms {
-                .cornerRadius = desc.cornerRadius,
-                .borderWidth = desc.borderWidth,
+                .cornerRadius = cornerRadius,
+                .borderWidth = borderWidth,
                 .borderColor = desc.borderColor
             };
 

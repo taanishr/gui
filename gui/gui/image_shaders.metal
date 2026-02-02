@@ -11,7 +11,7 @@
 using namespace metal;
 
 struct ImageStyleUniforms {
-    float cornerRadius;
+    float2 cornerRadius;
     float borderWidth;
     float4 borderColor;
 };
