@@ -19,8 +19,16 @@ namespace NewArch {
         Descriptor,
     };
 
-    struct TreeConstraints {
-        bool collapseWithAncestor;
+    struct TreeNode;
+
+    struct CollapsedChain {
+        TreeNode* root;
+        float intent;
+    };
+
+    struct MarginMetadata {
+        CollapsedChain topChain;
+        CollapsedChain bottomChain;
     };  
 
     template<typename E>
@@ -184,7 +192,7 @@ namespace NewArch {
         uint64_t id;
         uint64_t localZIndex;
         uint64_t globalZIndex;
-        TreeConstraints treeLayoutConstraints {}; // wrap in tree
+        MarginMetadata marginMetadata;
 
         std::optional<Measured> measured;
         std::optional<Atomized> atomized;
@@ -217,6 +225,7 @@ namespace NewArch {
     private:
         Constraints rootConstraints; // root constraints;
         simd_float2 rootCursor; // root cursor
+        CollapsedChain collapsedChains;
 
         std::unique_ptr<TreeNode> elementTree;
         LayoutEngine layoutEngine;
@@ -224,7 +233,7 @@ namespace NewArch {
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
 
-        void layoutPreprocess(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+        void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 
 
