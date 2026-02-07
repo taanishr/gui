@@ -58,6 +58,8 @@ namespace NewArch {
             }
         );
         
+        preLayoutPhase(root, frameInfo, rootConstraints);
+        
         layoutPhase(root, frameInfo, rootConstraints);
         root->calculateGlobalZIndex(0);
         
@@ -122,28 +124,18 @@ namespace NewArch {
         node->atomized = atomized;
     }
 
-    void RenderTree::layoutPreprocess(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        // do asserts here
-        
+    void buildCollapsedChains(std::vector<CollapsedChain>& collapsedChains,  CollapsedChain& collapsedTopChain, CollapsedChain& collapsedBottomChain, TreeNode* node) {
         TreeNode* firstInFlowChild = nullptr;
-
         TreeNode* lastInFlowChild = nullptr;
 
-        DescriptorPayload rawPayload {
+        std::any positionRequest {DescriptorPayload{
             GetField{
                 .name="Position"
             },
-        };
-
-        std::any payload {rawPayload};
+        }};
 
         for (auto& child : node->children) {
-            // if request says in flow (not absolute/fixed)
-                // if firstInFlowChild == nullptr; set
-                // set lastInFlowChild (want last one)
-
-
-            auto resp = child->element->request(RequestTarget::Descriptor, payload);
+            auto resp = child->element->request(RequestTarget::Descriptor, positionRequest);
 
             if (resp.has_value()) {
                 auto flow = std::any_cast<Position>(resp);
@@ -155,25 +147,123 @@ namespace NewArch {
             }
         }
 
-        // if firstInFlowChild == nullptr (both are null)
-            // check if size == 0 (useless condition, here for clarity)
-                // if in flow
-                    // this->collapseWithAncestor = true
-                // return
-            // otherwise, still preprocess children
-                // find first/last child; preprocess
-                // this->collapseWithAncestor = false
-                // return
+        std::any marginTopRequest {DescriptorPayload{
+            GetField{
+                .name="marginTop"
+            },
+        }};
 
-        
+        std::any marginBottomRequest {DescriptorPayload{
+            GetField{
+                .name="marginBottom"
+            },
+        }};
+
         if (firstInFlowChild) {
-            firstInFlowChild->treeConstraints.collapseWithAncestor = true;
-            lastInFlowChild->treeConstraints.collapseWithAncestor = true;
+            auto resp = firstInFlowChild->element->request(RequestTarget::Descriptor, marginTopRequest);
+
+            if (resp.has_value()) {
+                auto margin = std::any_cast<float>(resp);
+
+                collapsedTopChain.intent = std::max(collapsedTopChain.intent, margin);
+            }
+        }else {
+            collapsedChains.push_back(collapsedTopChain);
+        }
+
+        if (lastInFlowChild) {
+            auto resp = firstInFlowChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
+
+
+            if (resp.has_value()) {
+                auto margin = std::any_cast<float>(resp);
+
+                collapsedBottomChain.intent = std::max(collapsedTopChain.intent, margin);
+            }
+
+
+        }else {
+            collapsedChains.push_back(collapsedBottomChain);
         }
 
         for (auto& child : node->children) {
-            layoutPreprocess(child.get(), frameInfo, constraints);
+            auto rawChild = child.get();
+
+            if (rawChild == firstInFlowChild) {
+                auto resp = rawChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
+                float margin = 0.0;
+
+                if (resp.has_value()) {
+                    margin = std::any_cast<float>(resp);
+                }
+
+                CollapsedChain newCollapsedBottomChain {
+                    .root = rawChild,
+                    .intent = margin
+                };
+
+                buildCollapsedChains(collapsedChains, collapsedTopChain, newCollapsedBottomChain, rawChild);
+            }else if (rawChild == lastInFlowChild) {
+                auto resp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
+                float margin = 0.0;
+
+                if (resp.has_value()) {
+                    margin = std::any_cast<float>(resp);
+                }
+
+                CollapsedChain newCollapsedTopChain {
+                    .root = rawChild,
+                    .intent = margin
+                };
+
+                buildCollapsedChains(collapsedChains, newCollapsedTopChain, collapsedBottomChain, rawChild);
+            }else {
+                auto topResp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
+                auto botResp = rawChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
+
+                float marginTop = 0.0;
+                float marginBottom = 0.0;
+
+                if (topResp.has_value()) {
+                    marginTop = std::any_cast<float>(topResp);
+                }
+
+                if (botResp.has_value()) {
+                    marginBottom = std::any_cast<float>(botResp);
+                }
+
+                CollapsedChain newCollapsedTopChain {
+                    .root = rawChild,
+                    .intent = marginTop
+                };
+
+                CollapsedChain newCollapsedBottomChain {
+                    .root = rawChild,
+                    .intent = marginBottom
+                };
+
+                buildCollapsedChains(collapsedChains, newCollapsedTopChain, newCollapsedBottomChain, rawChild);
+            }
         }
+    }
+
+    void RenderTree::preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
+        // do asserts here
+        std::vector<CollapsedChain> collapsedChains;
+
+        CollapsedChain topChain {
+            .root = node,
+            .intent = 0,
+        };
+
+        CollapsedChain bottomChain {
+            .root = node,
+            .intent = 0,
+        };
+
+        buildCollapsedChains(collapsedChains, topChain, bottomChain, node);
+
+        std::println("collapsedChains size: {}", collapsedChains.size());
     }
 
     // DONE SERIALLY
