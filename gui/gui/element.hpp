@@ -6,6 +6,7 @@
 #include <any>
 #include <cstdint>
 #include <algorithm>
+#include <unordered_map>
 #include "frame_info.hpp"
 #include <optional>
 #include <print>
@@ -21,14 +22,18 @@ namespace NewArch {
 
     struct TreeNode;
 
+    using ChainID = uint64_t;
+
     struct CollapsedChain {
+        ChainID id;
         TreeNode* root;
-        float intent;
+        Size intent;
+        int depth;
     };
 
     struct MarginMetadata {
-        CollapsedChain topChain;
-        CollapsedChain bottomChain;
+        std::optional<ChainID> topChainId;
+        std::optional<ChainID> bottomChainId;
     };  
 
     template<typename E>
@@ -225,7 +230,8 @@ namespace NewArch {
     private:
         Constraints rootConstraints; // root constraints;
         simd_float2 rootCursor; // root cursor
-        CollapsedChain collapsedChains;
+        std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;
+        ChainID nextChainId = 0;
 
         std::unique_ptr<TreeNode> elementTree;
         LayoutEngine layoutEngine;

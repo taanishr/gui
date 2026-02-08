@@ -18,6 +18,7 @@
 #include "renderer_constants.hpp"
 #include "sizing.hpp"
 #include <any>
+#include "overloaded.hpp"
 
 namespace NewArch {
     struct DivPoint {
@@ -41,7 +42,48 @@ namespace NewArch {
         DivDescriptor();
 
 
-        std::any request(std::any payload) {
+        std::any request(std::any const& payloadAny) {
+            if (!payloadAny.has_value()) return std::any{};
+
+            if (auto payloadPtr = std::any_cast<DescriptorPayload>(&payloadAny)) {
+                return std::visit(Overloaded{
+                    [this](GetFull const&) -> std::any {
+                        return std::any(*this);
+                    },
+
+                    [this](GetField const& f) -> std::any {
+                        if (f.name == "color")    return this->color;
+                        if (f.name == "position") return this->position;
+                        if (f.name == "display") return this->display;
+                        if (f.name == "marginTop") {
+                            if (this->marginTop.has_value()) {
+                                return this->marginTop.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "marginBottom") {
+                            if (this->marginBottom.has_value()) {
+                                return this->marginBottom.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "paddingTop") {
+                            if (this->paddingTop.has_value()) {
+                                return this->paddingTop.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "paddingBottom") {
+                            if (this->paddingBottom.has_value()) {
+                                return this->paddingBottom.value();
+                            }
+                            return std::any{};
+                        }
+                        return std::any{};
+                    }
+                }, *payloadPtr);
+            }
+
             return std::any{};
         }
 

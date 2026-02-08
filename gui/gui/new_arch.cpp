@@ -18,14 +18,32 @@ namespace NewArch {
     // Resolve auto margins for centering
     LayoutEngine::ResolvedMargins LayoutEngine::resolveAutoMargins(
         const LayoutInput& li,
+        const ReplacedAttributes& replacedAttributes,
         float availableWidth,
         float contentWidth
     ) {
         ResolvedMargins margins;
 
         // Vertical margins: auto resolves to 0
-        margins.top = li.marginTop.resolveOr(0.0f, 0.0f);
+        // margins.top = li.marginTop.resolveOr(0.0f, 0.0f);
         margins.bottom = li.marginBottom.resolveOr(0.0f, 0.0f);
+
+        if (replacedAttributes.marginTop.has_value()) {
+            auto& replacedMarginTop = *replacedAttributes.marginTop;
+            // std::println("replaced margin top: {}", replacedMarginTop.resolveOr(0.0f, 0.0f));
+            margins.top = replacedMarginTop.resolveOr(0.0f, 0.0f);
+        }
+        else {
+            margins.top = li.marginTop.resolveOr(0.0f, 0.0f);
+        }
+
+        if (replacedAttributes.marginBottom.has_value()) {
+            auto replacedMarginBottom = *replacedAttributes.marginBottom;
+            margins.bottom = replacedMarginBottom.resolveOr(0.0f, 0.0f);
+        }
+        else {
+            margins.bottom = li.marginBottom.resolveOr(0.0f, 0.0f);
+        }
 
         // Horizontal margins: check for auto centering
         bool leftAuto = li.marginLeft.isAuto();
@@ -113,16 +131,18 @@ namespace NewArch {
 
         simd_float2 absolutePosition = constraints.origin;
 
-        // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
-        float marginLeft = layoutInput.marginLeft.resolveOr(constraints.maxWidth, 0.0f);
-        float marginTop = layoutInput.marginTop.resolveOr(constraints.maxHeight, 0.0f);
+        // // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
+        // float marginLeft = layoutInput.marginLeft.resolveOr(constraints.maxWidth, 0.0f);
+        // float marginTop = layoutInput.marginTop.resolveOr(constraints.maxHeight, 0.0f);
+
+        auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, layoutInput.width);
 
 
         float left = layoutInput.left.resolveOr(constraints.maxWidth);
         float top = layoutInput.top.resolveOr(constraints.maxHeight);
         
-        absolutePosition.x += left + marginLeft;
-        absolutePosition.y += top + marginTop;
+        absolutePosition.x += left + margins.left;
+        absolutePosition.y += top + margins.top;
 
         simd_float2 newCursor = absolutePosition;
 
@@ -268,13 +288,11 @@ namespace NewArch {
             contentHeight = std::max(contentHeight, atom.height);
         }
 
-        // If explicit width specified, use that for margin calculation
         if (layoutInput.width > 0) {
             contentWidth = layoutInput.width;
-        }
+        }       
 
-        // Resolve auto margins for potential centering
-        auto margins = resolveAutoMargins(layoutInput, constraints.maxWidth, contentWidth);
+        auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
 
         float startingX = constraints.origin.x;
         float startingY = constraints.cursor.y;
@@ -288,7 +306,6 @@ namespace NewArch {
             }
         }
 
-        // Apply left margin (now potentially auto-computed for centering)
         startingX += margins.left;
 
         simd_float2 newCursor {startingX, startingY};
