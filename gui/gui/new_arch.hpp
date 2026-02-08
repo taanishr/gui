@@ -17,6 +17,7 @@
 #include <format>
 #include "AppKit_Extensions.hpp"
 #include <any>
+#include <unordered_map>
 
 using namespace std::ranges::views;
 
@@ -197,6 +198,12 @@ namespace NewArch {
         bool collapsable {};
     };
 
+    // descriptor defines attributes; attributes can be replaced based on the tree structure (i.e. )
+    struct ReplacedAttributes {
+        std::optional<Size> marginTop{}; 
+        std::optional<Size> marginBottom{}; 
+    };
+
     struct Constraints {
         simd_float2 origin{};
         simd_float2 cursor{};
@@ -209,24 +216,20 @@ namespace NewArch {
 
         std::vector<Line> lineboxes {};
         
-        // todo: add margin overwrites
-        Size overwrittenMargin{}; // overwritten margins
+        ReplacedAttributes replacedAttributes {};
     };
 
     struct LayoutInput {
         Position position;
         Display display;
 
-        float width, height; // resolved width and height of total box
-        Size top, left, bottom, right; // resolved values for absolute positioning
+        float width, height; 
+        Size top, left, bottom, right;
 
-        // Margins use Size to support Auto for centering
         Size marginTop, marginRight, marginBottom, marginLeft;
 
-        // Padding (resolved, no Auto support)
         Size paddingTop, paddingRight, paddingBottom, paddingLeft;
 
-        // Helper to check if horizontal margins are both auto (for centering)
         bool hasHorizontalAutoMargins() const {
             return marginLeft.isAuto() && marginRight.isAuto();
         }
@@ -267,6 +270,7 @@ namespace NewArch {
         // Resolve auto margins for centering
         ResolvedMargins resolveAutoMargins(
             const LayoutInput& li,
+            const ReplacedAttributes& replacedAttributes,
             float availableWidth,
             float contentWidth
         );

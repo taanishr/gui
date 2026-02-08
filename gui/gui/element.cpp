@@ -4,6 +4,7 @@
 #include "printers.hpp"
 #include <any>
 #include <cstdint>
+#include <memory>
 #include <print>
 #include <simd/vector_types.h>
 
@@ -58,10 +59,17 @@ namespace NewArch {
             }
         );
         
+        // std::println("root ptr: {}", reinterpret_cast<void*>(root));
         preLayoutPhase(root, frameInfo, rootConstraints);
         
+        // for (auto& chain : collapsed) {
+        //     std
+        // }
+
         layoutPhase(root, frameInfo, rootConstraints);
         root->calculateGlobalZIndex(0);
+
+        // std::println("\n\n");
         
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
@@ -124,25 +132,33 @@ namespace NewArch {
         node->atomized = atomized;
     }
 
-    void buildCollapsedChains(std::vector<CollapsedChain>& collapsedChains,  CollapsedChain& collapsedTopChain, CollapsedChain& collapsedBottomChain, TreeNode* node) {
-        TreeNode* firstInFlowChild = nullptr;
-        TreeNode* lastInFlowChild = nullptr;
+    void buildCollapsedChains(std::unordered_map<ChainID, CollapsedChain>& chainMap, ChainID& nextChainId, CollapsedChain& collapsedTopChain, CollapsedChain& collapsedBottomChain, TreeNode* node, int depth = 0) {
+        TreeNode* firstInFlowCollapsableChild = nullptr;
+        TreeNode* lastInFlowCollapsableChild = nullptr;
 
         std::any positionRequest {DescriptorPayload{
             GetField{
-                .name="Position"
+                .name="position"
+            },
+        }};
+
+        std::any displayRequest {DescriptorPayload{
+            GetField{
+                .name="display"
             },
         }};
 
         for (auto& child : node->children) {
-            auto resp = child->element->request(RequestTarget::Descriptor, positionRequest);
+            auto positionResp = child->element->request(RequestTarget::Descriptor, positionRequest);
+            auto displayResp = child->element->request(RequestTarget::Descriptor, displayRequest);
 
-            if (resp.has_value()) {
-                auto flow = std::any_cast<Position>(resp);
+            if (positionResp.has_value() && displayResp.has_value()) {
+                auto position = std::any_cast<Position>(positionResp);
+                auto display = std::any_cast<Display>(displayResp);
 
-                if (flow == Position::Relative) {
-                    if (firstInFlowChild == nullptr) firstInFlowChild = child.get();
-                    lastInFlowChild = child.get();
+                if (position == Position::Relative && display == Display::Block) {
+                    if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
+                    lastInFlowCollapsableChild = child.get();
                 }
             }
         }
@@ -159,111 +175,194 @@ namespace NewArch {
             },
         }};
 
-        if (firstInFlowChild) {
-            auto resp = firstInFlowChild->element->request(RequestTarget::Descriptor, marginTopRequest);
+        std::any paddingTopRequest {DescriptorPayload{
+            GetField{
+                .name="paddingTop"
+            }
+        }};
+
+        std::any paddingBottomRequest {DescriptorPayload{
+            GetField{
+                .name="paddingBottom"
+            }
+        }};
+
+        // Note: node's chainIds are set by the parent before recursing into us.
+        // Here we only handle chain propagation logic (adding margins, incrementing depth, saving).
+
+        if (firstInFlowCollapsableChild) {
+            auto resp = firstInFlowCollapsableChild->element->request(RequestTarget::Descriptor, marginTopRequest);
 
             if (resp.has_value()) {
-                auto margin = std::any_cast<float>(resp);
-
-                collapsedTopChain.intent = std::max(collapsedTopChain.intent, margin);
+                auto margin = std::any_cast<Size>(resp);
+                if (margin.value > collapsedTopChain.intent.value) {
+                    collapsedTopChain.intent = margin;
+                }
             }
-        }else {
-            collapsedChains.push_back(collapsedTopChain);
+            collapsedTopChain.depth++;
+        } else {
+            chainMap[collapsedTopChain.id] = collapsedTopChain;
         }
 
-        if (lastInFlowChild) {
-            auto resp = firstInFlowChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
-
+        if (lastInFlowCollapsableChild) {
+            auto resp = lastInFlowCollapsableChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
 
             if (resp.has_value()) {
-                auto margin = std::any_cast<float>(resp);
-
-                collapsedBottomChain.intent = std::max(collapsedTopChain.intent, margin);
+                auto margin = std::any_cast<Size>(resp);
+                if (margin.value > collapsedBottomChain.intent.value) {
+                    collapsedBottomChain.intent = margin;
+                }
             }
-
-
-        }else {
-            collapsedChains.push_back(collapsedBottomChain);
+            collapsedBottomChain.depth++;
+        } else {
+            chainMap[collapsedBottomChain.id] = collapsedBottomChain;
         }
 
         for (auto& child : node->children) {
             auto rawChild = child.get();
 
-            if (rawChild == firstInFlowChild) {
-                auto resp = rawChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
-                float margin = 0.0;
+            // Check child's padding to determine if it blocks chain propagation
+            auto childPaddingTopResp = rawChild->element->request(RequestTarget::Descriptor, paddingTopRequest);
+            auto childPaddingBottomResp = rawChild->element->request(RequestTarget::Descriptor, paddingBottomRequest);
 
-                if (resp.has_value()) {
-                    margin = std::any_cast<float>(resp);
+            bool childBlocksTopChain = childPaddingTopResp.has_value();
+            bool childBlocksBottomChain = childPaddingBottomResp.has_value();
+
+            if (rawChild == firstInFlowCollapsableChild) {
+                // First child: belongs to collapsedTopChain, gets new bottom chain
+                rawChild->marginMetadata.topChainId = collapsedTopChain.id;
+
+                auto marginResp = rawChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
+                Size margin {};
+                if (marginResp.has_value()) {
+                    margin = std::any_cast<Size>(marginResp);
                 }
 
                 CollapsedChain newCollapsedBottomChain {
+                    .id = nextChainId++,
                     .root = rawChild,
-                    .intent = margin
+                    .intent = margin,
+                    .depth = 1
                 };
+                rawChild->marginMetadata.bottomChainId = newCollapsedBottomChain.id;
 
-                buildCollapsedChains(collapsedChains, collapsedTopChain, newCollapsedBottomChain, rawChild);
-            }else if (rawChild == lastInFlowChild) {
-                auto resp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
-                float margin = 0.0;
+                if (childBlocksTopChain) {
+                    // Child has padding-top: chain ends here, propagate fresh chain to descendants
+                    chainMap[collapsedTopChain.id] = collapsedTopChain;
 
-                if (resp.has_value()) {
-                    margin = std::any_cast<float>(resp);
+                    CollapsedChain newCollapsedTopChain {
+                        .id = nextChainId++,
+                        .root = rawChild,
+                        .intent = Size{},
+                        .depth = 0
+                    };
+                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
+                } else {
+                    buildCollapsedChains(chainMap, nextChainId, collapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
+                }
+
+            } else if (rawChild == lastInFlowCollapsableChild) {
+                // Last child: gets new top chain, belongs to collapsedBottomChain
+                auto marginResp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
+                Size margin {};
+                if (marginResp.has_value()) {
+                    margin = std::any_cast<Size>(marginResp);
                 }
 
                 CollapsedChain newCollapsedTopChain {
+                    .id = nextChainId++,
                     .root = rawChild,
-                    .intent = margin
+                    .intent = margin,
+                    .depth = 1
                 };
+                rawChild->marginMetadata.topChainId = newCollapsedTopChain.id;
+                rawChild->marginMetadata.bottomChainId = collapsedBottomChain.id;
 
-                buildCollapsedChains(collapsedChains, newCollapsedTopChain, collapsedBottomChain, rawChild);
-            }else {
+                if (childBlocksBottomChain) {
+                    // Child has padding-bottom: chain ends here, propagate fresh chain to descendants
+                    chainMap[collapsedBottomChain.id] = collapsedBottomChain;
+
+                    CollapsedChain newCollapsedBottomChain {
+                        .id = nextChainId++,
+                        .root = rawChild,
+                        .intent = Size{},
+                        .depth = 0
+                    };
+                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
+                } else {
+                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, collapsedBottomChain, rawChild, depth + 1);
+                }
+
+            } else {
+                // Middle child or out-of-flow: gets fresh chains for both
                 auto topResp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
                 auto botResp = rawChild->element->request(RequestTarget::Descriptor, marginBottomRequest);
 
-                float marginTop = 0.0;
-                float marginBottom = 0.0;
-
+                Size marginTop {};
+                Size marginBottom {};
                 if (topResp.has_value()) {
-                    marginTop = std::any_cast<float>(topResp);
+                    marginTop = std::any_cast<Size>(topResp);
                 }
-
                 if (botResp.has_value()) {
-                    marginBottom = std::any_cast<float>(botResp);
+                    marginBottom = std::any_cast<Size>(botResp);
                 }
 
                 CollapsedChain newCollapsedTopChain {
+                    .id = nextChainId++,
                     .root = rawChild,
-                    .intent = marginTop
+                    .intent = marginTop,
+                    .depth = 1
                 };
 
                 CollapsedChain newCollapsedBottomChain {
+                    .id = nextChainId++,
                     .root = rawChild,
-                    .intent = marginBottom
+                    .intent = marginBottom,
+                    .depth = 1
                 };
 
-                buildCollapsedChains(collapsedChains, newCollapsedTopChain, newCollapsedBottomChain, rawChild);
+                rawChild->marginMetadata.topChainId = newCollapsedTopChain.id;
+                rawChild->marginMetadata.bottomChainId = newCollapsedBottomChain.id;
+
+                buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
             }
         }
     }
 
     void RenderTree::preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        // do asserts here
-        std::vector<CollapsedChain> collapsedChains;
+        collapsedChainMap.clear();
+        nextChainId = 0;
 
-        CollapsedChain topChain {
-            .root = node,
-            .intent = 0,
-        };
+        for (auto& child : node->children) {
+            auto rawChild = child.get();
 
-        CollapsedChain bottomChain {
-            .root = node,
-            .intent = 0,
-        };
+            CollapsedChain topChain {
+                .id = nextChainId++,
+                .root = rawChild,
+                .intent = Size{},
+                .depth = 1,
+            };
 
-        buildCollapsedChains(collapsedChains, topChain, bottomChain, node);
+            CollapsedChain bottomChain {
+                .id = nextChainId++,
+                .root = rawChild,
+                .intent = Size{},
+                .depth = 1,
+            };
 
-        std::println("collapsedChains size: {}", collapsedChains.size());
+            // Parent sets child's chainIds before recursing
+            rawChild->marginMetadata.topChainId = topChain.id;
+            rawChild->marginMetadata.bottomChainId = bottomChain.id;
+
+            buildCollapsedChains(collapsedChainMap, nextChainId, topChain, bottomChain, rawChild);
+        }
+
+        // std::println("\n=== COLLAPSED CHAINS SUMMARY ===");
+        // std::println("Total chains: {}", collapsedChainMap.size());
+
+        // for (auto& [id, chain] : collapsedChainMap) {
+        //     std::println("  [id={}] root node id: {}, intent: {:.2f} depth: {}", id, chain.root->id, chain.intent.value, chain.depth);
+        // }
     }
 
     // DONE SERIALLY
@@ -281,6 +380,41 @@ namespace NewArch {
             // if true 
             // set first child's parentCollapses to true
 
+        
+        constraints.replacedAttributes = {};
+
+        if (node->marginMetadata.topChainId.has_value()) {
+            auto topChain = collapsedChainMap[node->marginMetadata.topChainId.value()];
+            if (topChain.depth > 1) {
+                // std::println("curr node: {} chain root: {} intent: {}", reinterpret_cast<void*>(node), reinterpret_cast<void*>(topChain.root), topChain.intent.value);
+                if (node == topChain.root) {
+                    // std::println("setting chain root: {} with following intent: {}", reinterpret_cast<void*>(node), topChain.intent.value);
+                    constraints.replacedAttributes.marginTop = topChain.intent;
+                }else {
+                    // std::println("RESETTING margin for node: {}, chain root: {}, depth: {}",                                                                                                                                
+                    //    reinterpret_cast<void*>(node),                                                                                                                                                             
+                    //    reinterpret_cast<void*>(topChain.root),                                                                                                                                                    
+                    //    topChain.depth);         
+
+                    constraints.replacedAttributes.marginTop = Size{};
+                }
+            }
+        }
+
+        // if (constraints.replacedAttributes.marginTop.has_value()) {
+        //     std::println("node: {} intent of replaced: {}", reinterpret_cast<void*>(node), constraints.replacedAttributes.marginTop->value);
+        // }
+
+        if (node->marginMetadata.bottomChainId.has_value()) {
+            auto bottomChain = collapsedChainMap[node->marginMetadata.bottomChainId.value()];
+            if (bottomChain.depth > 1) {
+                if (node == bottomChain.root) {
+                    constraints.replacedAttributes.marginBottom = bottomChain.intent;
+                }else {
+                    constraints.replacedAttributes.marginBottom = Size{};
+                }
+            }
+        }
 
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
@@ -289,11 +423,6 @@ namespace NewArch {
 
         // precompute lineboxes
         std::vector<std::vector<Line>> childrenLineboxes;
-
-        // check first child
-            // request margin ?
-
-        // update margin ? of child and parent if it has margin and parent has no padding?
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];

@@ -19,16 +19,16 @@ auto index() -> void {
             desc.color = simd_float4{0.0,0.0,1.0,1.0};
         }
 
-        std::println("hello world {}", count);
+        // std::println("hello world {}", count);
     };
 
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
-        .borderColor(simd_float4{0.77,0.71,1.0,1.0})
-        .borderWidth(NewArch::Size::px(1.0))
         .position(NewArch::Absolute)
         .left(NewArch::Size::px(10))
     (
-         div(NewArch::Size::percent(0.2), NewArch::Size::percent(1.0), simd_float4{1.0,0.5,1.0,0.8})(
+         div(NewArch::Size::percent(0.2), NewArch::Size::percent(1.0), simd_float4{1.0,0.5,1.0,0.8})
+        .paddingTop(NewArch::Size::px(0))
+         (
             div(NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.498,0.0,1.0,1.0})
                 .marginTop(30)
                 .marginLeft(NewArch::Size::autoSize())
@@ -51,8 +51,8 @@ auto index() -> void {
                     .fontSize(NewArch::Size::pt(48.0))
                     .font(Arial)
                     .color(simd_float4{0,0,0,1})
-            ),
-            div(
+            )
+            ,div(
                 NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}
             ).marginTop(10)
          )
