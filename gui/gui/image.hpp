@@ -30,7 +30,6 @@ namespace NewArch {
             return std::any{};
         }
 
-
         Size width;
         Size height;
         std::string path;
@@ -420,6 +419,15 @@ namespace NewArch {
             encoder->setFragmentSamplerState(sampler, 0);
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
         }
+
+        std::function<bool(HitTestContext<U>& context, simd_float2 testPoint)> setupHitTestFunction() {
+            auto hitTestFunction = [](HitTestContext<U>& context, simd_float2 testPoint){
+                return true;
+            };
+
+            return hitTestFunction;
+        }
+
         UIContext& ctx;
     };
 }

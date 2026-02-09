@@ -60,7 +60,6 @@ namespace NewArch {
                     [this](GetFull const&) -> std::any {
                         return std::any(*this);
                     },
-
                     [this](GetField const& f) -> std::any {
                         if (f.name == "text")     return this->text;
                         if (f.name == "font")     return this->font;
@@ -429,6 +428,14 @@ namespace NewArch {
             const auto& atoms = finalized.atomized.atoms;
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), atoms.size()*6);
 
+        }
+
+        std::function<bool(HitTestContext<U>& context, simd_float2 testPoint)> setupHitTestFunction() {
+            auto hitTestFunction = [](HitTestContext<U>& context, simd_float2 testPoint){
+                return true;
+            };
+
+            return hitTestFunction;
         }
 
         ~TextProcessor() {}

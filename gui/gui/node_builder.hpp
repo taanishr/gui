@@ -196,6 +196,10 @@ namespace NewArch {
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
             desc.padding = padding;
+            desc.paddingTop = padding;
+            desc.paddingRight = padding;
+            desc.paddingBottom = padding;
+            desc.paddingLeft = padding;
             return *this;
         }
 

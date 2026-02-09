@@ -9,4 +9,4 @@
 #include <cmath>
 #include "metal_imports.hpp"
 
-float rounded_rect_sdf(simd_float2 pt, simd_float2 halfExtent, float r);
+float rounded_rect_sdf(simd_float2 pt, simd_float2 halfExtent, simd_float2 r);

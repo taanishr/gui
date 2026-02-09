@@ -8,6 +8,7 @@
 #pragma once
 #include <variant>
 #include "metal_imports.hpp"
+#include "new_arch.hpp"
 
 // enum class EventType {
 //     KeyboardDown,
@@ -100,4 +101,10 @@ struct Event {
     const auto& get() const {
         return std::get<event_payload_t<E>>(payload);
     }
+};
+
+template <typename U>
+struct HitTestContext {
+    const NewArch::Finalized<U>& finalized;
+    const NewArch::LayoutResult& layout;
 };

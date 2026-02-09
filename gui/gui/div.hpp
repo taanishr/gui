@@ -13,12 +13,15 @@
 #include <optional>
 #include <print>
 #include "element.hpp"
+#include "events.hpp"
 #include "new_arch.hpp"
 #include "frame_buffered_buffer.hpp"
 #include "renderer_constants.hpp"
 #include "sizing.hpp"
 #include <any>
+#include <simd/vector_types.h>
 #include "overloaded.hpp"
+#include "sdf_helpers.hpp"
 
 namespace NewArch {
     struct DivPoint {
@@ -50,7 +53,6 @@ namespace NewArch {
                     [this](GetFull const&) -> std::any {
                         return std::any(*this);
                     },
-
                     [this](GetField const& f) -> std::any {
                         if (f.name == "color")    return this->color;
                         if (f.name == "position") return this->position;
@@ -437,6 +439,19 @@ namespace NewArch {
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
             
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
+        }
+
+        std::function<bool(HitTestContext<U>& context, simd_float2 testPoint)> setupHitTestFunction() {
+            auto hitTestFunction = [](HitTestContext<U>& context, simd_float2 testPoint){
+                simd_float2 halfExtent {context.layout.computedBox.width / 2.0f, context.layout.computedBox.height / 2.0f};
+                simd_float2 centerPoint {context.layout.computedBox.x + halfExtent.x, context.layout.computedBox.y + halfExtent.y};
+                simd_float2 localTestPoint = testPoint - centerPoint;
+                simd_float2 cr = context.finalized.uniforms.style.cornerRadius;
+
+                return rounded_rect_sdf(localTestPoint, halfExtent, cr) < 0.0;
+            };
+
+            return hitTestFunction;
         }
         
         // Shared resources (optional)

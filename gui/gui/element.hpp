@@ -65,6 +65,7 @@ namespace NewArch {
         { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
         { proc.finalize(fragment, constraints, desc, measured, atomized, placed) } -> std::same_as<Finalized<U>>;
+        { proc.setupHitTestFunction() } -> std::same_as<std::function<bool(HitTestContext<U>&, simd_float2)>>;
         proc.encode(encoder, fragment, finalized);
     };
 
@@ -77,7 +78,7 @@ namespace NewArch {
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
         virtual std::any request(RequestTarget target, std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
-        virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout) {
+        virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
             return true; 
         }
 
@@ -89,7 +90,9 @@ namespace NewArch {
     struct Element : ElementBase {
         Element(UIContext& ctx, E&& elem, P& proc):
             element{std::move(elem)}, processor{proc}
-        {}
+        {
+            hitTestFunction = processor.setupHitTestFunction();
+        }
         
         Measured measure(Constraints& constraints) override {
             return processor.measure(element.getFragment(), constraints, element.getDescriptor());
@@ -123,8 +126,22 @@ namespace NewArch {
             return processor.encode(encoder, element.getFragment(), finalized);
         }
 
+        bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
+            if (hitTestFunction) {
+                HitTestContext<U> ctx {
+                    .finalized = std::any_cast<Finalized<U>>(finalized),
+                    .layout = layout
+                };
+
+                return hitTestFunction(ctx, point);
+            }
+
+            return true;
+        }
+
         ~Element() override {};
 
+        std::function<bool(HitTestContext<U>& context, simd_float2 testPoint)> hitTestFunction;
         E element;
         P& processor;
     };
@@ -187,7 +204,7 @@ namespace NewArch {
                 return false;
             }
 
-            return element->preciseHitTest(point, layout.value());
+            return element->preciseHitTest(point, layout.value(), finalized);
         }
 
         
