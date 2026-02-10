@@ -13,6 +13,7 @@
 #include "sizing.hpp"
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <ranges>
 #include <format>
 #include "AppKit_Extensions.hpp"
@@ -184,7 +185,7 @@ namespace NewArch {
     enum Position {
         Absolute,
         Fixed,
-        Relative,
+        Static,
     };
 
     enum Display {
@@ -234,6 +235,23 @@ namespace NewArch {
             return marginLeft.isAuto() && marginRight.isAuto();
         }
     };
+
+    struct PositionContext {
+        Position position;
+        const std::optional<Size>&  top;
+        const std::optional<Size>&  right;
+        const std::optional<Size>&  bottom;
+        const std::optional<Size>&  left;
+    };
+
+    struct SizeContext {
+        const std::optional<Size>& requestedWidth;
+        const std::optional<Size>& requestedHeight;
+        float availableWidth;
+        float availableHeight;
+    };
+    
+    simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext);
 
     struct LineBox {
         float y;

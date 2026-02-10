@@ -43,7 +43,19 @@ namespace NewArch {
     concept HasTop = requires{ std::declval<T&>().top; };
 
     template <typename T>
+    concept HasRight = requires{ std::declval<T&>().right; };
+
+    template <typename T>
+    concept HasBottom = requires{ std::declval<T&>().bottom; };
+
+    template <typename T>
     concept HasLeft = requires{ std::declval<T&>().left; };
+
+    template <typename T>
+    concept HasWidth = requires{ std::declval<T&>().width; };
+
+    template <typename T>
+    concept HasHeight = requires{ std::declval<T&>().height; };
 
     template <typename T>
     concept HasPadding = requires(T& t) { 
@@ -183,6 +195,24 @@ namespace NewArch {
             return *this;
         }
 
+
+        NodeBuilder<E,P>& right(Size right) requires HasRight<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.right = right;
+            return *this;
+        }
+
+
+        NodeBuilder<E,P>& bottom(Size bottom) requires HasBottom<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.bottom = bottom;
+            return *this;
+        }
+
         NodeBuilder<E,P>& left(Size left) requires HasLeft<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& rawElem = elem->element;
@@ -190,6 +220,24 @@ namespace NewArch {
             desc.left = left;
             return *this;
         }
+
+        NodeBuilder<E,P>& width(Size width) requires HasWidth<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.width = width;
+            return *this;
+        }
+
+
+        NodeBuilder<E,P>& height(Size height) requires HasHeight<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.height = height;
+            return *this;
+        }
+
 
         NodeBuilder<E,P>& padding(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
@@ -317,6 +365,7 @@ namespace NewArch {
         using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
     };
 
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div();
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color);
     NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
                  Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 

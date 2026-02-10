@@ -156,7 +156,7 @@ namespace NewArch {
                 auto position = std::any_cast<Position>(positionResp);
                 auto display = std::any_cast<Display>(displayResp);
 
-                if (position == Position::Relative && display == Display::Block) {
+                if (position == Position::Static && display == Display::Block) {
                     if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
                     lastInFlowCollapsableChild = child.get();
                 }
