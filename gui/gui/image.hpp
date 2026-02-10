@@ -12,6 +12,7 @@
 #include "renderer_constants.hpp"
 #include "MTKTexture_loader.hpp"
 #include <format>
+#include <optional>
 #include <simd/vector_types.h>
 #include "new_arch.hpp"
 #include <any>
@@ -30,8 +31,8 @@ namespace NewArch {
             return std::any{};
         }
 
-        Size width;
-        Size height;
+        std::optional<Size> width;
+        std::optional<Size> height;
         std::string path;
         Size cornerRadius {};
         Size borderWidth {};
@@ -40,7 +41,7 @@ namespace NewArch {
         Display display;
         Position position;
 
-        // Margins use Size to support Auto
+        Size top, left, bottom, right;
         Size margin;
         std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
     };
@@ -243,24 +244,37 @@ namespace NewArch {
                 initializeTexture(fragment, desc.path);
             }
 
-            // Resolve width/height, falling back to intrinsic size if Auto or 0
-            auto resolvedWidth = desc.width.resolve(constraints.maxWidth);
-            auto resolvedHeight = desc.height.resolve(constraints.maxHeight);
+            PositionContext pctx {
+                .position = desc.position,
+                .top = desc.top,
+                .right = desc.right,
+                .bottom = desc.bottom,
+                .left = desc.left,
+            };
 
-            float width = resolvedWidth.value_or(0.0f);
-            float height = resolvedHeight.value_or(0.0f);
+            SizeContext sctx {
+                .requestedWidth = desc.width,
+                .requestedHeight = desc.height,
+                .availableWidth = constraints.maxWidth,
+                .availableHeight = constraints.maxHeight
+            };
+
+            simd_float2 explicitSize = resolveSize(pctx, sctx);
+
+            float resolvedWidth = explicitSize.x;
+            float resolvedHeight = explicitSize.y;
 
             // Fall back to intrinsic size if not specified
-            if (width == 0.0f || height == 0.0f) {
+            if (!desc.width || ! desc.height) {
                 auto intrinsic = fragment.fragmentStorage.intrinsicSize;
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
-                    if (width == 0.0f) width = intrinsic.x;
-                    if (height == 0.0f) height = intrinsic.y;
+                    resolvedWidth = intrinsic.x;
+                    resolvedHeight = intrinsic.y;
                 }
             }
 
-            measured.explicitWidth = width;
-            measured.explicitHeight = height;
+            measured.explicitWidth = resolvedWidth;
+            measured.explicitHeight = resolvedHeight;
 
             return measured;
         }

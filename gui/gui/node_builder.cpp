@@ -3,6 +3,18 @@
 #include "tree_manager.hpp"
 
 namespace NewArch {
+    NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div()
+    {
+        auto& ctx = ContextManager::getContext();
+        auto& proc = getDivProcessor(ctx);
+        Div elem {ctx};
+        auto& desc = elem.getDescriptor();
+
+        auto currTree = TreeStack::getCurrentTree();
+
+        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
+    }
+
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color)
     {
         auto& ctx = ContextManager::getContext();
@@ -13,8 +25,6 @@ namespace NewArch {
         desc.height = height;
         desc.color = color;
         // alter descriptor and fragment via elem.getDescriptor() and elem.getFragment() (mutable references)
-
-
 
         auto currTree = TreeStack::getCurrentTree();
 

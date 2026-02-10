@@ -89,9 +89,8 @@ namespace NewArch {
             return std::any{};
         }
 
-
-        Size width;
-        Size height;
+        std::optional<Size> width;
+        std::optional<Size> height;
 
         simd_float4 color;
         Size cornerRadius;
@@ -104,7 +103,7 @@ namespace NewArch {
         Size margin;
         std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
 
-        Size top, left;
+        std::optional<Size> top, left, bottom, right;
 
         Display display;
         Position position;
@@ -255,9 +254,28 @@ namespace NewArch {
 
             // starting with just one type of measurement; for now, we keep it simple, just desc width and height
             measured.id = fragment.id;
-            measured.explicitWidth = desc.width.resolveOr(constraints.maxWidth, 0.0f);
-            measured.explicitHeight = desc.height.resolveOr(constraints.maxHeight, 0.0f);
 
+            PositionContext pctx {
+                .position = desc.position,
+                .top = desc.top,
+                .right = desc.right,
+                .bottom = desc.bottom,
+                .left = desc.left,
+            };
+
+            SizeContext sctx {
+                .requestedWidth = desc.width,
+                .requestedHeight = desc.height,
+                .availableWidth = constraints.maxWidth,
+                .availableHeight = constraints.maxHeight
+            };
+
+            simd_float2 explicitSize = resolveSize(pctx, sctx);
+
+
+            measured.explicitWidth = explicitSize.x;
+            measured.explicitHeight = explicitSize.y;
+            
             return measured;
         }
         // resolve percents as explicit width/height, also resolve explicit width/height (like divs default 100% width?)
@@ -309,8 +327,8 @@ namespace NewArch {
             li.display = desc.display;
             li.position = desc.position;
 
-            li.top = desc.top;
-            li.left = desc.left;
+            li.top = desc.top.has_value() ? *desc.top : Size::px(0.0f);
+            li.left = desc.left.has_value() ? *desc.left : Size::px(0.0f);
 
             // Pass explicit width/height for margin auto centering calculation
             li.width = measured.explicitWidth;

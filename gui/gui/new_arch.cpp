@@ -9,11 +9,79 @@
 
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
+#include "sizing.hpp"
 #include <algorithm>
+#include <optional>
 #include <print>
 #include <simd/vector_types.h>
 
 namespace NewArch {
+
+    simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext)
+    {
+        simd_float2 explicitSize {0,0};
+
+        switch (positionContext.position) {
+            case NewArch::Position::Absolute:
+            case NewArch::Position::Fixed: {
+                if (sizeContext.requestedHeight.has_value()) {
+                    explicitSize.y = sizeContext.requestedHeight->resolveOr(sizeContext.availableHeight, 0.0f);
+                }else {
+                    std::optional<float> resolvedTop;
+                    std::optional<float> resolvedBottom;
+
+                    if (positionContext.top.has_value()) {
+                        resolvedTop = positionContext.top->resolveOr(sizeContext.availableHeight, 0.0f);
+                    }
+
+                    if (positionContext.bottom.has_value()) {
+                        resolvedBottom = positionContext.bottom->resolveOr(sizeContext.availableHeight, 0.0f);
+                    }
+
+                    if (resolvedTop.has_value() && resolvedBottom.has_value()) {
+                        explicitSize.y = sizeContext.availableHeight - *resolvedTop - *resolvedBottom;
+                    }
+                }
+
+                if (sizeContext.requestedWidth.has_value()) {
+                    explicitSize.x = sizeContext.requestedWidth->resolveOr(sizeContext.availableWidth, 0.0);
+                }else {
+                    std::optional<float> resolvedRight;
+                    std::optional<float> resolvedLeft;
+
+                    if (positionContext.right.has_value()) {
+                        resolvedRight = positionContext.right->resolveOr(sizeContext.availableWidth, 0.0f);
+                    }
+
+                    if (positionContext.left.has_value()) {
+                        resolvedLeft = positionContext.left->resolveOr(sizeContext.availableWidth, 0.0f);
+                    }
+
+                    if (resolvedRight.has_value() && resolvedLeft.has_value()) {
+                        explicitSize.x = sizeContext.availableWidth - *resolvedRight - * resolvedLeft;
+                    }
+                }
+
+                break;
+            }
+            default: {
+                // static fallthrough 
+                if (sizeContext.requestedHeight.has_value()) {
+                    explicitSize.y = sizeContext.requestedHeight->resolveOr(sizeContext.availableHeight, 0.0f);
+                }else {
+                    explicitSize.y = 0;
+                }
+
+                if (sizeContext.requestedWidth) {
+                    explicitSize.x = sizeContext.requestedWidth->resolveOr(sizeContext.availableWidth, 0.0f);
+                }else {
+                    explicitSize.x = 0;
+                }
+            }
+        };
+
+        return explicitSize;
+    }
 
     // Resolve auto margins for centering
     LayoutEngine::ResolvedMargins LayoutEngine::resolveAutoMargins(

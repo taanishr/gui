@@ -9,7 +9,7 @@ NewArch::ImageDescriptor::ImageDescriptor():
     borderWidth{},
     borderColor{0.0f, 0.0f, 0.0f, 1.0f},
     display{Display::Block},
-    position{Position::Relative},
+    position{Position::Static},
     margin{Size::px(0)},
     marginLeft{std::nullopt},
     marginRight{std::nullopt},
