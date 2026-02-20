@@ -246,6 +246,7 @@ namespace NewArch {
 
             PositionContext pctx {
                 .position = desc.position,
+                .constraints = constraints,
                 .top = desc.top,
                 .right = desc.right,
                 .bottom = desc.bottom,

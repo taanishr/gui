@@ -238,6 +238,7 @@ namespace NewArch {
 
     struct PositionContext {
         Position position;
+        Constraints& parentConstraints;
         const std::optional<Size>&  top;
         const std::optional<Size>&  right;
         const std::optional<Size>&  bottom;
@@ -251,6 +252,7 @@ namespace NewArch {
         float availableHeight;
     };
     
+    simd_float2 resolvePosition(simd_float2 currentCursor, const Constraints& constraints, const LayoutInput& layoutInput);
     simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext);
 
     struct LineBox {
@@ -278,15 +280,13 @@ namespace NewArch {
         bool outOfFlow; // don't change siblings
         EdgeIntent edgeIntent;
     };
+
+    struct ResolvedMargins {
+        float top, right, bottom, left;
+    };
     
     struct LayoutEngine {
-        // Resolved margins after handling Auto
-        struct ResolvedMargins {
-            float top, right, bottom, left;
-        };
-
-        // Resolve auto margins for centering
-        ResolvedMargins resolveAutoMargins(
+        static ResolvedMargins resolveAutoMargins(
             const LayoutInput& li,
             const ReplacedAttributes& replacedAttributes,
             float availableWidth,
@@ -294,15 +294,15 @@ namespace NewArch {
         );
 
         // relative, block/inline
-        LayoutResult layoutBlockNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        LayoutResult layoutInlineNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        LayoutResult resolveNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult layoutBlockNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult layoutInlineNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult resolveNormalFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
 
         // fixed and absolute, block/inline
-        LayoutResult layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        LayoutResult layoutFixed(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        LayoutResult resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
-        LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
+        static LayoutResult layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult layoutFixed(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult resolveOutOfFlow(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized);
+        static LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
     };
 
     // Rest of the stuff
