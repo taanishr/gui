@@ -17,6 +17,76 @@
 
 namespace NewArch {
 
+    simd_float2 resolvePosition(simd_float2 currentCursor, const Constraints& constraints, const LayoutInput& layoutInput) {
+        simd_float2 resolvedPosition = currentCursor;
+
+        switch (layoutInput.position) {
+            case NewArch::Position::Absolute:
+            case NewArch::Position::Fixed: {
+                // applies top/bottom/left/right
+                // if top & bottom, favor top
+                // if left & right, favor left
+                auto margins = LayoutEngine::resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, layoutInput.width);
+
+
+                auto left = layoutInput.left.resolve(constraints.maxWidth);
+                auto top = layoutInput.top.resolve(constraints.maxHeight);
+
+                auto right = layoutInput.right.resolve(constraints.maxHeight);
+                auto bottom = layoutInput.bottom.resolve(constraints.maxHeight);
+                
+
+
+                if (left.has_value()) {
+                    resolvedPosition.x += *left + margins.left;
+                }else if (right.has_value()) {
+                    resolvedPosition.x = constraints.origin.x + constraints.maxWidth - margins.right + layoutInput.width + *right;
+                }
+
+
+                if (top.has_value()) {
+                    resolvedPosition.y += *top + margins.top;
+                }else if (bottom.has_value()) {
+                    resolvedPosition.y = constraints.origin.y + constraints.maxHeight - layoutInput.height - margins.bottom + *bottom;
+                }
+
+                break;
+            }   
+            case NewArch::Position::Static: {
+                // ignores top/bottom/left/right 
+                
+                switch (layoutInput.display) {
+                    case NewArch::Display::Block: {
+                        auto margins = LayoutEngine::resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, /*contentWidth*/ 0);
+
+                        float startingX = constraints.origin.x;
+                        float startingY = constraints.cursor.y;
+
+                        // Handle vertical margin collapse
+                        if (constraints.edgeIntent.edgeDisplayMode == Display::Block) {
+                            if (constraints.edgeIntent.collapsable && !layoutInput.marginTop.isAuto()) {
+                                startingY += std::max(constraints.edgeIntent.intent, margins.top);
+                            } else {
+                                startingY += constraints.edgeIntent.intent + margins.top;
+                            }
+                        }
+
+                        startingX += margins.left;
+
+                        simd_float2 newCursor {startingX, startingY};
+                    }
+                    case NewArch::Display::Inline: {
+                        return currentCursor;
+                    }
+                }
+            }
+            default:
+                break;
+        }
+
+        return resolvedPosition;
+    }
+
     simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext)
     {
         simd_float2 explicitSize {0,0};
@@ -84,7 +154,7 @@ namespace NewArch {
     }
 
     // Resolve auto margins for centering
-    LayoutEngine::ResolvedMargins LayoutEngine::resolveAutoMargins(
+    ResolvedMargins LayoutEngine::resolveAutoMargins(
         const LayoutInput& li,
         const ReplacedAttributes& replacedAttributes,
         float availableWidth,
