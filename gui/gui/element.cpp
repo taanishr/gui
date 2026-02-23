@@ -415,6 +415,8 @@ namespace NewArch {
 
         auto childConstraints =  layout.childConstraints;
 
+        childConstraints.inheritedProperties = constraints.inheritedProperties;
+
         // precompute lineboxes
         std::vector<std::vector<Line>> childrenLineboxes;
 

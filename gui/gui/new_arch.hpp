@@ -199,10 +199,19 @@ namespace NewArch {
         bool collapsable {};
     };
 
+    enum class Direction {
+        ltr,
+        rtl
+    };
+
     // descriptor defines attributes; attributes can be replaced based on the tree structure (i.e. )
     struct ReplacedAttributes {
         std::optional<Size> marginTop{}; 
         std::optional<Size> marginBottom{}; 
+    };
+
+     struct InheritedProperties {
+        Direction direction{Direction::ltr};
     };
 
     struct Constraints {
@@ -210,6 +219,7 @@ namespace NewArch {
         simd_float2 cursor{};
         float maxWidth{};
         float maxHeight{};
+        InheritedProperties inheritedProperties{};
     
         FrameInfo frameInfo{}; // viewport size (for fixed)
 
@@ -226,6 +236,8 @@ namespace NewArch {
 
         float width, height;
         std::optional<Size> top, left, bottom, right;
+
+        std::optional<Direction> direction; // overwrites inherited if specified
 
         Size marginTop, marginRight, marginBottom, marginLeft;
 
