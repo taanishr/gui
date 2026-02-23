@@ -42,10 +42,18 @@ namespace NewArch {
                     ? ctx.layoutInput.bottom->resolve(ctx.constraints.maxHeight)
                     : std::nullopt;
 
-                if (left.has_value()) {
-                    resolvedPosition.x += *left + ctx.margins.left;
-                } else if (right.has_value()) {
-                    resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.margins.right - ctx.layoutInput.width - *right;;
+                if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
+                    if (left.has_value()) {
+                        resolvedPosition.x += *left + ctx.margins.left;
+                    } else if (right.has_value()) {
+                        resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.margins.right - ctx.layoutInput.width - *right;;
+                    }
+                }else {
+                    if (right.has_value()) {
+                        resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.margins.right - ctx.layoutInput.width - *right;;
+                    } else if (left.has_value()) {
+                        resolvedPosition.x += *left + ctx.margins.left;
+                    }
                 }
 
                 if (top.has_value()) {
@@ -75,7 +83,16 @@ namespace NewArch {
                             }
                         }
 
-                        startingX += ctx.margins.left;
+                        // startingX += ctx.margins.left;
+
+                        if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
+                            startingX += ctx.margins.left;
+                        }else {
+                            // std::println("end start: {}", ctx.constraints.origin.x + ctx.constraints.maxWidth);
+                            // startingX += ctx.margins.left;
+                            startingX = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.layoutInput.width - ctx.margins.right;
+                        }
+
 
                         simd_float2 newCursor {startingX, startingY};
 
@@ -175,7 +192,6 @@ namespace NewArch {
         ResolvedMargins margins;
 
         // Vertical margins: auto resolves to 0
-        // margins.top = li.marginTop.resolveOr(0.0f, 0.0f);
         margins.bottom = li.marginBottom.resolveOr(0.0f, 0.0f);
 
         if (replacedAttributes.marginTop.has_value()) {
@@ -279,8 +295,6 @@ namespace NewArch {
         LayoutResult lr;
         lr.outOfFlow = true;
 
-        // simd_float2 absolutePosition = constraints.origin;
-
         // // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
         float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
         float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
@@ -293,14 +307,6 @@ namespace NewArch {
             .bottom = marginBottom,
             .left = marginLeft,
         };
-
-        // float left = layoutInput.left.resolveOr(constraints.maxWidth);
-        // float top = layoutInput.top.resolveOr(constraints.maxHeight);
-        
-        // absolutePosition.x += left + margins.left;
-        // absolutePosition.y += top + margins.top;
-
-        // simd_float2 newCursor = absolutePosition;
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -375,11 +381,6 @@ namespace NewArch {
         lr.outOfFlow = true;
 
         simd_float2 viewportOrigin = {0.0f, 0.0f};
-        // simd_float2 fixedPosition = viewportOrigin;
-
-        // // Resolve margins (Auto resolves to 0 for fixed positioning)
-        // float marginLeft = layoutInput.marginLeft.resolveOr(constraints.frameInfo.width, 0.0f);
-        // float marginTop = layoutInput.marginTop.resolveOr(constraints.frameInfo.height, 0.0f);
 
         float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
         float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
@@ -393,12 +394,6 @@ namespace NewArch {
             .left = marginLeft,
         };
 
-
-        // float left = layoutInput.left.resolveOr(constraints.maxWidth);
-        // float top = layoutInput.top.resolveOr(constraints.maxHeight);
-        
-        // fixedPosition.x += left + marginLeft;
-        // fixedPosition.y += top + marginTop;
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
             .constraints = constraints,
@@ -480,22 +475,6 @@ namespace NewArch {
         }       
 
         auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
-
-        // float startingX = constraints.origin.x;
-        // float startingY = constraints.cursor.y;
-
-        // // Handle vertical margin collapse
-        // if (constraints.edgeIntent.edgeDisplayMode == Display::Block) {
-        //     if (constraints.edgeIntent.collapsable && !layoutInput.marginTop.isAuto()) {
-        //         startingY += std::max(constraints.edgeIntent.intent, margins.top);
-        //     } else {
-        //         startingY += constraints.edgeIntent.intent + margins.top;
-        //     }
-        // }
-
-        // startingX += margins.left;
-
-        // simd_float2 startingPos {startingX, startingY};
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -745,6 +724,13 @@ namespace NewArch {
     LayoutResult LayoutEngine::resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized)
     {
         LayoutResult lr;
+
+        if (layoutInput.direction.has_value()) {
+            constraints.inheritedProperties = {
+                .direction = *layoutInput.direction
+            };
+        }
+        
         
         if (layoutInput.position == Position::Fixed || layoutInput.position == Position::Absolute) {
             lr = resolveOutOfFlow(constraints, constraints.cursor, layoutInput, atomized);
