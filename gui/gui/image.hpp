@@ -41,7 +41,7 @@ namespace NewArch {
         Display display;
         Position position;
 
-        Size top, left, bottom, right;
+        std::optional<Size> top, left, bottom, right;
         Size margin;
         std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
     };
@@ -244,23 +244,20 @@ namespace NewArch {
                 initializeTexture(fragment, desc.path);
             }
 
-            PositionContext pctx {
+            SizeResolutionContext ctx {
                 .position = desc.position,
-                .constraints = constraints,
+                .parentConstraints = constraints,
                 .top = desc.top,
                 .right = desc.right,
                 .bottom = desc.bottom,
                 .left = desc.left,
-            };
-
-            SizeContext sctx {
                 .requestedWidth = desc.width,
                 .requestedHeight = desc.height,
                 .availableWidth = constraints.maxWidth,
                 .availableHeight = constraints.maxHeight
             };
 
-            simd_float2 explicitSize = resolveSize(pctx, sctx);
+            simd_float2 explicitSize = resolveSize(ctx);
 
             float resolvedWidth = explicitSize.x;
             float resolvedHeight = explicitSize.y;
@@ -317,6 +314,11 @@ namespace NewArch {
             li.display = desc.display;
             li.position = desc.position;
 
+            li.top = desc.top;
+            li.left = desc.left;
+            li.bottom = desc.bottom;
+            li.right = desc.right;
+
             // Pass explicit width/height for margin auto centering calculation
             li.width = measured.explicitWidth;
             li.height = measured.explicitHeight;
@@ -365,13 +367,13 @@ namespace NewArch {
             float borderWidth = 0.0;
 
             if (desc.borderWidth.unit == Unit::Px) {
-                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for
+                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for now
             }
 
             
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(constraints.maxWidth),
-                desc.cornerRadius.resolveOr(constraints.maxHeight)
+                desc.cornerRadius.resolveOr(measured.explicitWidth),
+                desc.cornerRadius.resolveOr(measured.explicitHeight)
             };
 
             ImageStyleUniforms styleUniforms {

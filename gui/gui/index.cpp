@@ -24,16 +24,17 @@ auto index() -> void {
 
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
         .position(NewArch::Absolute)
-        .left(NewArch::Size::px(10))
     (
          div(NewArch::Size::percent(0.2), NewArch::Size::percent(1.0), simd_float4{1.0,0.5,1.0,0.8})
         .padding(NewArch::Size::px(0))
+        .position(NewArch::Absolute)
+        .left(NewArch::Size::px(10.0))
          (
             div(NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.498,0.0,1.0,1.0})
                 .marginTop(30)
                 .marginLeft(NewArch::Size::autoSize())
                 .marginRight(NewArch::Size::autoSize())
-                .cornerRadius(NewArch::Size::percent(7.5))
+                .cornerRadius(NewArch::Size::percent(0.075))
                 .paddingLeft(NewArch::Size::px(9.0))
                 .paddingTop(NewArch::Size::px(4.5))
                 .borderColor(simd_float4{0.77,0.71,1.0,1.0})

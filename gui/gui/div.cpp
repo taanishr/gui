@@ -20,7 +20,9 @@ NewArch::DivDescriptor::DivDescriptor()
     , marginTop{std::nullopt}
     , marginBottom{std::nullopt}
     , top{std::nullopt}
+    , right{std::nullopt}
     , left{std::nullopt}
+    , bottom{std::nullopt}
     , display{Display::Block}
     , position{Position::Static}
 {

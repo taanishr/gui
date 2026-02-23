@@ -220,8 +220,7 @@ namespace NewArch {
         
         Measured measure(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc) {
             Measured measured;
-
-                        
+                            
             // std::println("text node: {} constraints.width: {} constraints.height: {}", reinterpret_cast<void*>(&desc), constraints.maxWidth, constraints.maxHeight);
 
             measured.id = fragment.id;
