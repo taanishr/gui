@@ -187,8 +187,31 @@ namespace NewArch {
             }
         }};
 
-        // Note: node's chainIds are set by the parent before recursing into us.
-        // Here we only handle chain propagation logic (adding margins, incrementing depth, saving).
+        auto currPositionResp = node->element->request(RequestTarget::Descriptor, positionRequest);
+        bool currOutOfFlow = false;
+
+        if (currPositionResp.has_value()) {
+            auto pos = std::any_cast<Position>(currPositionResp);
+            currOutOfFlow = pos == NewArch::Position::Absolute || pos == NewArch::Position::Fixed;
+        }
+
+        if (currOutOfFlow) {
+            firstInFlowCollapsableChild = nullptr;
+            lastInFlowCollapsableChild = nullptr;
+        }
+
+        auto nodePaddingTopResp = node->element->request(RequestTarget::Descriptor, paddingTopRequest);
+        auto nodePaddingBottomResp = node->element->request(RequestTarget::Descriptor, paddingBottomRequest);
+        bool nodeBlocksTopChain = nodePaddingTopResp.has_value();
+        bool nodeBlocksBottomChain = nodePaddingBottomResp.has_value();
+
+        if (nodeBlocksTopChain) {
+            firstInFlowCollapsableChild = nullptr;
+        }
+
+        if (nodeBlocksBottomChain) {
+            lastInFlowCollapsableChild = nullptr;
+        }
 
         if (firstInFlowCollapsableChild) {
             auto resp = firstInFlowCollapsableChild->element->request(RequestTarget::Descriptor, marginTopRequest);
@@ -223,10 +246,8 @@ namespace NewArch {
 
             // Check child's padding to determine if it blocks chain propagation
             auto childPaddingTopResp = rawChild->element->request(RequestTarget::Descriptor, paddingTopRequest);
-            auto childPaddingBottomResp = rawChild->element->request(RequestTarget::Descriptor, paddingBottomRequest);
 
-            bool childBlocksTopChain = childPaddingTopResp.has_value();
-            bool childBlocksBottomChain = childPaddingBottomResp.has_value();
+            auto childPaddingBottomResp = rawChild->element->request(RequestTarget::Descriptor, paddingBottomRequest);
 
             if (rawChild == firstInFlowCollapsableChild) {
                 // First child: belongs to collapsedTopChain, gets new bottom chain
@@ -246,20 +267,7 @@ namespace NewArch {
                 };
                 rawChild->marginMetadata.bottomChainId = newCollapsedBottomChain.id;
 
-                if (childBlocksTopChain) {
-                    // Child has padding-top: chain ends here, propagate fresh chain to descendants
-                    chainMap[collapsedTopChain.id] = collapsedTopChain;
-
-                    CollapsedChain newCollapsedTopChain {
-                        .id = nextChainId++,
-                        .root = rawChild,
-                        .intent = Size{},
-                        .depth = 0
-                    };
-                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
-                } else {
-                    buildCollapsedChains(chainMap, nextChainId, collapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
-                }
+                buildCollapsedChains(chainMap, nextChainId, collapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
 
             } else if (rawChild == lastInFlowCollapsableChild) {
                 // Last child: gets new top chain, belongs to collapsedBottomChain
@@ -278,21 +286,7 @@ namespace NewArch {
                 rawChild->marginMetadata.topChainId = newCollapsedTopChain.id;
                 rawChild->marginMetadata.bottomChainId = collapsedBottomChain.id;
 
-                if (childBlocksBottomChain) {
-                    // Child has padding-bottom: chain ends here, propagate fresh chain to descendants
-                    chainMap[collapsedBottomChain.id] = collapsedBottomChain;
-
-                    CollapsedChain newCollapsedBottomChain {
-                        .id = nextChainId++,
-                        .root = rawChild,
-                        .intent = Size{},
-                        .depth = 0
-                    };
-                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, newCollapsedBottomChain, rawChild, depth + 1);
-                } else {
-                    buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, collapsedBottomChain, rawChild, depth + 1);
-                }
-
+                buildCollapsedChains(chainMap, nextChainId, newCollapsedTopChain, collapsedBottomChain, rawChild, depth + 1);
             } else {
                 // Middle child or out-of-flow: gets fresh chains for both
                 auto topResp = rawChild->element->request(RequestTarget::Descriptor, marginTopRequest);
