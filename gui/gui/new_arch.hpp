@@ -224,8 +224,8 @@ namespace NewArch {
         Position position;
         Display display;
 
-        float width, height; 
-        Size top, left, bottom, right;
+        float width, height;
+        std::optional<Size> top, left, bottom, right;
 
         Size marginTop, marginRight, marginBottom, marginLeft;
 
@@ -236,24 +236,27 @@ namespace NewArch {
         }
     };
 
-    struct PositionContext {
+    struct SizeResolutionContext {
         Position position;
         Constraints& parentConstraints;
         const std::optional<Size>&  top;
         const std::optional<Size>&  right;
         const std::optional<Size>&  bottom;
         const std::optional<Size>&  left;
-    };
-
-    struct SizeContext {
         const std::optional<Size>& requestedWidth;
         const std::optional<Size>& requestedHeight;
         float availableWidth;
         float availableHeight;
     };
+
+    struct PositionResolutionContext {
+        simd_float2 currentCursor;
+        const Constraints& constraints;
+        const LayoutInput& layoutInput;
+    };
     
-    simd_float2 resolvePosition(simd_float2 currentCursor, const Constraints& constraints, const LayoutInput& layoutInput);
-    simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext);
+    simd_float2 resolvePosition(const PositionResolutionContext& ctx);
+    simd_float2 resolveSize(const SizeResolutionContext& positionContext);
 
     struct LineBox {
         float y;

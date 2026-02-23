@@ -17,37 +17,41 @@
 
 namespace NewArch {
 
-    simd_float2 resolvePosition(simd_float2 currentCursor, const Constraints& constraints, const LayoutInput& layoutInput) {
-        simd_float2 resolvedPosition = currentCursor;
+    simd_float2 resolvePosition(const PositionResolutionContext& ctx) {
+        simd_float2 resolvedPosition = ctx.currentCursor;
 
-        switch (layoutInput.position) {
+        switch (ctx.layoutInput.position) {
             case NewArch::Position::Absolute:
             case NewArch::Position::Fixed: {
                 // applies top/bottom/left/right
                 // if top & bottom, favor top
                 // if left & right, favor left
-                auto margins = LayoutEngine::resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, layoutInput.width);
+                auto margins = LayoutEngine::resolveAutoMargins(ctx.layoutInput, ctx.constraints.replacedAttributes, ctx.constraints.maxWidth, ctx.layoutInput.width);
 
-
-                auto left = layoutInput.left.resolve(constraints.maxWidth);
-                auto top = layoutInput.top.resolve(constraints.maxHeight);
-
-                auto right = layoutInput.right.resolve(constraints.maxHeight);
-                auto bottom = layoutInput.bottom.resolve(constraints.maxHeight);
-                
-
+                // Resolve each positioning property only if specified
+                std::optional<float> left = ctx.layoutInput.left.has_value()
+                    ? ctx.layoutInput.left->resolve(ctx.constraints.maxWidth)
+                    : std::nullopt;
+                std::optional<float> top = ctx.layoutInput.top.has_value()
+                    ? ctx.layoutInput.top->resolve(ctx.constraints.maxHeight)
+                    : std::nullopt;
+                std::optional<float> right = ctx.layoutInput.right.has_value()
+                    ? ctx.layoutInput.right->resolve(ctx.constraints.maxWidth)
+                    : std::nullopt;
+                std::optional<float> bottom = ctx.layoutInput.bottom.has_value()
+                    ? ctx.layoutInput.bottom->resolve(ctx.constraints.maxHeight)
+                    : std::nullopt;
 
                 if (left.has_value()) {
                     resolvedPosition.x += *left + margins.left;
-                }else if (right.has_value()) {
-                    resolvedPosition.x = constraints.origin.x + constraints.maxWidth - margins.right + layoutInput.width + *right;
+                } else if (right.has_value()) {
+                    resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - margins.right - ctx.layoutInput.width - *right;;
                 }
-
 
                 if (top.has_value()) {
                     resolvedPosition.y += *top + margins.top;
-                }else if (bottom.has_value()) {
-                    resolvedPosition.y = constraints.origin.y + constraints.maxHeight - layoutInput.height - margins.bottom + *bottom;
+                } else if (bottom.has_value()) {
+                    resolvedPosition.y = ctx.constraints.origin.y + ctx.constraints.maxHeight - ctx.layoutInput.height - margins.bottom - *bottom;
                 }
 
                 break;
@@ -55,19 +59,19 @@ namespace NewArch {
             case NewArch::Position::Static: {
                 // ignores top/bottom/left/right 
                 
-                switch (layoutInput.display) {
+                switch (ctx.layoutInput.display) {
                     case NewArch::Display::Block: {
-                        auto margins = LayoutEngine::resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, /*contentWidth*/ 0);
+                        auto margins = LayoutEngine::resolveAutoMargins(ctx.layoutInput, ctx.constraints.replacedAttributes, ctx.constraints.maxWidth, /*contentWidth*/ 0);
 
-                        float startingX = constraints.origin.x;
-                        float startingY = constraints.cursor.y;
+                        float startingX = ctx.constraints.origin.x;
+                        float startingY = ctx.constraints.cursor.y;
 
                         // Handle vertical margin collapse
-                        if (constraints.edgeIntent.edgeDisplayMode == Display::Block) {
-                            if (constraints.edgeIntent.collapsable && !layoutInput.marginTop.isAuto()) {
-                                startingY += std::max(constraints.edgeIntent.intent, margins.top);
+                        if (ctx.constraints.edgeIntent.edgeDisplayMode == Display::Block) {
+                            if (ctx.constraints.edgeIntent.collapsable && !ctx.layoutInput.marginTop.isAuto()) {
+                                startingY += std::max(ctx.constraints.edgeIntent.intent, margins.top);
                             } else {
-                                startingY += constraints.edgeIntent.intent + margins.top;
+                                startingY += ctx.constraints.edgeIntent.intent + margins.top;
                             }
                         }
 
@@ -76,7 +80,7 @@ namespace NewArch {
                         simd_float2 newCursor {startingX, startingY};
                     }
                     case NewArch::Display::Inline: {
-                        return currentCursor;
+                        return ctx.currentCursor;
                     }
                 }
             }
@@ -87,48 +91,48 @@ namespace NewArch {
         return resolvedPosition;
     }
 
-    simd_float2 resolveSize(const PositionContext& positionContext, const SizeContext& sizeContext)
+    simd_float2 resolveSize(const SizeResolutionContext& ctx)
     {
         simd_float2 explicitSize {0,0};
 
-        switch (positionContext.position) {
+        switch (ctx.position) {
             case NewArch::Position::Absolute:
             case NewArch::Position::Fixed: {
-                if (sizeContext.requestedHeight.has_value()) {
-                    explicitSize.y = sizeContext.requestedHeight->resolveOr(sizeContext.availableHeight, 0.0f);
+                if (ctx.requestedHeight.has_value()) {
+                    explicitSize.y = ctx.requestedHeight->resolveOr(ctx.availableHeight, 0.0f);
                 }else {
                     std::optional<float> resolvedTop;
                     std::optional<float> resolvedBottom;
 
-                    if (positionContext.top.has_value()) {
-                        resolvedTop = positionContext.top->resolveOr(sizeContext.availableHeight, 0.0f);
+                    if (ctx.top.has_value()) {
+                        resolvedTop = ctx.top->resolveOr(ctx.availableHeight, 0.0f);
                     }
 
-                    if (positionContext.bottom.has_value()) {
-                        resolvedBottom = positionContext.bottom->resolveOr(sizeContext.availableHeight, 0.0f);
+                    if (ctx.bottom.has_value()) {
+                        resolvedBottom = ctx.bottom->resolveOr(ctx.availableHeight, 0.0f);
                     }
 
                     if (resolvedTop.has_value() && resolvedBottom.has_value()) {
-                        explicitSize.y = sizeContext.availableHeight - *resolvedTop - *resolvedBottom;
+                        explicitSize.y = ctx.availableHeight - *resolvedTop - *resolvedBottom;
                     }
                 }
 
-                if (sizeContext.requestedWidth.has_value()) {
-                    explicitSize.x = sizeContext.requestedWidth->resolveOr(sizeContext.availableWidth, 0.0);
+                if (ctx.requestedWidth.has_value()) {
+                    explicitSize.x = ctx.requestedWidth->resolveOr(ctx.availableWidth, 0.0);
                 }else {
                     std::optional<float> resolvedRight;
                     std::optional<float> resolvedLeft;
 
-                    if (positionContext.right.has_value()) {
-                        resolvedRight = positionContext.right->resolveOr(sizeContext.availableWidth, 0.0f);
+                    if (ctx.right.has_value()) {
+                        resolvedRight = ctx.right->resolveOr(ctx.availableWidth, 0.0f);
                     }
 
-                    if (positionContext.left.has_value()) {
-                        resolvedLeft = positionContext.left->resolveOr(sizeContext.availableWidth, 0.0f);
+                    if (ctx.left.has_value()) {
+                        resolvedLeft = ctx.left->resolveOr(ctx.availableWidth, 0.0f);
                     }
 
                     if (resolvedRight.has_value() && resolvedLeft.has_value()) {
-                        explicitSize.x = sizeContext.availableWidth - *resolvedRight - * resolvedLeft;
+                        explicitSize.x = ctx.availableWidth - *resolvedRight - * resolvedLeft;
                     }
                 }
 
@@ -136,14 +140,14 @@ namespace NewArch {
             }
             default: {
                 // static fallthrough 
-                if (sizeContext.requestedHeight.has_value()) {
-                    explicitSize.y = sizeContext.requestedHeight->resolveOr(sizeContext.availableHeight, 0.0f);
+                if (ctx.requestedHeight.has_value()) {
+                    explicitSize.y = ctx.requestedHeight->resolveOr(ctx.availableHeight, 0.0f);
                 }else {
                     explicitSize.y = 0;
                 }
 
-                if (sizeContext.requestedWidth) {
-                    explicitSize.x = sizeContext.requestedWidth->resolveOr(sizeContext.availableWidth, 0.0f);
+                if (ctx.requestedWidth) {
+                    explicitSize.x = ctx.requestedWidth->resolveOr(ctx.availableWidth, 0.0f);
                 }else {
                     explicitSize.x = 0;
                 }
@@ -267,21 +271,30 @@ namespace NewArch {
         LayoutResult lr;
         lr.outOfFlow = true;
 
-        simd_float2 absolutePosition = constraints.origin;
+        // simd_float2 absolutePosition = constraints.origin;
 
         // // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
         // float marginLeft = layoutInput.marginLeft.resolveOr(constraints.maxWidth, 0.0f);
         // float marginTop = layoutInput.marginTop.resolveOr(constraints.maxHeight, 0.0f);
 
-        auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, layoutInput.width);
+        // auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, layoutInput.width);
 
 
-        float left = layoutInput.left.resolveOr(constraints.maxWidth);
-        float top = layoutInput.top.resolveOr(constraints.maxHeight);
+        // float left = layoutInput.left.resolveOr(constraints.maxWidth);
+        // float top = layoutInput.top.resolveOr(constraints.maxHeight);
         
-        absolutePosition.x += left + margins.left;
-        absolutePosition.y += top + margins.top;
+        // absolutePosition.x += left + margins.left;
+        // absolutePosition.y += top + margins.top;
 
+        // simd_float2 newCursor = absolutePosition;
+
+        PositionResolutionContext pctx {
+            .currentCursor = currentCursor,
+            .constraints = constraints,
+            .layoutInput = layoutInput,
+        };
+
+        simd_float2 absolutePosition = resolvePosition(pctx);
         simd_float2 newCursor = absolutePosition;
 
         float resolvedHeight = 0.0f;
@@ -347,17 +360,24 @@ namespace NewArch {
         lr.outOfFlow = true;
 
         simd_float2 viewportOrigin = {0.0f, 0.0f};
-        simd_float2 fixedPosition = viewportOrigin;
+        // simd_float2 fixedPosition = viewportOrigin;
 
-        // Resolve margins (Auto resolves to 0 for fixed positioning)
-        float marginLeft = layoutInput.marginLeft.resolveOr(constraints.frameInfo.width, 0.0f);
-        float marginTop = layoutInput.marginTop.resolveOr(constraints.frameInfo.height, 0.0f);
+        // // Resolve margins (Auto resolves to 0 for fixed positioning)
+        // float marginLeft = layoutInput.marginLeft.resolveOr(constraints.frameInfo.width, 0.0f);
+        // float marginTop = layoutInput.marginTop.resolveOr(constraints.frameInfo.height, 0.0f);
 
-        float left = layoutInput.left.resolveOr(constraints.maxWidth);
-        float top = layoutInput.top.resolveOr(constraints.maxHeight);
+        // float left = layoutInput.left.resolveOr(constraints.maxWidth);
+        // float top = layoutInput.top.resolveOr(constraints.maxHeight);
         
-        fixedPosition.x += left + marginLeft;
-        fixedPosition.y += top + marginTop;
+        // fixedPosition.x += left + marginLeft;
+        // fixedPosition.y += top + marginTop;
+        PositionResolutionContext pctx {
+            .currentCursor = currentCursor,
+            .constraints = constraints,
+            .layoutInput = layoutInput    
+        };
+
+        simd_float2 fixedPosition = resolvePosition(pctx);
         
         simd_float2 newCursor = fixedPosition;
         float resolvedHeight = 0.0f;
