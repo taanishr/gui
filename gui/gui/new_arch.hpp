@@ -249,10 +249,15 @@ namespace NewArch {
         float availableHeight;
     };
 
+    struct ResolvedMargins {
+        float top, right, bottom, left;
+    };
+
     struct PositionResolutionContext {
         simd_float2 currentCursor;
         const Constraints& constraints;
         const LayoutInput& layoutInput;
+        const ResolvedMargins& margins;
     };
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
@@ -284,9 +289,6 @@ namespace NewArch {
         EdgeIntent edgeIntent;
     };
 
-    struct ResolvedMargins {
-        float top, right, bottom, left;
-    };
     
     struct LayoutEngine {
         static ResolvedMargins resolveAutoMargins(
