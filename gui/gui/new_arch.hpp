@@ -221,7 +221,7 @@ namespace NewArch {
     };
 
      struct InheritedProperties {
-        Direction direction{Direction::ltr};
+        Direction direction{Direction::rtl};
     };
 
     struct Constraints {

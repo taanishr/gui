@@ -660,7 +660,7 @@ namespace NewArch {
                             }
                         } else {
                             if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
-                                newCursor.x = constraints.origin.x + marginLeft;
+                                newCursor.x = startingX + marginLeft;
                                 newCursor.y += lineHeight;
                                 totalHeight += lineHeight;
                                 lineHeight = 0;
@@ -678,13 +678,13 @@ namespace NewArch {
                         } else {
                             newCursor.y += marginTop + constraints.edgeIntent.intent;
                         }
-                        newCursor.x = constraints.origin.x + marginLeft;
+                        newCursor.x = startingX + marginLeft;
                     }
                 } else {
                     if (fragment.collapsable) {
                     } else {
                         if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
-                            newCursor.x = constraints.origin.x;
+                            newCursor.x = startingX;
                             newCursor.y += lineHeight;
                             totalHeight += lineHeight;
                             lineHeight = 0;
