@@ -15,6 +15,28 @@
 #include <print>
 #include <simd/vector_types.h>
 
+
+/*
+    figuring out how to introduce right justificaiton with rtl setting
+        op 1) helper function that resolves the next cursor
+            problems:
+                - <span> dasdasd </span> <span>dasdasdas </span>
+                - will combine; but in right justification case, cursor needs to be adjusted in this case
+                - need some sort of "lookahead" function or preprocessing maybe?
+                - there should be a better method though
+                - inlineCtx {
+                    currentLineW
+                }
+
+        Solution:
+            - create concept of line boxes
+            - currently, i have created "inline boxes"
+            - but line boxes will be shared across all children
+            - each line box will be assigned to a line box
+            - clear this vector if the array is blank
+            - preprocess these
+*/
+
 namespace NewArch {
 
     simd_float2 resolvePosition(const PositionResolutionContext& ctx) {
@@ -538,6 +560,13 @@ namespace NewArch {
         return lr;
     }
 
+    void LineBox::pushFragment(const LineFragment& fragment) {
+        fragmentOffsets.push_back(currentFragmentOffset);
+        currentFragmentOffset += fragment.width;
+        width += fragment.width;
+        fragmentCount += 1;
+    }
+
     LayoutResult LayoutEngine::layoutInlineNormalFlow(
         Constraints& constraints,
         simd_float2 currentCursor,
@@ -579,51 +608,58 @@ namespace NewArch {
 
         size_t atomIndex = 0;
 
-        if (constraints.lineboxes.empty()) {
-            if (constraints.edgeIntent.edgeDisplayMode == Block) {
-                if (constraints.edgeIntent.collapsable) {
-                    newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
-                } else {
-                    newCursor.y += marginTop + constraints.edgeIntent.intent;
-                }
-                newCursor.x = constraints.origin.x + marginLeft;
-            } else {
-                if (constraints.edgeIntent.collapsable) {
-                    newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
-                } else {
-                    newCursor.x += marginLeft + constraints.edgeIntent.intent;
-                }
-            }
+        if (constraints.lineFragments.empty()) {
+            // non-text case? Shouldn't exist. If its inline, and not text, it should just be one line fragment + box?
+            // if (constraints.edgeIntent.edgeDisplayMode == Block) {
+            //     if (constraints.edgeIntent.collapsable) {
+            //         newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
+            //     } else {
+            //         newCursor.y += marginTop + constraints.edgeIntent.intent;
+            //     }
+            //     newCursor.x = constraints.origin.x + marginLeft;
+            // } else {
+            //     if (constraints.edgeIntent.collapsable) {
+            //         newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
+            //     } else {
+            //         newCursor.x += marginLeft + constraints.edgeIntent.intent;
+            //     }
+            // }
 
-            for (auto& atom : atomized.atoms) {
-                if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
-                    || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
-                    newCursor.x = constraints.origin.x;
-                    newCursor.y += lineHeight;
-                    totalHeight += lineHeight;
-                    lineHeight = 0;
-                }
+            // for (auto& atom : atomized.atoms) {
+            //     if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
+            //         || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
+            //         newCursor.x = constraints.origin.x;
+            //         newCursor.y += lineHeight;
+            //         totalHeight += lineHeight;
+            //         lineHeight = 0;
+            //     }
 
-                atomOffsets.push_back(newCursor);
-                newCursor.x += atom.width;
-                lineHeight = std::max(lineHeight, atom.height);
-                minX = std::min(minX, atomOffsets.back().x);
-                maxX = std::max(maxX, newCursor.x);
-            }
+            //     atomOffsets.push_back(newCursor);
+            //     newCursor.x += atom.width;
+            //     lineHeight = std::max(lineHeight, atom.height);
+            //     minX = std::min(minX, atomOffsets.back().x);
+            //     maxX = std::max(maxX, newCursor.x);
+            // }
         } else {
-            for (size_t lineIdx = 0; lineIdx < constraints.lineboxes.size(); ++lineIdx) {
-                const Line& line = constraints.lineboxes[lineIdx];
+            for (size_t lineIdx = 0; lineIdx < constraints.lineFragments.size(); ++lineIdx) {
+                const LineFragment& fragment = constraints.lineFragments[lineIdx];
+
+                auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
+                float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
+                float startingX = constraints.inheritedProperties.direction == Direction::ltr
+                                    ? constraints.origin.x + offset 
+                                    : constraints.origin.x + constraints.maxWidth - lineBox.width + offset; 
 
                 if (lineIdx == 0) {
                     if (constraints.edgeIntent.edgeDisplayMode == Inline) {
-                        if (line.collapsable) {
+                        if (fragment.collapsable) {
                             if (constraints.edgeIntent.collapsable) {
                                 newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
                             } else {
                                 newCursor.x += marginLeft + constraints.edgeIntent.intent;
                             }
                         } else {
-                            if (newCursor.x + line.width > constraints.origin.x + constraints.maxWidth) {
+                            if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
                                 newCursor.x = constraints.origin.x + marginLeft;
                                 newCursor.y += lineHeight;
                                 totalHeight += lineHeight;
@@ -645,9 +681,9 @@ namespace NewArch {
                         newCursor.x = constraints.origin.x + marginLeft;
                     }
                 } else {
-                    if (line.collapsable) {
+                    if (fragment.collapsable) {
                     } else {
-                        if (newCursor.x + line.width > constraints.origin.x + constraints.maxWidth) {
+                        if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
                             newCursor.x = constraints.origin.x;
                             newCursor.y += lineHeight;
                             totalHeight += lineHeight;
@@ -656,7 +692,7 @@ namespace NewArch {
                     }
                 }
 
-                for (size_t i = 0; i < line.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
+                for (size_t i = 0; i < fragment.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
                     auto& atom = atomized.atoms[atomIndex];
 
                     if (atom.placeOnNewLine) {

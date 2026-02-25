@@ -4,9 +4,11 @@
 #include "printers.hpp"
 #include <any>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <print>
 #include <simd/vector_types.h>
+#include <unordered_map>
 
 
     
@@ -369,35 +371,18 @@ namespace NewArch {
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
         
-
-        // check constraints.parentMarginCollapses (only true if relative)
-            // if true 
-            // set first child's parentCollapses to true
-
-        
         constraints.replacedAttributes = {};
 
         if (node->marginMetadata.topChainId.has_value()) {
             auto topChain = collapsedChainMap[node->marginMetadata.topChainId.value()];
             if (topChain.depth > 1) {
-                // std::println("curr node: {} chain root: {} intent: {}", reinterpret_cast<void*>(node), reinterpret_cast<void*>(topChain.root), topChain.intent.value);
                 if (node == topChain.root) {
-                    // std::println("setting chain root: {} with following intent: {}", reinterpret_cast<void*>(node), topChain.intent.value);
                     constraints.replacedAttributes.marginTop = topChain.intent;
                 }else {
-                    // std::println("RESETTING margin for node: {}, chain root: {}, depth: {}",                                                                                                                                
-                    //    reinterpret_cast<void*>(node),                                                                                                                                                             
-                    //    reinterpret_cast<void*>(topChain.root),                                                                                                                                                    
-                    //    topChain.depth);         
-
                     constraints.replacedAttributes.marginTop = Size{};
                 }
             }
         }
-
-        // if (constraints.replacedAttributes.marginTop.has_value()) {
-        //     std::println("node: {} intent of replaced: {}", reinterpret_cast<void*>(node), constraints.replacedAttributes.marginTop->value);
-        // }
 
         if (node->marginMetadata.bottomChainId.has_value()) {
             auto bottomChain = collapsedChainMap[node->marginMetadata.bottomChainId.value()];
@@ -415,15 +400,20 @@ namespace NewArch {
 
         auto childConstraints =  layout.childConstraints;
 
-        childConstraints.inheritedProperties = constraints.inheritedProperties;
+        // precompute line fragments & line boxes
+        bool prevInline = false;
+        bool trailingLineBox = false;
+        std::vector<LineBox> childrenLineBoxes;
+        std::vector<std::vector<LineFragment>> childrenLineFragments;
 
-        // precompute lineboxes
-        std::vector<std::vector<Line>> childrenLineboxes;
+
+        LineBox currentLineBox {};
+        size_t currentLineBoxIndex = 0;
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
 
-            std::vector<Line> childLineboxes;
+            std::vector<LineFragment> childLineFragments;
 
             // request
             DescriptorPayload rawPayload {
@@ -434,18 +424,30 @@ namespace NewArch {
             std::any payload = rawPayload;
             auto resp = child->element->request(RequestTarget::Descriptor, payload);
 
-            
-
             // value check
             if (resp.has_value()) {
                 auto text = std::any_cast<std::string>(resp);
 
                 float runningWidth = 0.0;
                 size_t runningAtomCount = 0;
-                bool isFirstLinebox = true;
+                bool isFirstLineFragment = true;
 
                 auto& atoms = child->atomized->atoms;
                 size_t idx = 0;
+
+                // if prevInline; add to current line box
+                // else, make new linebox
+                // what to do with trailing line boxes?
+                // how do we know we have a trailing line box
+
+
+                // checks for gaps
+                
+                if (i > 0 && !prevInline) {
+                    childrenLineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                }
 
                 while (idx < text.size() && idx < atoms.size()) {
                     char ch = text[idx];
@@ -456,46 +458,79 @@ namespace NewArch {
                         runningAtomCount++;
                         idx++;
                     } else {
-                        // Space: add all consecutive spaces to current linebox
+                        // Space: add all consecutive spaces to current line fragment
                         while (idx < text.size() && text[idx] == ' ') {
                             runningWidth += atoms[idx].width;
                             runningAtomCount++;
                             idx++;
                         }
-                        // Push linebox with trailing spaces
+                        // Push line fragment with trailing spaces
                         if (runningAtomCount > 0) {
-                            childLineboxes.push_back({
+                            LineFragment lineFragment {
                                 .width = runningWidth,
                                 .atomCount = runningAtomCount,
-                                .collapsable = isFirstLinebox
-                            });
-                            isFirstLinebox = false;
+                                .collapsable = isFirstLineFragment,
+                                .lineBoxIndex = currentLineBoxIndex,
+                                .fragmentIndex = currentLineBox.fragmentCount
+                            };
+
+                            childLineFragments.push_back(lineFragment);
+                            currentLineBox.pushFragment(lineFragment);
+                            childrenLineBoxes.push_back(currentLineBox);
+                            currentLineBox = {};
+                            currentLineBoxIndex++;
+                            trailingLineBox = false;
+                            isFirstLineFragment = false;
                         }
                         runningWidth = 0.0;
                         runningAtomCount = 0;
                     }
                 }
 
-                // Push final linebox if any
+                // Push final line fragment if any
                 if (runningAtomCount > 0) {
-                    childLineboxes.push_back({
+                    LineFragment lineFragment {
                         .width = runningWidth,
                         .atomCount = runningAtomCount,
-                        .collapsable = isFirstLinebox
-                    });
+                        .collapsable = isFirstLineFragment,
+                        .lineBoxIndex = currentLineBoxIndex,
+                        .fragmentIndex = currentLineBox.fragmentCount
+                    };
+
+                    childLineFragments.push_back(lineFragment);
+                    currentLineBox.pushFragment(lineFragment);
+                    trailingLineBox = true;
                 }
+                prevInline = true;
+            }else {
+                prevInline = false;
             }
 
-            childrenLineboxes.push_back(childLineboxes);
+            childrenLineFragments.push_back(childLineFragments);
+            // std::println("child line boxes: {} child line fragments: {}", childrenLineBoxes.size(), childLineFragments.size());
         }
+
+        if (trailingLineBox) {
+            childrenLineBoxes.push_back(currentLineBox);
+        }
+
         
+        auto flatViewFragments = childrenLineFragments | std::views::join;
+
+        for (auto& fragment : flatViewFragments) {
+            std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
+        }
+
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
             auto childAsPtr = child.get();
 
-            // Pass precomputed lineboxes to child
-            childConstraints.lineboxes = childrenLineboxes[i];
+            // Pass precomputed line fragments and line boxes to child
+            childConstraints.lineFragments = childrenLineFragments[i];
+            childConstraints.lineBoxes = childrenLineBoxes;
 
+
+            childConstraints.inheritedProperties = constraints.inheritedProperties;
             layoutPhase(childAsPtr, frameInfo, childConstraints);
             auto childLayout = *childAsPtr->layout;
 
