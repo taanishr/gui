@@ -43,12 +43,22 @@ namespace NewArch {
         std::vector<AtomPlacement> placements;
     };
 
-    struct Line {
-        float width;
-        size_t atomCount;
-        bool collapsable;
+    struct LineFragment {
+        float width{};
+        size_t atomCount{};
+        bool collapsable{};
+        size_t lineBoxIndex{};
+        size_t fragmentIndex{};  // index within lineBox.fragmentOffsets
     };
 
+    struct LineBox {
+        size_t fragmentCount{}; // number of fragments
+        std::vector<int> fragmentOffsets{}; // relative x where fragment is placed in line box
+        float width{}; // width of line box (width of all fragments)
+        float currentFragmentOffset{};
+
+        void pushFragment(const LineFragment& fragment);
+    };
 
     struct FinalizedBase {};
 
@@ -225,8 +235,9 @@ namespace NewArch {
 
         EdgeIntent edgeIntent{};
 
-        std::vector<Line> lineboxes {};
-        
+        std::vector<LineFragment> lineFragments {};
+        std::vector<LineBox> lineBoxes {};
+
         ReplacedAttributes replacedAttributes {};
     };
 
@@ -274,14 +285,6 @@ namespace NewArch {
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
     simd_float2 resolveSize(const SizeResolutionContext& positionContext);
-
-    struct LineBox {
-        float y;
-        float currentWidth;
-        float maxWidth;
-        float height;
-        std::vector<size_t> atomIndices;
-    };
 
     struct LayoutResult {
         std::vector<simd_float2> atomOffsets;
