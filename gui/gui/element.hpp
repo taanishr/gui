@@ -22,19 +22,12 @@ namespace NewArch {
 
     struct TreeNode;
 
-    using ChainID = uint64_t;
-
     struct CollapsedChain {
         ChainID id;
         TreeNode* root;
         Size intent;
         int depth;
     };
-
-    struct MarginMetadata {
-        std::optional<ChainID> topChainId;
-        std::optional<ChainID> bottomChainId;
-    };  
 
     template<typename E>
     concept ElementType = requires(E& e, RequestTarget target, std::any& payload) {
@@ -214,10 +207,10 @@ namespace NewArch {
         uint64_t id;
         uint64_t localZIndex;
         uint64_t globalZIndex;
-        MarginMetadata marginMetadata;
 
         std::optional<Measured> measured;
         std::optional<Atomized> atomized;
+        std::optional<PreLayoutResult> preLayout;
         std::optional<LayoutResult> layout;
         std::optional<Placed> placed;
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;

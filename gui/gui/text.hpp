@@ -65,6 +65,18 @@ namespace NewArch {
                         if (f.name == "font")     return this->font;
                         if (f.name == "fontSize") return this->fontSize;
                         if (f.name == "color")    return this->color;
+                        if (f.name == "marginLeft") {
+                            if (this->marginLeft.has_value()) {
+                                return this->marginLeft.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "marginRight") {
+                            if (this->marginRight.has_value()) {
+                                return this->marginRight.value();
+                            }
+                            return std::any{};
+                        }
                         return std::any{};
                     }
                 }, *payloadPtr);

@@ -105,7 +105,9 @@ namespace NewArch {
                             }
                         }
 
-                        // startingX += ctx.margins.left;
+                        // adjust y if prev was inline
+                        
+                        // if (ctx.constraints.edgeIntent)
 
                         if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
                             startingX += ctx.margins.left;
@@ -265,6 +267,25 @@ namespace NewArch {
         }
 
         return margins;
+    }
+
+    ResolvedMargins resolveMargins(
+        const LayoutInput& li
+    ) {
+
+        float marginTop = li.marginTop.resolveOr(0.0f, 0.0f);
+        float marginRight = li.marginRight.resolveOr(0.0f, 0.0f);
+        float marginBottom = li.marginBottom.resolveOr(0.0f, 0.0f);
+        float marginLeft = li.marginLeft.resolveOr(0.0f, 0.0f);
+
+        ResolvedMargins resolvedMargins {
+            .top = marginTop,
+            .right = marginRight,
+            .bottom = marginBottom,
+            .left = marginLeft,
+        };
+
+        return resolvedMargins;
     }
 
     // pipeline specific
@@ -607,109 +628,72 @@ namespace NewArch {
         float maxX = currentCursor.x;
 
         size_t atomIndex = 0;
+        bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
+        size_t prevLineBoxIndex = -1;
+        float currentLineWidth = 0;
 
-        if (constraints.lineFragments.empty()) {
-            // non-text case? Shouldn't exist. If its inline, and not text, it should just be one line fragment + box?
-            // if (constraints.edgeIntent.edgeDisplayMode == Block) {
-            //     if (constraints.edgeIntent.collapsable) {
-            //         newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
-            //     } else {
-            //         newCursor.y += marginTop + constraints.edgeIntent.intent;
-            //     }
-            //     newCursor.x = constraints.origin.x + marginLeft;
-            // } else {
-            //     if (constraints.edgeIntent.collapsable) {
-            //         newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
-            //     } else {
-            //         newCursor.x += marginLeft + constraints.edgeIntent.intent;
-            //     }
-            // }
+        size_t fragmentIdx = 0;
+        for (auto it = constraints.lineFragments.begin(); it != constraints.lineFragments.end(); ++it, ++fragmentIdx) {
+            
+            const LineFragment& fragment = *it;
 
-            // for (auto& atom : atomized.atoms) {
-            //     if ((constraints.maxWidth > 0 && newCursor.x + atom.width > constraints.origin.x + constraints.maxWidth)
-            //         || (newCursor.x + atom.width > constraints.frameInfo.width) || atom.placeOnNewLine) {
-            //         newCursor.x = constraints.origin.x;
-            //         newCursor.y += lineHeight;
-            //         totalHeight += lineHeight;
-            //         lineHeight = 0;
-            //     }
+            auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
+            float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
+            float startingX = constraints.inheritedProperties.direction == Direction::ltr
+                                ? currentCursor.x + offset + marginLeft
+                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset - marginRight;
 
-            //     atomOffsets.push_back(newCursor);
-            //     newCursor.x += atom.width;
-            //     lineHeight = std::max(lineHeight, atom.height);
-            //     minX = std::min(minX, atomOffsets.back().x);
-            //     maxX = std::max(maxX, newCursor.x);
-            // }
-        } else {
-            for (size_t lineIdx = 0; lineIdx < constraints.lineFragments.size(); ++lineIdx) {
-                const LineFragment& fragment = constraints.lineFragments[lineIdx];
+            if (fragmentIdx == 0) {
+                float inlineMargin = isLtr ? marginRight : marginLeft;
 
-                auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
-                float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
-                float startingX = constraints.inheritedProperties.direction == Direction::ltr
-                                    ? constraints.origin.x + offset 
-                                    : constraints.origin.x + constraints.maxWidth - lineBox.width + offset; 
-
-                if (lineIdx == 0) {
-                    if (constraints.edgeIntent.edgeDisplayMode == Inline) {
-                        if (fragment.collapsable) {
-                            if (constraints.edgeIntent.collapsable) {
-                                newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
-                            } else {
-                                newCursor.x += marginLeft + constraints.edgeIntent.intent;
-                            }
-                        } else {
-                            if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
-                                newCursor.x = startingX + marginLeft;
-                                newCursor.y += lineHeight;
-                                totalHeight += lineHeight;
-                                lineHeight = 0;
-                            } else {
-                                if (constraints.edgeIntent.collapsable) {
-                                    newCursor.x += std::max(marginLeft, constraints.edgeIntent.intent);
-                                } else {
-                                    newCursor.x += marginLeft + constraints.edgeIntent.intent;
-                                }
-                            }
-                        }
+                if (constraints.edgeIntent.edgeDisplayMode == Inline) {
+                    if (constraints.edgeIntent.collapsable) {
+                        float collapsed = std::max(inlineMargin, constraints.edgeIntent.intent);
+                        newCursor.x += collapsed;
                     } else {
-                        if (constraints.edgeIntent.collapsable) {
-                            newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
-                        } else {
-                            newCursor.y += marginTop + constraints.edgeIntent.intent;
-                        }
-                        newCursor.x = startingX + marginLeft;
+                        float total = inlineMargin + constraints.edgeIntent.intent;
+                        newCursor.x += total;
                     }
                 } else {
-                    if (fragment.collapsable) {
+                    if (constraints.edgeIntent.collapsable) {
+                        newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
                     } else {
-                        if (newCursor.x + fragment.width > constraints.origin.x + constraints.maxWidth) {
-                            newCursor.x = startingX;
-                            newCursor.y += lineHeight;
-                            totalHeight += lineHeight;
-                            lineHeight = 0;
-                        }
-                    }
-                }
-
-                for (size_t i = 0; i < fragment.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
-                    auto& atom = atomized.atoms[atomIndex];
-
-                    if (atom.placeOnNewLine) {
-                        newCursor.x = constraints.origin.x;
-                        newCursor.y += lineHeight;
-                        totalHeight += lineHeight;
-                        lineHeight = 0;
+                        newCursor.y += marginTop + constraints.edgeIntent.intent;
                     }
 
-                    atomOffsets.push_back(newCursor);
-                    newCursor.x += atom.width;
-                    lineHeight = std::max(lineHeight, atom.height);
-                    minX = std::min(minX, atomOffsets.back().x);
-                    maxX = std::max(maxX, newCursor.x);
+                    newCursor.x = startingX + (isLtr ? inlineMargin : -inlineMargin);
                 }
             }
+
+            if (fragment.lineBoxIndex != prevLineBoxIndex) {
+                // New line box - check if it fits
+                if (currentLineWidth + lineBox.width > constraints.maxWidth && currentLineWidth > 0) {
+                    // Wrap to new line
+                    newCursor.y += lineHeight;
+                    totalHeight += lineHeight;
+                    lineHeight = 0;
+                    currentLineWidth = 0;
+                }
+                currentLineWidth += lineBox.width;
+                newCursor.x = startingX;
+            }
+
+
+            for (size_t i = 0; i < fragment.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
+                auto& atom = atomized.atoms[atomIndex];
+
+                atomOffsets.push_back(newCursor);
+                newCursor.x += atom.width;
+                lineHeight = std::max(lineHeight, atom.height);
+                minX = std::min(minX, atomOffsets.back().x);
+                maxX = std::max(maxX, newCursor.x);
+            }
+
+            prevLineBoxIndex = fragment.lineBoxIndex;
         }
+
+        // Add trailing margin for sibling cursor
+        newCursor.x += isLtr ? marginRight : -marginLeft;
 
         totalHeight += lineHeight;
         float totalWidth = maxX - minX;
@@ -738,9 +722,13 @@ namespace NewArch {
 
         lr.edgeIntent = {
             .edgeDisplayMode = Inline,
-            .intent = marginRight,
+            .intent = isLtr ? marginRight : marginLeft,
             .collapsable = false,
         };
+
+        // solution: assume inline elements dont collapse (they can't)
+        // add l/r margin to width of fragments
+        // we ball from there
 
         return lr;
     }
