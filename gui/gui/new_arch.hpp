@@ -46,7 +46,6 @@ namespace NewArch {
     struct LineFragment {
         float width{};
         size_t atomCount{};
-        bool collapsable{};
         size_t lineBoxIndex{};
         size_t fragmentIndex{};  // index within lineBox.fragmentOffsets
     };
@@ -220,8 +219,8 @@ namespace NewArch {
         std::optional<Size> marginBottom{}; 
     };
 
-     struct InheritedProperties {
-        Direction direction{Direction::rtl};
+    struct InheritedProperties {
+        Direction direction{Direction::ltr};
     };
 
     struct Constraints {
@@ -285,6 +284,19 @@ namespace NewArch {
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
     simd_float2 resolveSize(const SizeResolutionContext& positionContext);
+
+
+    using ChainID = uint64_t;
+
+    struct MarginMetadata {
+        std::optional<ChainID> topChainId;
+        std::optional<ChainID> bottomChainId;
+    };  
+
+    struct PreLayoutResult {
+        MarginMetadata marginMetadata;
+        ResolvedMargins resolvedMargins;
+    };
 
     struct LayoutResult {
         std::vector<simd_float2> atomOffsets;
