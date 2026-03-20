@@ -338,18 +338,7 @@ namespace NewArch {
         LayoutResult lr;
         lr.outOfFlow = true;
 
-        // // Resolve margins (Auto resolves to 0 for absolute positioning, centering handled separately)
-        float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
-        float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
-        float marginBottom = layoutInput.marginBottom.resolveOr(0.0f, 0.0f);
-        float marginLeft = layoutInput.marginLeft.resolveOr(0.0f, 0.0f);
-
-        ResolvedMargins margins {
-            .top = marginTop,
-            .right = marginRight,
-            .bottom = marginBottom,
-            .left = marginLeft,
-        };
+        auto margins = constraints.resolvedMargins;
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -425,17 +414,7 @@ namespace NewArch {
 
         simd_float2 viewportOrigin = {0.0f, 0.0f};
 
-        float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
-        float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
-        float marginBottom = layoutInput.marginBottom.resolveOr(0.0f, 0.0f);
-        float marginLeft = layoutInput.marginLeft.resolveOr(0.0f, 0.0f);
-
-        ResolvedMargins margins {
-            .top = marginTop,
-            .right = marginRight,
-            .bottom = marginBottom,
-            .left = marginLeft,
-        };
+        auto margins = constraints.resolvedMargins;
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -505,19 +484,7 @@ namespace NewArch {
         std::vector<simd_float2> atomOffsets;
         Constraints childConstraints;
 
-        // First compute content dimensions from atoms
-        float contentWidth = 0;
-        float contentHeight = 0;
-        for (auto& atom : atomized.atoms) {
-            contentWidth += atom.width;
-            contentHeight = std::max(contentHeight, atom.height);
-        }
-
-        if (layoutInput.width > 0) {
-            contentWidth = layoutInput.width;
-        }       
-
-        auto margins = resolveAutoMargins(layoutInput, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
+        auto margins = constraints.resolvedMargins;
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -597,18 +564,7 @@ namespace NewArch {
         LayoutResult lr;
         lr.outOfFlow = false;
 
-        // For inline elements, auto margins resolve to 0
-        float marginTop = layoutInput.marginTop.resolveOr(0.0f, 0.0f);
-        float marginRight = layoutInput.marginRight.resolveOr(0.0f, 0.0f);
-        float marginBottom = layoutInput.marginBottom.resolveOr(0.0f, 0.0f);
-        float marginLeft = layoutInput.marginLeft.resolveOr(0.0f, 0.0f);
-
-        ResolvedMargins margins {
-            .top = marginTop,
-            .right = marginRight,
-            .bottom = marginBottom,
-            .left = marginLeft,
-        };
+        ResolvedMargins margins = constraints.resolvedMargins;
 
         std::vector<simd_float2> atomOffsets;
 
@@ -636,15 +592,16 @@ namespace NewArch {
         for (auto it = constraints.lineFragments.begin(); it != constraints.lineFragments.end(); ++it, ++fragmentIdx) {
             
             const LineFragment& fragment = *it;
+            
 
             auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
             float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
             float startingX = constraints.inheritedProperties.direction == Direction::ltr
-                                ? currentCursor.x + offset + marginLeft
-                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset - marginRight;
+                                ? currentCursor.x + offset + margins.left
+                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset - margins.right;
 
             if (fragmentIdx == 0) {
-                float inlineMargin = isLtr ? marginRight : marginLeft;
+                float inlineMargin = isLtr ? margins.right : margins.left;
 
                 if (constraints.edgeIntent.edgeDisplayMode == Inline) {
                     if (constraints.edgeIntent.collapsable) {
@@ -656,9 +613,9 @@ namespace NewArch {
                     }
                 } else {
                     if (constraints.edgeIntent.collapsable) {
-                        newCursor.y += std::max(marginTop, constraints.edgeIntent.intent);
+                        newCursor.y += std::max(margins.top, constraints.edgeIntent.intent);
                     } else {
-                        newCursor.y += marginTop + constraints.edgeIntent.intent;
+                        newCursor.y += margins.top + constraints.edgeIntent.intent;
                     }
 
                     newCursor.x = startingX + (isLtr ? inlineMargin : -inlineMargin);
@@ -693,7 +650,7 @@ namespace NewArch {
         }
 
         // Add trailing margin for sibling cursor
-        newCursor.x += isLtr ? marginRight : -marginLeft;
+        newCursor.x += isLtr ? margins.right : -margins.left;
 
         totalHeight += lineHeight;
         float totalWidth = maxX - minX;
@@ -722,7 +679,7 @@ namespace NewArch {
 
         lr.edgeIntent = {
             .edgeDisplayMode = Inline,
-            .intent = isLtr ? marginRight : marginLeft,
+            .intent = isLtr ? margins.right : margins.left,
             .collapsable = false,
         };
 

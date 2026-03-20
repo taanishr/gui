@@ -97,6 +97,24 @@ namespace NewArch {
         return std::nullopt;
     }
 
+    std::optional<float> getWidth(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "width"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<float>(resp);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Size> getMargin(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "margin"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<Size>(resp);
+        }
+        return std::nullopt;
+    }
+
     uint64_t TreeNode::nextId = 0;
 
     std::vector<TreeNode*> collectAllNodes(TreeNode* root) {
@@ -340,12 +358,104 @@ namespace NewArch {
         node->preLayout->marginMetadata = marginMetadata;
     }
 
+    void RenderTree::precomputeMargins(TreeNode* node, Constraints& constraints) {
+        // Build replacedAttributes from collapse chain (same logic as layoutPhase)
+        constraints.replacedAttributes = {};
+
+        if (node->preLayout->marginMetadata.topChainId.has_value()) {
+            auto topChain = collapsedChainMap[node->preLayout->marginMetadata.topChainId.value()];
+            if (topChain.depth > 1) {
+                if (node == topChain.root) {
+                    constraints.replacedAttributes.marginTop = topChain.intent;
+                } else {
+                    constraints.replacedAttributes.marginTop = Size{};
+                }
+            }
+        }
+
+        if (node->preLayout->marginMetadata.bottomChainId.has_value()) {
+            auto bottomChain = collapsedChainMap[node->preLayout->marginMetadata.bottomChainId.value()];
+            if (bottomChain.depth > 1) {
+                if (node == bottomChain.root) {
+                    constraints.replacedAttributes.marginBottom = bottomChain.intent;
+                } else {
+                    constraints.replacedAttributes.marginBottom = Size{};
+                }
+            }
+        }
+
+        // Determine position and display
+        auto position = getPosition(node).value_or(Position::Static);
+        auto display = getDisplay(node).value_or(Display::Block);
+
+        // Get margin values from descriptor (with fallback to default margin)
+        Size defaultMargin = getMargin(node).value_or(Size{});
+        Size marginTop = getMarginTop(node).value_or(defaultMargin);
+        Size marginRight = getMarginRight(node).value_or(defaultMargin);
+        Size marginBottom = getMarginBottom(node).value_or(defaultMargin);
+        Size marginLeft = getMarginLeft(node).value_or(defaultMargin);
+
+        ResolvedMargins margins{};
+
+        if (position == Position::Static && display == Display::Block) {
+            // Block normal flow: use resolveAutoMargins
+            // Compute content dimensions from atoms
+            float contentWidth = 0;
+            float contentHeight = 0;
+            for (auto& atom : node->atomized->atoms) {
+                contentWidth += atom.width;
+                contentHeight = std::max(contentHeight, atom.height);
+            }
+
+            float width = getWidth(node).value_or(0.0f);
+            if (width > 0) {
+                contentWidth = width;
+            }
+
+            // Build a temporary LayoutInput for resolveAutoMargins
+            LayoutInput li{
+                .position = position,
+                .display = display,
+                .width = width,
+                .height = 0,
+                .marginTop = marginTop,
+                .marginRight = marginRight,
+                .marginBottom = marginBottom,
+                .marginLeft = marginLeft,
+            };
+
+            margins = LayoutEngine::resolveAutoMargins(li, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
+        } else {
+            // Inline, fixed, absolute: use simple resolution
+            margins = {
+                .top = marginTop.resolveOr(0.0f, 0.0f),
+                .right = marginRight.resolveOr(0.0f, 0.0f),
+                .bottom = marginBottom.resolveOr(0.0f, 0.0f),
+                .left = marginLeft.resolveOr(0.0f, 0.0f),
+            };
+        }
+
+        node->preLayout->resolvedMargins = margins;
+
+        // Recurse for children with updated constraints
+        auto& measured = *node->measured;
+        Constraints childConstraints{};
+        childConstraints.maxWidth = measured.explicitWidth;
+        childConstraints.maxHeight = measured.explicitHeight;
+        childConstraints.frameInfo = constraints.frameInfo;
+
+        for (auto& child : node->children) {
+            precomputeMargins(child.get(), childConstraints);
+        }
+    }
+
     void RenderTree::preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         collapsedChainMap.clear();
         nextChainId = 0;
 
         buildCollapsedChains(node, collapsedChainMap, nextChainId, nullptr, nullptr);
-        
+
+        precomputeMargins(node, constraints);
     }
 
     // DONE SERIALLY
@@ -381,6 +491,8 @@ namespace NewArch {
                 }
             }
         }
+
+        constraints.resolvedMargins = node->preLayout->resolvedMargins;
 
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
