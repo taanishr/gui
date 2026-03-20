@@ -25,6 +25,13 @@ using namespace std::ranges::views;
 class Renderer;
 
 namespace NewArch {
+
+
+    struct ResolvedMargins {
+        float top, right, bottom, left;
+    };
+
+    
     using FragmentID = uint64_t;
 
     struct Measured {
@@ -229,7 +236,7 @@ namespace NewArch {
         float maxWidth{};
         float maxHeight{};
         InheritedProperties inheritedProperties{};
-    
+
         FrameInfo frameInfo{}; // viewport size (for fixed)
 
         EdgeIntent edgeIntent{};
@@ -238,6 +245,7 @@ namespace NewArch {
         std::vector<LineBox> lineBoxes {};
 
         ReplacedAttributes replacedAttributes {};
+        ResolvedMargins resolvedMargins {};
     };
 
     struct LayoutInput {
@@ -269,10 +277,6 @@ namespace NewArch {
         const std::optional<Size>& requestedHeight;
         float availableWidth;
         float availableHeight;
-    };
-
-    struct ResolvedMargins {
-        float top, right, bottom, left;
     };
 
     struct PositionResolutionContext {

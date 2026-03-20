@@ -81,6 +81,27 @@ namespace NewArch {
                             }
                             return std::any{};
                         }
+                        if (f.name == "marginLeft") {
+                            if (this->marginLeft.has_value()) {
+                                return this->marginLeft.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "marginRight") {
+                            if (this->marginRight.has_value()) {
+                                return this->marginRight.value();
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "width") {
+                            if (this->width.has_value()) {
+                                return this->width->resolveOr(0.0f);
+                            }
+                            return std::any{};
+                        }
+                        if (f.name == "margin") {
+                            return this->margin;
+                        }
                         return std::any{};
                     }
                 }, *payloadPtr);
