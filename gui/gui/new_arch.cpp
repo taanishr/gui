@@ -590,6 +590,8 @@ namespace NewArch {
         fragmentCount += 1;
     }
 
+    // LayoutResult LayoutEngine::layoutFlex
+
     LayoutResult LayoutEngine::layoutInlineNormalFlow(
         Constraints& constraints,
         simd_float2 currentCursor,
@@ -716,6 +718,15 @@ namespace NewArch {
 
         return lr;
     }
+
+    // LayoutResult layoutFlex(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized) {
+    //     // flex algorithm:
+    //         // all in preprocessing: gather sizes (flex-basis) of all elements
+    //         // if shrink is set: shrink elements; if grow is set: grow elements
+    //         // place sequentially; leave remaining space
+
+    // }
+
 
     LayoutResult LayoutEngine::resolveNormalFlow(Constraints& constraints, simd_float2 current_cursor, LayoutInput& layoutInput, Atomized& atomized) {
         LayoutResult lr;

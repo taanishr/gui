@@ -257,7 +257,7 @@ namespace NewArch {
             auto display = getDisplay(child.get());
 
             if (position.has_value() && display.has_value()) {
-                if (*position == Position::Static && *display == Display::Block) {
+                if ((*position == Position::Static || *position == Position::Relative) && *display == Display::Block) {
                     if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
                     lastInFlowCollapsableChild = child.get();
                 }
@@ -463,150 +463,6 @@ namespace NewArch {
     }
 
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
-        bool prevInline = false;
-        std::vector<LineBox> childrenLineBoxes;
-        std::vector<std::vector<LineFragment>> childrenLineFragments;
-        LineBox currentLineBox {};
-        size_t currentLineBoxIndex = 0;
-
-
-        for (uint64_t i = 0; i < node->children.size(); ++i) {
-            auto& child = node->children[i];
-
-            std::vector<LineFragment> childLineFragments;
-
-            auto textResp = getText(child.get());
-
-            if (textResp.has_value()) {
-                auto margins = child->preLayout->resolvedMargins;
-                auto marginLeft = margins.left;
-                auto marginRight = margins.right;
-                auto text = *textResp;
-
-                float runningWidth = 0.0;
-                size_t runningAtomCount = 0;
-
-                auto& atoms = child->atomized->atoms;
-                size_t idx = 0;
-
-                if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
-                    childrenLineBoxes.push_back(currentLineBox);
-                    currentLineBox = {};
-                    currentLineBoxIndex++;
-                }
-
-                // construct current fragment.
-                runningWidth += marginLeft;
-
-                while (idx < text.size() && idx < atoms.size()) {
-                    char ch = text[idx];
-
-                    if (ch != ' ') {
-                        runningWidth += atoms[idx].width;
-                        runningAtomCount++;
-                        idx++;
-                        
-                        if (idx < text.size())
-                            continue;
-                    }
-
-                    while (idx < text.size() && text[idx] == ' ') {
-                        runningWidth += atoms[idx].width;
-                        runningAtomCount++;
-                        idx++;
-                    }
-
-                    if (runningAtomCount > 0) {
-                        if (currentLineBox.width + runningWidth > childConstraints.maxWidth) {
-                            childrenLineBoxes.push_back(currentLineBox);
-                            currentLineBox = {};
-                            currentLineBoxIndex++;
-                        }
-                        
-                        runningWidth += marginRight;
-
-                        LineFragment lineFragment {
-                            .width = runningWidth,
-                            .atomCount = runningAtomCount,
-                            .lineBoxIndex = currentLineBoxIndex,
-                            .fragmentIndex = currentLineBox.fragmentCount
-                        };
-
-                        childLineFragments.push_back(lineFragment);
-                        currentLineBox.pushFragment(lineFragment);
-
-                        runningWidth = 0.0;
-                        runningAtomCount = 0;
-                    }
-                }
-
-                prevInline = true;
-            }else {
-                prevInline = false;
-            }
-
-            childrenLineFragments.push_back(childLineFragments);
-        }
-
-        if (currentLineBox.fragmentCount > 0) {
-            childrenLineBoxes.push_back(currentLineBox);
-        }
-
-        return {childrenLineFragments, childrenLineBoxes};
-    }
-
-    // DONE SERIALLY
-    void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        assert(node->measured.has_value());
-        assert(node->atomized.has_value());
-        assert(node->preLayout.has_value());
-
-        auto& measured = *node->measured;
-        auto& atomized = *node->atomized;
-
-        constraints.replacedAttributes = {};
-
-        if (node->preLayout->marginMetadata.topChainId.has_value()) {
-            auto topChain = collapsedChainMap[node->preLayout->marginMetadata.topChainId.value()];
-            if (topChain.depth > 1) {
-                if (node == topChain.root) {
-                    constraints.replacedAttributes.marginTop = topChain.intent;
-                }else {
-                    constraints.replacedAttributes.marginTop = Size{};
-                }
-            }
-        }
-
-        if (node->preLayout->marginMetadata.bottomChainId.has_value()) {
-            auto bottomChain = collapsedChainMap[node->preLayout->marginMetadata.bottomChainId.value()];
-            if (bottomChain.depth > 1) {
-                if (node == bottomChain.root) {
-                    constraints.replacedAttributes.marginBottom = bottomChain.intent;
-                }else {
-                    constraints.replacedAttributes.marginBottom = Size{};
-                }
-            }
-        }
-   
-        constraints.resolvedMargins = node->preLayout->resolvedMargins;
-
-        auto layout = node->element->layout(constraints, measured, atomized);
-        node->layout = layout;
-
-        auto childConstraints = layout.childConstraints;
-
-        // If this node is positioned, it becomes the containing block for absolute descendants
-        auto position = getPosition(node);
-        if (position.has_value() && *position != Position::Static) {
-            childConstraints.absoluteContainingBlock = {
-                .origin = {layout.computedBox.x, layout.computedBox.y},
-                .width = layout.computedBox.width,
-                .height = layout.computedBox.height
-            };
-        } else {
-            childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
-        }
-
         // precompute line fragments & line boxes
         bool prevInline = false;
         std::vector<LineBox> childrenLineBoxes;
@@ -712,8 +568,38 @@ namespace NewArch {
             childrenLineBoxes.push_back(currentLineBox);
         }
 
-        // auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
+        return {childrenLineFragments, childrenLineBoxes};
+    }
 
+    // DONE SERIALLY
+    void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
+        assert(node->measured.has_value());
+        assert(node->atomized.has_value());
+        assert(node->preLayout.has_value());
+
+        auto& measured = *node->measured;
+        auto& atomized = *node->atomized;
+   
+        constraints.resolvedMargins = node->preLayout->resolvedMargins;
+
+        auto layout = node->element->layout(constraints, measured, atomized);
+        node->layout = layout;
+
+        auto childConstraints = layout.childConstraints;
+
+        // If this node is positioned, it becomes the containing block for absolute descendants
+        auto position = getPosition(node);
+        if (position.has_value() && *position != Position::Static) {
+            childConstraints.absoluteContainingBlock = {
+                .origin = {layout.computedBox.x, layout.computedBox.y},
+                .width = layout.computedBox.width,
+                .height = layout.computedBox.height
+            };
+        } else {
+            childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
+        }
+
+        auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
         
         // auto flatViewFragments = childrenLineFragments | std::views::join;
 
