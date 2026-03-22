@@ -612,11 +612,12 @@ namespace NewArch {
 
         simd_float2 newCursor = resolvePosition(pctx);
 
-        lr.childConstraints.origin = currentCursor;
+        lr.childConstraints.origin = newCursor;
         float lineHeight = 0;
         float totalHeight = 0;
-        float minX = currentCursor.x;
-        float maxX = currentCursor.x;
+        float totalWidth = 0;
+        float minX = newCursor.x;
+        float minY = newCursor.y;
 
         size_t atomIndex = 0;
         bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
@@ -629,8 +630,11 @@ namespace NewArch {
             auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
             float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
             float startingX = isLtr
-                                ? currentCursor.x + offset
-                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset;
+                                ? constraints.origin.x + offset
+                                : constraints.origin.x + constraints.maxWidth - lineBox.width + offset;
+
+
+            newCursor.x = startingX;
 
             if (fragmentIdx == 0) {
                 float inlineMargin = isLtr ? margins.right : margins.left;
@@ -650,7 +654,7 @@ namespace NewArch {
                         newCursor.y += margins.top + constraints.edgeIntent.intent;
                     }
 
-                    newCursor.x = startingX + (isLtr ? inlineMargin : -inlineMargin);
+                    newCursor.x += (isLtr ? inlineMargin : -inlineMargin);
                 }
             }
 
@@ -658,8 +662,7 @@ namespace NewArch {
                 newCursor.y += lineHeight;
                 totalHeight += lineHeight;
                 lineHeight = 0;
-                // std::println("starting x: {}", startingX);
-                newCursor.x = constraints.origin.x;
+                newCursor.x = startingX;
             }
 
 
@@ -669,32 +672,33 @@ namespace NewArch {
                 atomOffsets.push_back(newCursor);
                 newCursor.x += atom.width;
                 lineHeight = std::max(lineHeight, atom.height);
-                minX = std::min(minX, atomOffsets.back().x);
-                maxX = std::max(maxX, newCursor.x);
             }
 
             prevLineBoxIndex = fragment.lineBoxIndex;
+            totalWidth += fragment.width;
         }
 
         // Add trailing margin for sibling cursor
         newCursor.x += isLtr ? margins.right : -margins.left;
 
         totalHeight += lineHeight;
-        float totalWidth = maxX - minX;
 
         lr.computedBox = {
             minX,
-            currentCursor.y,
+            minY,
             totalWidth,
             totalHeight
         };
+
+        auto cbx = minX;
+        auto cby = minY;
 
         float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
         float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
         float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
         float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
 
-        lr.childConstraints.cursor = {minX + paddingLeft, currentCursor.y + paddingTop};
+        lr.childConstraints.cursor = {minX + paddingLeft, minY + paddingTop};
         lr.childConstraints.maxWidth = totalWidth - paddingLeft - paddingRight;
         lr.childConstraints.maxHeight = totalHeight - paddingTop - paddingBottom;
         lr.childConstraints.frameInfo = constraints.frameInfo;
@@ -709,10 +713,6 @@ namespace NewArch {
             .intent = isLtr ? margins.right : margins.left,
             .collapsable = false,
         };
-
-        // solution: assume inline elements dont collapse (they can't)
-        // add l/r margin to width of fragments
-        // we ball from there
 
         return lr;
     }
