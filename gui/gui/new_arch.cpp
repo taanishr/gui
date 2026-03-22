@@ -12,6 +12,7 @@
 #include "sizing.hpp"
 #include <algorithm>
 #include <optional>
+#include <print>
 #include <simd/vector_types.h>
 
 
@@ -255,7 +256,6 @@ namespace NewArch {
 
         if (replacedAttributes.marginTop.has_value()) {
             auto& replacedMarginTop = *replacedAttributes.marginTop;
-            // std::println("replaced margin top: {}", replacedMarginTop.resolveOr(0.0f, 0.0f));
             margins.top = replacedMarginTop.resolveOr(0.0f, 0.0f);
         }
         else {
@@ -658,7 +658,8 @@ namespace NewArch {
                 newCursor.y += lineHeight;
                 totalHeight += lineHeight;
                 lineHeight = 0;
-                newCursor.x = startingX;
+                // std::println("starting x: {}", startingX);
+                newCursor.x = constraints.origin.x;
             }
 
 

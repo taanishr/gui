@@ -232,8 +232,7 @@ namespace NewArch {
     void RenderTree::atomizePhase(TreeNode* node, Constraints& constraints) {
         // assert(renderCache.measured.contains(node->id) && 
         //    "atomizePhase called before measurePhase");
-        assert(node->measured.has_value() && 
-           "atomizePhase called before measurePhase");
+        assert(node->measured.has_value());
 
 
         auto& measured  = *node->measured;
@@ -463,16 +462,108 @@ namespace NewArch {
         precomputeMargins(node, constraints);
     }
 
+    std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
+        bool prevInline = false;
+        std::vector<LineBox> childrenLineBoxes;
+        std::vector<std::vector<LineFragment>> childrenLineFragments;
+        LineBox currentLineBox {};
+        size_t currentLineBoxIndex = 0;
+
+
+        for (uint64_t i = 0; i < node->children.size(); ++i) {
+            auto& child = node->children[i];
+
+            std::vector<LineFragment> childLineFragments;
+
+            auto textResp = getText(child.get());
+
+            if (textResp.has_value()) {
+                auto margins = child->preLayout->resolvedMargins;
+                auto marginLeft = margins.left;
+                auto marginRight = margins.right;
+                auto text = *textResp;
+
+                float runningWidth = 0.0;
+                size_t runningAtomCount = 0;
+
+                auto& atoms = child->atomized->atoms;
+                size_t idx = 0;
+
+                if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
+                    childrenLineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                }
+
+                // construct current fragment.
+                runningWidth += marginLeft;
+
+                while (idx < text.size() && idx < atoms.size()) {
+                    char ch = text[idx];
+
+                    if (ch != ' ') {
+                        runningWidth += atoms[idx].width;
+                        runningAtomCount++;
+                        idx++;
+                        
+                        if (idx < text.size())
+                            continue;
+                    }
+
+                    while (idx < text.size() && text[idx] == ' ') {
+                        runningWidth += atoms[idx].width;
+                        runningAtomCount++;
+                        idx++;
+                    }
+
+                    if (runningAtomCount > 0) {
+                        if (currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                            childrenLineBoxes.push_back(currentLineBox);
+                            currentLineBox = {};
+                            currentLineBoxIndex++;
+                        }
+                        
+                        runningWidth += marginRight;
+
+                        LineFragment lineFragment {
+                            .width = runningWidth,
+                            .atomCount = runningAtomCount,
+                            .lineBoxIndex = currentLineBoxIndex,
+                            .fragmentIndex = currentLineBox.fragmentCount
+                        };
+
+                        childLineFragments.push_back(lineFragment);
+                        currentLineBox.pushFragment(lineFragment);
+
+                        runningWidth = 0.0;
+                        runningAtomCount = 0;
+                    }
+                }
+
+                prevInline = true;
+            }else {
+                prevInline = false;
+            }
+
+            childrenLineFragments.push_back(childLineFragments);
+        }
+
+        if (currentLineBox.fragmentCount > 0) {
+            childrenLineBoxes.push_back(currentLineBox);
+        }
+
+        return {childrenLineFragments, childrenLineBoxes};
+    }
+
     // DONE SERIALLY
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        assert(node->measured.has_value() && 
-            "layoutPhase called before measurePhase");
-        assert(node->atomized.has_value() && 
-            "layoutPhase called before atomizePhase");
+        assert(node->measured.has_value());
+        assert(node->atomized.has_value());
+        assert(node->preLayout.has_value());
 
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
-        
+
         constraints.replacedAttributes = {};
 
         if (node->preLayout->marginMetadata.topChainId.has_value()) {
@@ -496,7 +587,7 @@ namespace NewArch {
                 }
             }
         }
-
+   
         constraints.resolvedMargins = node->preLayout->resolvedMargins;
 
         auto layout = node->element->layout(constraints, measured, atomized);
@@ -572,7 +663,6 @@ namespace NewArch {
 
                     if (runningAtomCount > 0) {
                         if (currentLineBox.width + runningWidth > childConstraints.maxWidth) {
-                            std::println("current lb width: {} running width: {} maxwidth: {}", currentLineBox.width, runningWidth, childConstraints.maxWidth);
                             childrenLineBoxes.push_back(currentLineBox);
                             currentLineBox = {};
                             currentLineBoxIndex++;
@@ -607,12 +697,14 @@ namespace NewArch {
             childrenLineBoxes.push_back(currentLineBox);
         }
 
-        
-        auto flatViewFragments = childrenLineFragments | std::views::join;
+        // auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
 
-        for (auto& fragment : flatViewFragments) {
-            std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
-        }
+        
+        // auto flatViewFragments = childrenLineFragments | std::views::join;
+
+        // for (auto& fragment : flatViewFragments) {
+        //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
+        // }
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
@@ -635,12 +727,9 @@ namespace NewArch {
     }
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        assert(node->measured.has_value() && 
-            "finalizePhase: missing measured");
-        assert(node->atomized.has_value() && 
-            "finalizePhase: missing atomized");
-        assert(node->layout.has_value() && 
-            "finalizePhase: missing layout");
+        assert(node->measured.has_value());
+        assert(node->atomized.has_value());
+        assert(node->layout.has_value());
         
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
@@ -653,12 +742,9 @@ namespace NewArch {
     void RenderTree::finalizePhase(TreeNode* node, Constraints& constraints) {
         // I thought runtime checks for private methods were stupid, but I also am not superhuman and LLMs can hallucinate,
         // so debug asserts never hurt
-        assert(node->measured.has_value() && 
-            "finalizePhase: missing measured");
-        assert(node->atomized.has_value() && 
-            "finalizePhase: missing atomized");
-        assert(node->finalized.has_value() && 
-            "finalizePhase: missing placed");
+        assert(node->measured.has_value());
+        assert(node->atomized.has_value());
+        assert(node->finalized.has_value());
         
             
         auto& measured =  *node->measured;
