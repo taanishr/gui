@@ -34,7 +34,7 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     auto& desc = rootElem.getDescriptor();
     desc.width = NewArch::Size::percent(1.0);
     desc.height = NewArch::Size::percent(1.0);
-    desc.color = simd_float4{1,1,1,1};
+    desc.color = simd_float4{0,0,0,0};
 
 
     rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));

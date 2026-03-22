@@ -12,7 +12,6 @@
 #include "sizing.hpp"
 #include <algorithm>
 #include <optional>
-#include <print>
 #include <simd/vector_types.h>
 
 
@@ -43,60 +42,90 @@ namespace NewArch {
         simd_float2 resolvedPosition = ctx.currentCursor;
 
         switch (ctx.layoutInput.position) {
-            case NewArch::Position::Absolute:
             case NewArch::Position::Fixed: {
-                // applies top/bottom/left/right
-                // if top & bottom, favor top
-                // if left & right, favor left
-                // auto margins = LayoutEngine::resolveAutoMargins(ctx.layoutInput, ctx.constraints.replacedAttributes, ctx.constraints.maxWidth, ctx.layoutInput.width);
+                float refWidth = ctx.constraints.frameInfo.width;
+                float refHeight = ctx.constraints.frameInfo.height;
+                simd_float2 refOrigin = {0.0f, 0.0f};
 
-                // Resolve each positioning property only if specified
                 std::optional<float> left = ctx.layoutInput.left.has_value()
-                    ? ctx.layoutInput.left->resolve(ctx.constraints.maxWidth)
-                    : std::nullopt;
+                    ? ctx.layoutInput.left->resolve(refWidth) : std::nullopt;
                 std::optional<float> top = ctx.layoutInput.top.has_value()
-                    ? ctx.layoutInput.top->resolve(ctx.constraints.maxHeight)
-                    : std::nullopt;
+                    ? ctx.layoutInput.top->resolve(refHeight) : std::nullopt;
                 std::optional<float> right = ctx.layoutInput.right.has_value()
-                    ? ctx.layoutInput.right->resolve(ctx.constraints.maxWidth)
-                    : std::nullopt;
+                    ? ctx.layoutInput.right->resolve(refWidth) : std::nullopt;
                 std::optional<float> bottom = ctx.layoutInput.bottom.has_value()
-                    ? ctx.layoutInput.bottom->resolve(ctx.constraints.maxHeight)
-                    : std::nullopt;
+                    ? ctx.layoutInput.bottom->resolve(refHeight) : std::nullopt;
+
+                resolvedPosition = refOrigin;
 
                 if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
                     if (left.has_value()) {
-                        resolvedPosition.x += *left + ctx.margins.left;
+                        resolvedPosition.x = refOrigin.x + *left + ctx.margins.left;
                     } else if (right.has_value()) {
-                        resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.margins.right - ctx.layoutInput.width - *right;;
+                        resolvedPosition.x = refOrigin.x + refWidth - ctx.margins.right - ctx.layoutInput.width - *right;
                     }
-                }else {
+                } else {
                     if (right.has_value()) {
-                        resolvedPosition.x = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.margins.right - ctx.layoutInput.width - *right;;
+                        resolvedPosition.x = refOrigin.x + refWidth - ctx.margins.right - ctx.layoutInput.width - *right;
                     } else if (left.has_value()) {
-                        resolvedPosition.x += *left + ctx.margins.left;
+                        resolvedPosition.x = refOrigin.x + *left + ctx.margins.left;
                     }
                 }
 
                 if (top.has_value()) {
-                    resolvedPosition.y += *top + ctx.margins.top;
+                    resolvedPosition.y = refOrigin.y + *top + ctx.margins.top;
                 } else if (bottom.has_value()) {
-                    resolvedPosition.y = ctx.constraints.origin.y + ctx.constraints.maxHeight - ctx.layoutInput.height - ctx.margins.bottom - *bottom;
+                    resolvedPosition.y = refOrigin.y + refHeight - ctx.layoutInput.height - ctx.margins.bottom - *bottom;
+                }
+
+                break;
+            }
+            case NewArch::Position::Absolute: {
+                auto& cb = ctx.constraints.absoluteContainingBlock;
+                float refWidth = cb.width;
+                float refHeight = cb.height;
+                simd_float2 refOrigin = cb.origin;
+
+                std::optional<float> left = ctx.layoutInput.left.has_value()
+                    ? ctx.layoutInput.left->resolve(refWidth) : std::nullopt;
+                std::optional<float> top = ctx.layoutInput.top.has_value()
+                    ? ctx.layoutInput.top->resolve(refHeight) : std::nullopt;
+                std::optional<float> right = ctx.layoutInput.right.has_value()
+                    ? ctx.layoutInput.right->resolve(refWidth) : std::nullopt;
+                std::optional<float> bottom = ctx.layoutInput.bottom.has_value()
+                    ? ctx.layoutInput.bottom->resolve(refHeight) : std::nullopt;
+
+                resolvedPosition = refOrigin;
+
+                if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
+                    if (left.has_value()) {
+                        resolvedPosition.x = refOrigin.x + *left + ctx.margins.left;
+                    } else if (right.has_value()) {
+                        resolvedPosition.x = refOrigin.x + refWidth - ctx.margins.right - ctx.layoutInput.width - *right;
+                    }
+                } else {
+                    if (right.has_value()) {
+                        resolvedPosition.x = refOrigin.x + refWidth - ctx.margins.right - ctx.layoutInput.width - *right;
+                    } else if (left.has_value()) {
+                        resolvedPosition.x = refOrigin.x + *left + ctx.margins.left;
+                    }
+                }
+
+                if (top.has_value()) {
+                    resolvedPosition.y = refOrigin.y + *top + ctx.margins.top;
+                } else if (bottom.has_value()) {
+                    resolvedPosition.y = refOrigin.y + refHeight - ctx.layoutInput.height - ctx.margins.bottom - *bottom;
                 }
 
                 break;
             }   
+            case NewArch::Position::Relative:
             case NewArch::Position::Static: {
-                // ignores top/bottom/left/right 
-                
                 switch (ctx.layoutInput.display) {
                     case NewArch::Display::Block: {
-                        // auto margins = LayoutEngine::resolveAutoMargins(ctx.layoutInput, ctx.constraints.replacedAttributes, ctx.constraints.maxWidth, /*contentWidth*/ 0);
-
                         float startingX = ctx.constraints.origin.x;
                         float startingY = ctx.constraints.cursor.y;
 
-                        // Handle vertical margin collapse
                         if (ctx.constraints.edgeIntent.edgeDisplayMode == Display::Block) {
                             if (ctx.constraints.edgeIntent.collapsable && !ctx.layoutInput.marginTop.isAuto()) {
                                 startingY += std::max(ctx.constraints.edgeIntent.intent, ctx.margins.top);
@@ -105,22 +134,13 @@ namespace NewArch {
                             }
                         }
 
-                        // adjust y if prev was inline
-                        
-                        // if (ctx.constraints.edgeIntent)
-
                         if (ctx.constraints.inheritedProperties.direction == Direction::ltr) {
                             startingX += ctx.margins.left;
-                        }else {
-                            // std::println("end start: {}", ctx.constraints.origin.x + ctx.constraints.maxWidth);
-                            // startingX += ctx.margins.left;
+                        } else {
                             startingX = ctx.constraints.origin.x + ctx.constraints.maxWidth - ctx.layoutInput.width - ctx.margins.right;
                         }
 
-
-                        simd_float2 newCursor {startingX, startingY};
-
-                        resolvedPosition = newCursor;
+                        resolvedPosition = {startingX, startingY};
                         break;
                     }
                     case NewArch::Display::Inline: {
@@ -129,6 +149,21 @@ namespace NewArch {
                     }
                     default:
                         break;
+                }
+
+                // Relative: apply offsets after computing static position
+                if (ctx.layoutInput.position == Position::Relative) {
+                    if (ctx.layoutInput.top.has_value()) {
+                        resolvedPosition.y += ctx.layoutInput.top->resolveOr(ctx.constraints.maxHeight, 0.0f);
+                    } else if (ctx.layoutInput.bottom.has_value()) {
+                        resolvedPosition.y -= ctx.layoutInput.bottom->resolveOr(ctx.constraints.maxHeight, 0.0f);
+                    }
+
+                    if (ctx.layoutInput.left.has_value()) {
+                        resolvedPosition.x += ctx.layoutInput.left->resolveOr(ctx.constraints.maxWidth, 0.0f);
+                    } else if (ctx.layoutInput.right.has_value()) {
+                        resolvedPosition.x -= ctx.layoutInput.right->resolveOr(ctx.constraints.maxWidth, 0.0f);
+                    }
                 }
 
                 break;

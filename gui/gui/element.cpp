@@ -144,6 +144,11 @@ namespace NewArch {
             .maxWidth = frameInfo.width,
             .maxHeight = frameInfo.height,
             .frameInfo = frameInfo,
+            .absoluteContainingBlock = {
+                .origin = {0, 0},
+                .width = frameInfo.width,
+                .height = frameInfo.height
+            },
         };
 
         // AHH APPLE CLANG DOESN'T SUPPORT EXECUTION POLICIES YET EXECUTE ME
@@ -497,7 +502,19 @@ namespace NewArch {
         auto layout = node->element->layout(constraints, measured, atomized);
         node->layout = layout;
 
-        auto childConstraints =  layout.childConstraints;
+        auto childConstraints = layout.childConstraints;
+
+        // If this node is positioned, it becomes the containing block for absolute descendants
+        auto position = getPosition(node);
+        if (position.has_value() && *position != Position::Static) {
+            childConstraints.absoluteContainingBlock = {
+                .origin = {layout.computedBox.x, layout.computedBox.y},
+                .width = layout.computedBox.width,
+                .height = layout.computedBox.height
+            };
+        } else {
+            childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
+        }
 
         // precompute line fragments & line boxes
         bool prevInline = false;

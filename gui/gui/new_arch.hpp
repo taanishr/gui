@@ -202,6 +202,7 @@ namespace NewArch {
         Absolute,
         Fixed,
         Static,
+        Relative,
     };
 
     enum Display {
@@ -227,7 +228,13 @@ namespace NewArch {
     };
 
     struct InheritedProperties {
-        Direction direction{Direction::rtl};
+        Direction direction{Direction::ltr};
+    };
+
+    struct ContainingBlock {
+        simd_float2 origin{};
+        float width{};
+        float height{};
     };
 
     struct Constraints {
@@ -238,6 +245,7 @@ namespace NewArch {
         InheritedProperties inheritedProperties{};
 
         FrameInfo frameInfo{}; // viewport size (for fixed)
+        ContainingBlock absoluteContainingBlock{}; // for absolute: nearest positioned ancestor
 
         EdgeIntent edgeIntent{};
 
