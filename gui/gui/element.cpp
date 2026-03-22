@@ -653,21 +653,13 @@ namespace NewArch {
                         
                         if (idx < text.size())
                             continue;
-                    }
-
-                    while (idx < text.size() && text[idx] == ' ') {
-                        runningWidth += atoms[idx].width;
-                        runningAtomCount++;
-                        idx++;
-                    }
-
-                    if (runningAtomCount > 0) {
-                        if (currentLineBox.width + runningWidth > childConstraints.maxWidth) {
-                            childrenLineBoxes.push_back(currentLineBox);
-                            currentLineBox = {};
-                            currentLineBoxIndex++;
+                    }else {
+                        while (idx < text.size() && text[idx] == ' ') {
+                            runningWidth += atoms[idx].width;
+                            runningAtomCount++;
+                            idx++;
                         }
-                        
+
                         runningWidth += marginRight;
 
                         LineFragment lineFragment {
@@ -679,10 +671,33 @@ namespace NewArch {
 
                         childLineFragments.push_back(lineFragment);
                         currentLineBox.pushFragment(lineFragment);
+                    
+                        childrenLineBoxes.push_back(currentLineBox);
+                        currentLineBox = {};
+                        currentLineBoxIndex++;
 
                         runningWidth = 0.0;
                         runningAtomCount = 0;
+
                     }
+                
+                }
+
+                if (runningAtomCount > 0) {                        
+                    runningWidth += marginRight;
+
+                    LineFragment lineFragment {
+                        .width = runningWidth,
+                        .atomCount = runningAtomCount,
+                        .lineBoxIndex = currentLineBoxIndex,
+                        .fragmentIndex = currentLineBox.fragmentCount
+                    };
+
+                    childLineFragments.push_back(lineFragment);
+                    currentLineBox.pushFragment(lineFragment);
+
+                    runningWidth = 0.0;
+                    runningAtomCount = 0;
                 }
 
                 prevInline = true;
