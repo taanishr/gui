@@ -586,19 +586,16 @@ namespace NewArch {
         size_t atomIndex = 0;
         bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
         size_t prevLineBoxIndex = -1;
-        float currentLineWidth = 0;
 
         size_t fragmentIdx = 0;
         for (auto it = constraints.lineFragments.begin(); it != constraints.lineFragments.end(); ++it, ++fragmentIdx) {
-            
             const LineFragment& fragment = *it;
-            
 
             auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
             float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
-            float startingX = constraints.inheritedProperties.direction == Direction::ltr
-                                ? currentCursor.x + offset + margins.left
-                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset - margins.right;
+            float startingX = isLtr
+                                ? currentCursor.x + offset
+                                : currentCursor.x + constraints.maxWidth - lineBox.width + offset;
 
             if (fragmentIdx == 0) {
                 float inlineMargin = isLtr ? margins.right : margins.left;
@@ -622,16 +619,10 @@ namespace NewArch {
                 }
             }
 
-            if (fragment.lineBoxIndex != prevLineBoxIndex) {
-                // New line box - check if it fits
-                if (currentLineWidth + lineBox.width > constraints.maxWidth && currentLineWidth > 0) {
-                    // Wrap to new line
-                    newCursor.y += lineHeight;
-                    totalHeight += lineHeight;
-                    lineHeight = 0;
-                    currentLineWidth = 0;
-                }
-                currentLineWidth += lineBox.width;
+            if (fragment.lineBoxIndex != prevLineBoxIndex && prevLineBoxIndex != (size_t)-1) {
+                newCursor.y += lineHeight;
+                totalHeight += lineHeight;
+                lineHeight = 0;
                 newCursor.x = startingX;
             }
 

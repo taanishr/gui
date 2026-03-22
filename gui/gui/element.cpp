@@ -501,7 +501,6 @@ namespace NewArch {
 
         // precompute line fragments & line boxes
         bool prevInline = false;
-        bool trailingLineBox = false;
         std::vector<LineBox> childrenLineBoxes;
         std::vector<std::vector<LineFragment>> childrenLineFragments;
         LineBox currentLineBox {};
@@ -516,22 +515,9 @@ namespace NewArch {
             auto textResp = getText(child.get());
 
             if (textResp.has_value()) {
-                auto marginLeftResp = getMarginLeft(child.get());
-                auto marginRightResp = getMarginRight(child.get());
-
-                float marginLeft = 0.0;
-                float marginRight = 0.0;
-
-                if (marginLeftResp.has_value()) {
-                    std::println("ml has value");
-                    marginLeft = marginLeftResp->resolveOr(childConstraints.maxWidth);
-                }
-
-                if (marginRightResp.has_value()) {
-                    std::println("mr has value");
-                    marginRight = marginRightResp->resolveOr(childConstraints.maxWidth);
-                }
-
+                auto margins = child->preLayout->resolvedMargins;
+                auto marginLeft = margins.left;
+                auto marginRight = margins.right;
                 auto text = *textResp;
 
                 float runningWidth = 0.0;
@@ -540,90 +526,67 @@ namespace NewArch {
                 auto& atoms = child->atomized->atoms;
                 size_t idx = 0;
 
-                // if prevInline; add to current line box
-                // else, make new linebox
-                // what to do with trailing line boxes?
-                // how do we know we have a trailing line box
-
-
-                // checks for gaps
-                
-                if (i > 0 && !prevInline) {
+                if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
                     childrenLineBoxes.push_back(currentLineBox);
                     currentLineBox = {};
                     currentLineBoxIndex++;
                 }
 
+                // construct current fragment.
                 runningWidth += marginLeft;
 
                 while (idx < text.size() && idx < atoms.size()) {
                     char ch = text[idx];
 
                     if (ch != ' ') {
-                        // Non-space: accumulate
                         runningWidth += atoms[idx].width;
                         runningAtomCount++;
                         idx++;
-                    } else {
-                        // Space: add all consecutive spaces to current line fragment
-                        while (idx < text.size() && text[idx] == ' ') {
-                            runningWidth += atoms[idx].width;
-                            runningAtomCount++;
-                            idx++;
-                        }
+                        
+                        if (idx < text.size())
+                            continue;
+                    }
 
-                        // Push line fragment with trailing spaces
-                        runningWidth += marginRight;
+                    while (idx < text.size() && text[idx] == ' ') {
+                        runningWidth += atoms[idx].width;
+                        runningAtomCount++;
+                        idx++;
+                    }
 
-                        if (runningAtomCount > 0) {
-                            std::println("running Width: {}", runningWidth);
-
-                            LineFragment lineFragment {
-                                .width = runningWidth,
-                                .atomCount = runningAtomCount,
-                                .lineBoxIndex = currentLineBoxIndex,
-                                .fragmentIndex = currentLineBox.fragmentCount
-                            };
-
-                            childLineFragments.push_back(lineFragment);
-                            currentLineBox.pushFragment(lineFragment);
+                    if (runningAtomCount > 0) {
+                        if (currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                            std::println("current lb width: {} running width: {} maxwidth: {}", currentLineBox.width, runningWidth, childConstraints.maxWidth);
                             childrenLineBoxes.push_back(currentLineBox);
                             currentLineBox = {};
                             currentLineBoxIndex++;
-                            trailingLineBox = false;
                         }
+                        
+                        runningWidth += marginRight;
+
+                        LineFragment lineFragment {
+                            .width = runningWidth,
+                            .atomCount = runningAtomCount,
+                            .lineBoxIndex = currentLineBoxIndex,
+                            .fragmentIndex = currentLineBox.fragmentCount
+                        };
+
+                        childLineFragments.push_back(lineFragment);
+                        currentLineBox.pushFragment(lineFragment);
+
                         runningWidth = 0.0;
                         runningAtomCount = 0;
                     }
                 }
 
-                // Push final line fragment if any
-                if (runningAtomCount > 0) {
-                    runningWidth += marginRight;
-
-                    std::println("running Width: {}", runningWidth);
-
-                    LineFragment lineFragment {
-                        .width = runningWidth,
-                        .atomCount = runningAtomCount,
-                        .lineBoxIndex = currentLineBoxIndex,
-                        .fragmentIndex = currentLineBox.fragmentCount
-                    };
-
-                    childLineFragments.push_back(lineFragment);
-                    currentLineBox.pushFragment(lineFragment);
-                    trailingLineBox = true;
-                }
                 prevInline = true;
             }else {
                 prevInline = false;
             }
 
             childrenLineFragments.push_back(childLineFragments);
-            // std::println("child line boxes: {} child line fragments: {}", childrenLineBoxes.size(), childLineFragments.size());
         }
 
-        if (trailingLineBox) {
+        if (currentLineBox.fragmentCount > 0) {
             childrenLineBoxes.push_back(currentLineBox);
         }
 
