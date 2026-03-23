@@ -387,6 +387,47 @@ namespace NewArch {
         }
         
         // OHHH!  Do I need to alter my later passes to have a computed size? Computed width? Ok, makes sense.
+
+
+        Atomized reconcile(Fragment<S>& fragment, Constraints&, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+                     std::vector<Atom> atoms {};
+            
+            // get measurements
+            float width = layout.computedBox.width;
+            float height = layout.computedBox.height;
+
+            std::println("reconciled shape: {} {}", width, height);
+            
+            // prepare buffer
+            size_t bufferLen = 6*sizeof(DivPoint);
+            
+            std::array<DivPoint, 6> atomPoints {{
+                {{0,0}, 0},
+                {{width,0}, 0},
+                {{0,height}, 0},
+                {{0,height}, 0},
+                {{width,0}, 0},
+                {{width,height}, 0},
+            }};
+            
+            // std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
+            fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
+            
+            // finish allocating atom
+            Atom atom;
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
+            atom.offset = 0;
+            atom.length = bufferLen;
+            atom.width = width;
+            atom.height = height;
+            
+            atoms.push_back(atom);
+            
+            return Atomized{
+                .id = fragment.id,
+                .atoms = atoms
+            };
+        }
         
         // TODO: Cache all this
         Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) // also needs to take in constraints
@@ -413,11 +454,9 @@ namespace NewArch {
                 .placements = placements
             };
         }
-        
 
-        
         // finalizes uniforms and makes final object
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed)
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed)
         {
             // finalizes uniforms and return finalized object
 
@@ -445,7 +484,8 @@ namespace NewArch {
             
             if (placed.placements.size() > 0) {
                 auto offset = placed.placements.front();
-                simd_float2 halfExtent { measured.explicitWidth / 2.0f, measured.explicitHeight / 2.0f };
+
+                simd_float2 halfExtent { layout.computedBox.width / 2.0f, layout.computedBox.height / 2.0f };
                 simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
                 
                 geometryUniforms.halfExtent = halfExtent;
