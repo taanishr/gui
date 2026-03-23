@@ -102,6 +102,14 @@ namespace NewArch {
                         if (f.name == "margin") {
                             return this->margin;
                         }
+
+                        if (f.name == "flexShrink") {
+                            return this->flexShrink;
+                        }
+
+                        if (f.name == "flexGrow") {
+                            return this->flexGrow;
+                        }
                         return std::any{};
                     }
                 }, *payloadPtr);
@@ -119,6 +127,9 @@ namespace NewArch {
         simd_float4 borderColor;
         Size padding;
         std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
+
+
+        Size flexGrow, flexShrink;
 
         // Margins use Size to support Auto for centering
         Size margin;
