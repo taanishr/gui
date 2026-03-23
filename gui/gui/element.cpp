@@ -1,4 +1,5 @@
 #include "element.hpp"
+#include "fragment_types.hpp"
 #include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
@@ -199,6 +200,12 @@ namespace NewArch {
         root->calculateGlobalZIndex(0);
 
         // std::println("\n\n");
+
+        Parallel::for_each(allNodes.begin(), allNodes.end(),
+            [&](TreeNode* node) {
+                node->atomized = node->element->reconcile(rootConstraints, *node->measured, *node->atomized, *node->layout);
+            }
+        );
         
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
@@ -210,7 +217,7 @@ namespace NewArch {
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
                 node->finalized = node->element->finalize(rootConstraints, *node->measured,
-                                                        *node->atomized, *node->placed);
+                                                        *node->atomized, *node->layout, *node->placed);
             }
         );
     }
@@ -242,11 +249,10 @@ namespace NewArch {
         childConstraints.maxWidth = measured.explicitWidth;
         childConstraints.maxHeight = measured.explicitHeight;
 
-        // measure margins now?
-
         for (auto& child : node->children) {
             measurePhase(child.get(), childConstraints);
         }
+
     }
 
 
@@ -595,6 +601,7 @@ namespace NewArch {
 
     std::vector<float> buildFlexContext(TreeNode* node, Constraints& childConstraints) {
         // contract: ensure is flex before caling this method
+        // basic algorithm; not finalized becuase must run in measurement pahse
 
         // flex row impl
         float maxWidth = childConstraints.maxWidth;
@@ -684,7 +691,7 @@ namespace NewArch {
         constraints.resolvedMargins = node->preLayout->resolvedMargins;
 
         auto layout = node->element->layout(constraints, measured, atomized);
-        node->layout = layout;
+        // node->layout = layout;
 
         auto childConstraints = layout.childConstraints;
 
@@ -708,6 +715,9 @@ namespace NewArch {
         //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
         // }
 
+        float minY = constraints.origin.y;
+        float maxY = constraints.origin.y;
+
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
             auto childAsPtr = child.get();
@@ -724,8 +734,33 @@ namespace NewArch {
             if (!childLayout.outOfFlow) {
                 childConstraints.cursor = childLayout.siblingCursor;
                 childConstraints.edgeIntent = childLayout.edgeIntent;
+                maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
             }
         }
+
+        if (layout.computedBox.height == 0) {
+            float oldHeight = layout.computedBox.height;
+            layout.computedBox.height = maxY - minY;
+            layout.consumedHeight = layout.computedBox.height;
+
+            std::println("old height: {} new height: {}", oldHeight, layout.computedBox.height);
+        }
+
+        node->layout = layout;
+
+    }
+
+    void RenderTree::reconcilationPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
+        assert(node->measured.has_value());
+        assert(node->atomized.has_value());
+        assert(node->layout.has_value());
+        
+        auto& measured = *node->measured;
+        auto& atomized = *node->atomized;
+        auto& layout = *node->layout;
+
+        auto reconciledAtomized = node->element->reconcile(constraints, measured, atomized, layout);
+        node->atomized = reconciledAtomized;
     }
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
@@ -751,8 +786,9 @@ namespace NewArch {
             
         auto& measured =  *node->measured;
         auto& atomized = *node->atomized;
+        auto& layout = *node->layout;
         auto& placed = *node->placed;
-        auto finalized = node->element->finalize(constraints, measured, atomized, placed);
+        auto finalized = node->element->finalize(constraints, measured, atomized, layout, placed);
         node->finalized = finalized;
     }
 

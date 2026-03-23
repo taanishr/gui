@@ -334,6 +334,10 @@ namespace NewArch {
             return lr;
         }
 
+        Atomized reconcile(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+            return atomized;
+        };
+
         Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
 
@@ -363,7 +367,7 @@ namespace NewArch {
             return Placed{ .id = fragment.id, .placements = placements };
         }
 
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized, Placed& placed) {
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
             float borderWidth = 0.0;
 
             if (desc.borderWidth.unit == Unit::Px) {

@@ -56,8 +56,14 @@ namespace NewArch {
         { proc.measure(fragment, constraints, desc) } -> std::same_as<Measured>;
         { proc.atomize(fragment, constraints, desc, measured) } -> std::same_as<Atomized>;
         { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
+
+        // TODO: add reconcile phase to fix atoms based on consumed height for container elements like divs
+
+        { proc.reconcile(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Atomized>;
+
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
-        { proc.finalize(fragment, constraints, desc, measured, atomized, placed) } -> std::same_as<Finalized<U>>;
+
+        { proc.finalize(fragment, constraints, desc, measured, atomized, layout, placed) } -> std::same_as<Finalized<U>>;
         { proc.setupHitTestFunction() } -> std::same_as<std::function<bool(HitTestContext<U>&, simd_float2)>>;
         proc.encode(encoder, fragment, finalized);
     };
@@ -67,8 +73,9 @@ namespace NewArch {
         virtual Measured measure(Constraints& constraints) = 0;
         virtual Atomized atomize(Constraints& constraints, Measured& measured) = 0;
         virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
+        virtual Atomized reconcile(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
-        virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) = 0;
+        virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) = 0;
         virtual std::any request(RequestTarget target, std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
         virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
@@ -100,12 +107,16 @@ namespace NewArch {
             return processor.layout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized);
         }
 
+        Atomized reconcile(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
+            return processor.reconcile(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
+        }
+
         Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
             return processor.place(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
         }
 
-        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, Placed& placed) override {
-            auto finalized = processor.finalize(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, placed);
+        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) override {
+            auto finalized = processor.finalize(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout, placed);
             auto finalizedErased = finalized;
             return finalizedErased;
         }
@@ -253,6 +264,7 @@ namespace NewArch {
         void precomputeMargins(TreeNode* node, Constraints& constraints);
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 
+        void reconcilationPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
