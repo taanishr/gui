@@ -2,13 +2,17 @@
 #include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
+#include <algorithm>
 #include <any>
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <print>
+#include <ranges>
 #include <simd/vector_types.h>
 #include <unordered_map>
+#include <ranges>
 
 
     
@@ -108,6 +112,24 @@ namespace NewArch {
 
     std::optional<Size> getMargin(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "margin"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<Size>(resp);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Size> getFlexGrow(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "flexGrow"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<Size>(resp);
+        }
+        return std::nullopt;
+    }
+
+        std::optional<Size> getFlexShrink(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "flexShrink"}}};
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
             return std::any_cast<Size>(resp);
@@ -569,6 +591,85 @@ namespace NewArch {
         }
 
         return {childrenLineFragments, childrenLineBoxes};
+    }
+
+    std::vector<float> buildFlexContext(TreeNode* node, Constraints& childConstraints) {
+        // contract: ensure is flex before caling this method
+
+        // flex row impl
+        float maxWidth = childConstraints.maxWidth;
+
+        // get flex shrink and grow as transforms
+        float totalWidth {};
+        float shrinkScaledTotalWidth {};
+        float growthScaledTotalWidth {};
+
+        std::vector<float> childWidths;
+        std::vector<float> shrinkScaledChildWidths;
+        std::vector<float> growthScaledChildWidths;
+
+        for (auto& child : node->children) {
+            auto rawChild = child.get();
+            float childWidth = rawChild->measured->explicitWidth;
+
+            auto flexGrow = getFlexGrow(rawChild);
+            float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+
+            auto flexShrink = getFlexShrink(rawChild);
+            float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+
+            childWidths.push_back(childWidth);
+
+            if (resolvedFlexShrink > 0.0) {
+                shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
+                shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
+            }else {
+                shrinkScaledChildWidths.push_back(0.0);
+            }
+
+            if (resolvedFlexGrow > 0.0 ){
+                growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
+                growthScaledTotalWidth += childWidth * resolvedFlexGrow;
+            }else {
+                growthScaledChildWidths.push_back(0.0);
+            }
+
+            totalWidth += childWidth;
+        }
+        
+
+        std::vector<float> flexWidths;
+
+        float spaceRemaining = maxWidth - totalWidth;
+
+        if (spaceRemaining > 0) {
+            // grow
+            for (int i = 0; i < childWidths.size(); ++i) {
+                if (growthScaledChildWidths[i] > 0) {
+                    flexWidths.push_back(
+                        childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
+                    );
+                }else {
+                    flexWidths.push_back(childWidths[i]);
+                }
+            }
+        }else if (spaceRemaining < 0) {
+            for (int i = 0; i < childWidths.size(); ++i) {
+                if (shrinkScaledChildWidths[i] > 0) {
+                    flexWidths.push_back(
+                        childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
+                    );
+                }else {
+                    flexWidths.push_back(childWidths[i]);
+                }
+            }
+        }else {
+            for (int i = 0; i < childWidths.size(); ++i) {
+                flexWidths.push_back(childWidths[i]);
+            }
+        }
+
+        return flexWidths;
     }
 
     // DONE SERIALLY

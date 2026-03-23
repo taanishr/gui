@@ -38,6 +38,9 @@ namespace NewArch {
         FragmentID id;
         float explicitWidth;
         float explicitHeight;
+
+        float minContentWidth;
+        float maxContentWidth;
     };
 
     struct Atomized {
@@ -253,9 +256,6 @@ namespace NewArch {
 
         std::vector<LineFragment> lineFragments {};
         std::vector<LineBox> lineBoxes {};
-
-        float flexGrow{0.0};
-        float flexShrink{1.0};
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
