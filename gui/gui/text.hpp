@@ -232,8 +232,6 @@ namespace NewArch {
         
         Measured measure(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc) {
             Measured measured;
-                            
-            // std::println("text node: {} constraints.width: {} constraints.height: {}", reinterpret_cast<void*>(&desc), constraints.maxWidth, constraints.maxHeight);
 
             measured.id = fragment.id;
             measured.explicitWidth  = 0.0;
@@ -265,7 +263,6 @@ namespace NewArch {
                 Atom atom;
 
                 if (ch == '\n') {
-                    int metadataIndex = metadata.size();
                     metadata.push_back(0); 
                     metadata.push_back(0); 
                     
@@ -406,7 +403,6 @@ namespace NewArch {
                 .color = desc.color
             };
 
-            // std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(TextUniforms));
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(TextUniforms));
 
             return Finalized<U> {
@@ -421,11 +417,7 @@ namespace NewArch {
             auto pipeline = getPipeline();
             encoder->setRenderPipelineState(pipeline);
 
-            // auto atomBuf = fragment.fragmentStorage.atomsBuffer.get();
-            // auto placementBuf = fragment.fragmentStorage.placementsBuffer.get();
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
-            // auto metaBuf = fragment.fragmentStorage.metadataBuffer.get();
-            // auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.get();
             auto atomBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
             auto placementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto metaBuf = fragment.fragmentStorage.metadataBuffer.getBuffer(ctx.frameIndex);

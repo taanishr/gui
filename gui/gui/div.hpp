@@ -396,8 +396,6 @@ namespace NewArch {
             float width = layout.computedBox.width;
             float height = layout.computedBox.height;
 
-            // std::println("reconciled shape: {} {}", width, height);
-            
             // prepare buffer
             size_t bufferLen = 6*sizeof(DivPoint);
             
@@ -410,7 +408,6 @@ namespace NewArch {
                 {{width,height}, 0},
             }};
             
-            // std::memcpy(atomsBuffer->contents(), atomPoints.data(), bufferLen);
             fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
             
             // finish allocating atom

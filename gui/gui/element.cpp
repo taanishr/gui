@@ -1,14 +1,11 @@
 #include "element.hpp"
 #include "fragment_types.hpp"
-#include "text.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
 #include <algorithm>
 #include <any>
 #include <cstdint>
-#include <map>
 #include <memory>
-#include <numeric>
 #include <print>
 #include <ranges>
 #include <simd/vector_types.h>
@@ -16,7 +13,6 @@
 #include <ranges>
 
 
-    
 namespace NewArch {
     ElementBase::~ElementBase() {};
 
@@ -188,17 +184,13 @@ namespace NewArch {
                 node->atomized = node->element->atomize(rootConstraints, *node->measured);
             }
         );
-        
-        // std::println("root ptr: {}", reinterpret_cast<void*>(root));
+    
+        // Layout pass
+        // precompute margin metadata + intents
         preLayoutPhase(root, frameInfo, rootConstraints);
-        
-        // for (auto& chain : collapsed) {
-        //     std
-        // }
-
+        // initial layout pass
         layoutPhase(root, frameInfo, rootConstraints);
         root->calculateGlobalZIndex(0);
-
         // postLayout: resolve global positions (serial, top-down) + reconcile atoms
         postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
 
@@ -384,7 +376,7 @@ namespace NewArch {
         node->preLayout->marginMetadata = marginMetadata;
     }
 
-    void RenderTree::precomputeMargins(TreeNode* node, Constraints& constraints) {
+    void precomputeMargins(TreeNode* node, Constraints& constraints, std::unordered_map<ChainID, CollapsedChain>& collapsedChainMap) {
         // Build replacedAttributes from collapse chain (same logic as layoutPhase)
         constraints.replacedAttributes = {};
 
@@ -473,7 +465,7 @@ namespace NewArch {
         childConstraints.frameInfo = constraints.frameInfo;
 
         for (auto& child : node->children) {
-            precomputeMargins(child.get(), childConstraints);
+            precomputeMargins(child.get(), childConstraints, collapsedChainMap);
         }
     }
 
@@ -483,7 +475,7 @@ namespace NewArch {
 
         buildCollapsedChains(node, collapsedChainMap, nextChainId, nullptr, nullptr);
 
-        precomputeMargins(node, constraints);
+        precomputeMargins(node, constraints, collapsedChainMap);
     }
 
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
@@ -515,10 +507,7 @@ namespace NewArch {
                 auto& atoms = child->atomized->atoms;
                 size_t idx = 0;
 
-                std::println("childConstraints.maxWidth: {}", childConstraints.maxWidth);
-
                 if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
-                    std::println("make new linebox");
                     childrenLineBoxes.push_back(currentLineBox);
                     currentLineBox = {};
                     currentLineBoxIndex++;
@@ -607,8 +596,6 @@ namespace NewArch {
         if (currentLineBox.fragmentCount > 0) {
             childrenLineBoxes.push_back(currentLineBox);
         }
-
-        // std::println("line boxes: {}", childrenLineBoxes.size());
 
         return {childrenLineFragments, childrenLineBoxes};
     }
@@ -705,7 +692,6 @@ namespace NewArch {
         constraints.resolvedMargins = node->preLayout->resolvedMargins;
 
         auto layout = node->element->layout(constraints, measured, atomized);
-        // node->layout = layout;
 
         auto childConstraints = layout.childConstraints;
 
@@ -728,11 +714,7 @@ namespace NewArch {
         // for (auto& fragment : flatViewFragments) {
         //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
         // }
-
-        // for (auto& lb : childrenLineBoxes) {
-        //     std::println("lb width: {}", lb.width);
-        // }
-
+        
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
 
@@ -744,7 +726,6 @@ namespace NewArch {
             auto& child = node->children[i];
             auto childAsPtr = child.get();
 
-            // Pass precomputed line fragments and line boxes to child
             childConstraints.lineFragments = childrenLineFragments[i];
             childConstraints.lineBoxes = childrenLineBoxes;
 
@@ -755,7 +736,6 @@ namespace NewArch {
             if (!childLayout.outOfFlow) {
                 childConstraints.cursor = childLayout.siblingCursor;
                 childConstraints.edgeIntent = childLayout.edgeIntent;
-                std::println("childLayout.computedBox.x: {}, computedBox.width: {}", childLayout.computedBox.x,  childLayout.computedBox.width);
                 
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
@@ -763,7 +743,6 @@ namespace NewArch {
         }
 
         if (!measured.explicitWidth.has_value() && *position != Position::Static) {
-            std::println("{}", maxX - minX);
             layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
         }
 

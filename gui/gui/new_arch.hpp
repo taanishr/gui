@@ -222,7 +222,6 @@ namespace NewArch {
         rtl
     };
 
-    // descriptor defines attributes; attributes can be replaced based on the tree structure (i.e. )
     struct ReplacedAttributes {
         std::optional<Size> marginTop{}; 
         std::optional<Size> marginBottom{}; 
@@ -382,7 +381,6 @@ namespace NewArch {
         static LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
     };
 
-    // Rest of the stuff
     struct UIContext {
         UIContext(MTL::Device* device, MTK::View* view);
 

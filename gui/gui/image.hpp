@@ -341,18 +341,10 @@ namespace NewArch {
         Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
 
-            // LayoutInput li;
-            
-            // li.display = desc.display;
-            // li.position = desc.position;
-
-            // auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
             auto offsets = lr.atomOffsets;
-            
-            // auto placementsBuffer = fragment.fragmentStorage.placementsBuffer.get();
+        
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
             if (bufferLen > 0) {
-                // std::memcpy(placementsBuffer->contents(), offsets.data(), bufferLen);
                 fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
             }
 
@@ -402,7 +394,6 @@ namespace NewArch {
                 .geometry = geometryUniforms
             };
 
-            // std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(ImageUniforms));
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(ImageUniforms));
             return Finalized<U> {
                 .id = fragment.id,
@@ -411,10 +402,6 @@ namespace NewArch {
                 .uniforms = uniforms
             };
         }
-
-        // std::any request(std::any payload) {
-        //     return std::nullopt;
-        // }
 
         void encode(MTL::RenderCommandEncoder* encoder, Fragment<S>& fragment, Finalized<U>& finalized) {
             auto pipeline = getPipeline();

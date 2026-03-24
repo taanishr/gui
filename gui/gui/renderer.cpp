@@ -117,7 +117,7 @@ FrameInfo Renderer::getFrameInfo() {
     auto frameDimensions = this->view->drawableSize();
     auto scale = AppKit_Extensions::getContentScaleFactor(reinterpret_cast<void*>(this->view));
 
-    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = 1.0};
+    return {.width=static_cast<float>(frameDimensions.width)/2.0f, .height=static_cast<float>(frameDimensions.height)/2.0f, .scale = scale};
 }
 
 void Renderer::makeCurrent() {
