@@ -58,6 +58,12 @@ namespace NewArch {
     concept HasHeight = requires{ std::declval<T&>().height; };
 
     template <typename T>
+    concept HasFlexGrow = requires{ std::declval<T&>().flexGrow; };
+
+    template <typename T>
+    concept HasFlexShrink = requires{ std::declval<T&>().flexShrink; };
+
+    template <typename T>
     concept HasPadding = requires(T& t) { 
         { t.padding } -> std::convertible_to<Size>;
         { t.paddingTop } -> std::same_as<std::optional<Size>&>;
@@ -238,6 +244,29 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder<E,P>& display(Display display) requires HasDisplay<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.display = display;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexGrow(Size grow) requires HasFlexGrow<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.flexGrow = grow;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexShrink(Size shrink) requires HasFlexShrink<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.flexShrink = shrink;
+            return *this;
+        }
 
         NodeBuilder<E,P>& padding(Size padding) requires HasPadding<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());

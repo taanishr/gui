@@ -513,7 +513,6 @@ namespace NewArch {
                     currentLineBoxIndex++;
                 }
 
-                // construct current fragment.
                 runningWidth += marginLeft;
 
                 while (idx < text.size() && idx < atoms.size()) {
@@ -608,79 +607,78 @@ namespace NewArch {
     //     float maxWidth = childConstraints.maxWidth;
 
     //     // get flex shrink and grow as transforms
-    //     float totalWidth {};
-    //     float shrinkScaledTotalWidth {};
-    //     float growthScaledTotalWidth {};
+        // float totalWidth {};
+        // float shrinkScaledTotalWidth {};
+        // float growthScaledTotalWidth {};
 
-    //     std::vector<float> childWidths;
-    //     std::vector<float> shrinkScaledChildWidths;
-    //     std::vector<float> growthScaledChildWidths;
+        // std::vector<float> childWidths;
+        // std::vector<float> shrinkScaledChildWidths;
+        // std::vector<float> growthScaledChildWidths;
 
-    //     for (auto& child : node->children) {
-    //         auto rawChild = child.get();
-    //         float childWidth = rawChild->measured->explicitWidth;
+        // for (auto& child : node->children) {
+        //     auto rawChild = child.get();
+        //     float childWidth = rawChild->measured->explicitWidth;
 
-    //         auto flexGrow = getFlexGrow(rawChild);
-    //         float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+        //     auto flexGrow = getFlexGrow(rawChild);
+        //     float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
 
-    //         auto flexShrink = getFlexShrink(rawChild);
-    //         float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+        //     auto flexShrink = getFlexShrink(rawChild);
+        //     float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
 
-    //         childWidths.push_back(childWidth);
+        //     childWidths.push_back(childWidth);
 
-    //         if (resolvedFlexShrink > 0.0) {
-    //             shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
-    //             shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
-    //         }else {
-    //             shrinkScaledChildWidths.push_back(0.0);
-    //         }
+        //     if (resolvedFlexShrink > 0.0) {
+        //         shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
+        //         shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
+        //     }else {
+        //         shrinkScaledChildWidths.push_back(0.0);
+        //     }
 
-    //         if (resolvedFlexGrow > 0.0 ){
-    //             growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
-    //             growthScaledTotalWidth += childWidth * resolvedFlexGrow;
-    //         }else {
-    //             growthScaledChildWidths.push_back(0.0);
-    //         }
+        //     if (resolvedFlexGrow > 0.0 ){
+        //         growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
+        //         growthScaledTotalWidth += childWidth * resolvedFlexGrow;
+        //     }else {
+        //         growthScaledChildWidths.push_back(0.0);
+        //     }
 
-    //         totalWidth += childWidth;
-    //     }
+        //     totalWidth += childWidth;
+        // }
         
 
-    //     std::vector<float> flexWidths;
+        // std::vector<float> flexWidths;
 
-    //     float spaceRemaining = maxWidth - totalWidth;
+        // float spaceRemaining = maxWidth - totalWidth;
 
-    //     if (spaceRemaining > 0) {
-    //         // grow
-    //         for (int i = 0; i < childWidths.size(); ++i) {
-    //             if (growthScaledChildWidths[i] > 0) {
-    //                 flexWidths.push_back(
-    //                     childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
-    //                 );
-    //             }else {
-    //                 flexWidths.push_back(childWidths[i]);
-    //             }
-    //         }
-    //     }else if (spaceRemaining < 0) {
-    //         for (int i = 0; i < childWidths.size(); ++i) {
-    //             if (shrinkScaledChildWidths[i] > 0) {
-    //                 flexWidths.push_back(
-    //                     childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
-    //                 );
-    //             }else {
-    //                 flexWidths.push_back(childWidths[i]);
-    //             }
-    //         }
-    //     }else {
-    //         for (int i = 0; i < childWidths.size(); ++i) {
-    //             flexWidths.push_back(childWidths[i]);
-    //         }
-    //     }
+        // if (spaceRemaining > 0) {
+        //     // grow
+        //     for (int i = 0; i < childWidths.size(); ++i) {
+        //         if (growthScaledChildWidths[i] > 0) {
+        //             flexWidths.push_back(
+        //                 childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
+        //             );
+        //         }else {
+        //             flexWidths.push_back(childWidths[i]);
+        //         }
+        //     }
+        // }else if (spaceRemaining < 0) {
+        //     for (int i = 0; i < childWidths.size(); ++i) {
+        //         if (shrinkScaledChildWidths[i] > 0) {
+        //             flexWidths.push_back(
+        //                 childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
+        //             );
+        //         }else {
+        //             flexWidths.push_back(childWidths[i]);
+        //         }
+        //     }
+        // }else {
+        //     for (int i = 0; i < childWidths.size(); ++i) {
+        //         flexWidths.push_back(childWidths[i]);
+        //     }
+        // }
 
     //     return flexWidths;
     // }
 
-    // DONE SERIALLY
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         assert(node->measured.has_value());
         assert(node->atomized.has_value());
@@ -688,14 +686,14 @@ namespace NewArch {
 
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
-   
-        constraints.resolvedMargins = node->preLayout->resolvedMargins;
+        auto& prelayout = *node->preLayout;
 
+        // attach precomputed margins and resolve existing node layout
+        constraints.resolvedMargins = prelayout.resolvedMargins;
         auto layout = node->element->layout(constraints, measured, atomized);
 
+        // prepare child constraints
         auto childConstraints = layout.childConstraints;
-
-        // If this node is positioned, it becomes the containing block for absolute descendants
         auto position = getPosition(node);
         if (position.has_value() && *position != Position::Static) {
             childConstraints.absoluteContainingBlock = {
@@ -707,43 +705,154 @@ namespace NewArch {
             childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
         }
 
+        // construct line boxes (if any)
         auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
-        
-        // auto flatViewFragments = childrenLineFragments | std::views::join;
+        childConstraints.lineBoxes = childrenLineBoxes;
 
-        // for (auto& fragment : flatViewFragments) {
-        //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
-        // }
-        
+
+        // prepare post layout context
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
-
         float minX = layout.childConstraints.origin.x;
         float maxX = layout.childConstraints.origin.x;
 
+        auto display = getDisplay(node).value_or(Display::Block);
 
-        for (uint64_t i = 0; i < node->children.size(); ++i) {
-            auto& child = node->children[i];
-            auto childAsPtr = child.get();
+        if (display == Display::Flex) {
+            std::vector<LayoutResult*> flexChildrenLayouts;
 
-            childConstraints.lineFragments = childrenLineFragments[i];
-            childConstraints.lineBoxes = childrenLineBoxes;
+            float totalWidth {};
+            float shrinkScaledTotalWidth {};
+            float growthScaledTotalWidth {};
 
-            childConstraints.inheritedProperties = constraints.inheritedProperties;
-            layoutPhase(childAsPtr, frameInfo, childConstraints);
-            auto childLayout = *childAsPtr->layout;
+            std::vector<float> childWidths;
+            std::vector<float> shrinkScaledChildWidths;
+            std::vector<float> growthScaledChildWidths;
 
-            if (!childLayout.outOfFlow) {
-                childConstraints.cursor = childLayout.siblingCursor;
-                childConstraints.edgeIntent = childLayout.edgeIntent;
-                
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto& child = node->children[i];
+                auto childAsPtr = child.get();
+
+                childConstraints.lineFragments = childrenLineFragments[i];
+                childConstraints.inheritedProperties = constraints.inheritedProperties;
+
+                layoutPhase(childAsPtr, frameInfo, childConstraints);
+                auto& childLayout = *childAsPtr->layout;
+
+                if (childLayout.outOfFlow) {
+                    continue;
+                }
+
+                float childWidth = childLayout.computedBox.width;
+
+                auto flexGrow = getFlexGrow(childAsPtr);
+                float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+
+                auto flexShrink = getFlexShrink(childAsPtr);
+                float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+
+                childWidths.push_back(childWidth);
+
+                if (resolvedFlexShrink > 0.0) {
+                    shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
+                    shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
+                }else {
+                    shrinkScaledChildWidths.push_back(0.0);
+                }
+
+                if (resolvedFlexGrow > 0.0 ){
+                    growthScaledChildWidths.push_back(resolvedFlexGrow);
+                    growthScaledTotalWidth += resolvedFlexGrow;
+                }else {
+                    growthScaledChildWidths.push_back(0.0);
+                }
+
+                totalWidth += childWidth;
+            }
+
+            std::vector<float> flexWidths;
+
+            float spaceRemaining = constraints.maxWidth - totalWidth;
+
+            if (spaceRemaining > 0) {
+                // grow
+                for (int i = 0; i < childWidths.size(); ++i) {
+                    if (growthScaledChildWidths[i] > 0) {
+                        flexWidths.push_back(
+                            childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
+                        );
+                    }else {
+                        flexWidths.push_back(childWidths[i]);
+                    }
+                }
+            }else if (spaceRemaining < 0) {
+                for (int i = 0; i < childWidths.size(); ++i) {
+                    if (shrinkScaledChildWidths[i] > 0) {
+                        flexWidths.push_back(
+                            childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
+                        );
+                    }else {
+                        flexWidths.push_back(childWidths[i]);
+                    }
+                }
+            }else {
+                for (int i = 0; i < childWidths.size(); ++i) {
+                    flexWidths.push_back(childWidths[i]);
+                }
+            }
+
+            float accumulatedX = 0;
+            
+            for (int i = 0; i < node->children.size(); ++i) {
+                auto& child = node->children[i];
+                auto childAsPtr = child.get();
+
+                Constraints flexChildConstraints = childConstraints;
+                flexChildConstraints.maxWidth = flexWidths[i];
+                flexChildConstraints.origin.x = accumulatedX;
+                flexChildConstraints.cursor = {0, 0};
+                flexChildConstraints.lineFragments = childrenLineFragments[i];
+                flexChildConstraints.inheritedProperties = constraints.inheritedProperties;
+
+                childAsPtr->measured->explicitWidth = flexWidths[i];
+
+                layoutPhase(childAsPtr, frameInfo, flexChildConstraints);
+                auto& childLayout = *childAsPtr->layout;
+
+                if (childLayout.outOfFlow) {
+                    continue;
+                }
+
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
+
+                accumulatedX += flexWidths[i];
+            }
+
+        }else {
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto& child = node->children[i];
+                auto childAsPtr = child.get();
+
+                childConstraints.lineFragments = childrenLineFragments[i];
+                childConstraints.inheritedProperties = constraints.inheritedProperties;
+                layoutPhase(childAsPtr, frameInfo, childConstraints);
+                auto childLayout = *childAsPtr->layout;
+
+                if (!childLayout.outOfFlow) {
+                    childConstraints.cursor = childLayout.siblingCursor;
+                    childConstraints.edgeIntent = childLayout.edgeIntent;
+                    
+                    maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
+                    maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
+                }
             }
         }
 
-        if (!measured.explicitWidth.has_value() && *position != Position::Static) {
-            layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
+        // resize width/height of underspecified elements
+        if (!measured.explicitWidth.has_value()) {
+            if (*position != Position::Static)
+                layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
         }
 
         if (!measured.explicitHeight.has_value()) {
@@ -751,8 +860,8 @@ namespace NewArch {
             layout.consumedHeight = layout.computedBox.height;
         }
 
+        // finalize layout of node
         node->layout = layout;
-
     }
 
     void RenderTree::postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
@@ -812,7 +921,6 @@ namespace NewArch {
             childAbsBlockOrigin = currContentOrigin;
         }
 
-        // 6. Recurse into children
         for (auto& child : node->children) {
             postLayoutPhase(child.get(), frameInfo, constraints,
                            currContentOrigin, childAbsBlockOrigin);
