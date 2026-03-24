@@ -36,11 +36,8 @@ namespace NewArch {
 
     struct Measured {
         FragmentID id;
-        float explicitWidth;
-        float explicitHeight;
-
-        float minContentWidth;
-        float maxContentWidth;
+        std::optional<float> explicitWidth;
+        std::optional<float> explicitHeight;
     };
 
     struct Atomized {
@@ -265,7 +262,8 @@ namespace NewArch {
         Position position;
         Display display;
 
-        float width, height;
+        std::optional<float> width, height;
+        
         std::optional<Size> top, left, bottom, right;
 
         std::optional<Direction> direction; // overwrites inherited if specified
@@ -298,9 +296,15 @@ namespace NewArch {
         const LayoutInput& layoutInput;
         const ResolvedMargins& margins;
     };
+
+
+    struct ResolvedSize {
+        std::optional<float> width;
+        std::optional<float> height;
+    };
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
-    simd_float2 resolveSize(const SizeResolutionContext& positionContext);
+    ResolvedSize resolveSize(const SizeResolutionContext& positionContext);
 
 
     using ChainID = uint64_t;
@@ -315,22 +319,41 @@ namespace NewArch {
         ResolvedMargins resolvedMargins;
     };
 
+    // Info needed to resolve right/bottom positioning in postLayout
+    // (deferred because element size may not be known during layout)
+    struct DeferredPositionInfo {
+        bool needsRightResolution{};
+        bool needsBottomResolution{};
+        float containingBlockWidth{};
+        float containingBlockHeight{};
+        float resolvedRight{};   // already resolved from Size to float
+        float resolvedBottom{};
+        float marginRight{};
+        float marginBottom{};
+        Direction direction{Direction::ltr};
+    };
+
     struct LayoutResult {
         std::vector<simd_float2> atomOffsets;
-        
+
         struct {
             float x, y;
             float width, height;
         } computedBox;
-        // for creating background atom in finalize for text? but doesn't make sense in case of border when regular inline...?
 
         float consumedHeight; // how much height consumed
 
         Constraints childConstraints; // child constraints
-    
+
         simd_float2 siblingCursor;
         bool outOfFlow; // don't change siblings
         EdgeIntent edgeIntent;
+
+        struct {
+            float top{}, right{}, bottom{}, left{};
+        } resolvedPadding;
+
+        DeferredPositionInfo deferredPosition;
     };
 
     

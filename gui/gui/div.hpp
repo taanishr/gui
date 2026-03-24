@@ -300,11 +300,11 @@ namespace NewArch {
                 .availableHeight = constraints.maxHeight
             };
 
-            simd_float2 explicitSize = resolveSize(ctx);
+            auto resolvedSize = resolveSize(ctx);
 
 
-            measured.explicitWidth = explicitSize.x;
-            measured.explicitHeight = explicitSize.y;
+            measured.explicitWidth = resolvedSize.width;
+            measured.explicitHeight = resolvedSize.height;
             
             return measured;
         }
@@ -318,8 +318,8 @@ namespace NewArch {
             std::vector<Atom> atoms {};
             
             // get measurements
-            float width = measured.explicitWidth;
-            float height = measured.explicitHeight;
+            float width = measured.explicitWidth.value_or(0.0);
+            float height = measured.explicitHeight.value_or(0.0);
             
             // prepare buffer
             size_t bufferLen = 6*sizeof(DivPoint);
@@ -389,14 +389,14 @@ namespace NewArch {
         // OHHH!  Do I need to alter my later passes to have a computed size? Computed width? Ok, makes sense.
 
 
-        Atomized reconcile(Fragment<S>& fragment, Constraints&, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
-                     std::vector<Atom> atoms {};
+        Atomized postLayout(Fragment<S>& fragment, Constraints&, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+            std::vector<Atom> atoms {};
             
             // get measurements
             float width = layout.computedBox.width;
             float height = layout.computedBox.height;
 
-            std::println("reconciled shape: {} {}", width, height);
+            // std::println("reconciled shape: {} {}", width, height);
             
             // prepare buffer
             size_t bufferLen = 6*sizeof(DivPoint);
@@ -467,8 +467,8 @@ namespace NewArch {
             }
 
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(measured.explicitWidth),
-                desc.cornerRadius.resolveOr(measured.explicitHeight)
+                desc.cornerRadius.resolveOr(layout.computedBox.width),
+                desc.cornerRadius.resolveOr(layout.computedBox.height)
             };
             
             // style uniforms

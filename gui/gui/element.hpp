@@ -59,7 +59,7 @@ namespace NewArch {
 
         // TODO: add reconcile phase to fix atoms based on consumed height for container elements like divs
 
-        { proc.reconcile(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Atomized>;
+        { proc.postLayout(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Atomized>;
 
         { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
 
@@ -73,7 +73,7 @@ namespace NewArch {
         virtual Measured measure(Constraints& constraints) = 0;
         virtual Atomized atomize(Constraints& constraints, Measured& measured) = 0;
         virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
-        virtual Atomized reconcile(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
+        virtual Atomized postLayout(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
         virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) = 0;
         virtual std::any request(RequestTarget target, std::any& payload) = 0;
@@ -107,8 +107,8 @@ namespace NewArch {
             return processor.layout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized);
         }
 
-        Atomized reconcile(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
-            return processor.reconcile(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
+        Atomized postLayout(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
+            return processor.postLayout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
         }
 
         Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
@@ -226,6 +226,7 @@ namespace NewArch {
         std::optional<Placed> placed;
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
+        simd_float2 globalOffset {0.0f, 0.0f};
         
     private:
         static uint64_t nextId;
@@ -256,15 +257,17 @@ namespace NewArch {
 
         std::unique_ptr<TreeNode> elementTree;
         LayoutEngine layoutEngine;
+
+        void precomputeMargins(TreeNode* node, Constraints& constraints);
+
         
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
 
         void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
-        void precomputeMargins(TreeNode* node, Constraints& constraints);
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
-
-        void reconcilationPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+        void postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
+                             simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin);
 
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);

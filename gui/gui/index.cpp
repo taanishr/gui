@@ -33,15 +33,15 @@ auto index() -> void {
         // .paddingTop(NewArch::Size::px(0))
          (
             div()
-                .width(NewArch::Size::px(60))
-                .height(NewArch::Size::px(30))
+                .width(NewArch::Size::px(500))
+                // .height(NewArch::Size::px(30))
                 .color(simd_float4{0.498,0.0,1.0,1.0})
                 .marginTop(30)
                 .marginLeft(NewArch::Size::autoSize())
                 .marginRight(NewArch::Size::autoSize())
                 .cornerRadius(NewArch::Size::percent(0.075))
                 .paddingLeft(NewArch::Size::px(9.0))
-                .paddingTop(NewArch::Size::px(4.5))
+                .paddingTop(NewArch::Size::px(10.0))
                 .borderColor(simd_float4{0.77,0.71,1.0,1.0})
                 .borderWidth(NewArch::Size::px(1.0))
                 .addEventListener(EventType::MouseDown, onClick)
@@ -49,9 +49,9 @@ auto index() -> void {
                 text("Startfsd"),
                 text("fsdfsdfsda dads sdsfsdsds")
             )
-            // ,div(
-            //     NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}
-            // ).marginTop(10)
+            ,div(
+                NewArch::Size::px(60), NewArch::Size::px(30), simd_float4{0.5,0.0,0.0,1.0}
+            ).marginTop(10)
          )
     );
 }
