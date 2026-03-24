@@ -15,6 +15,7 @@
 #include "renderer_constants.hpp"
 #include "index.hpp"
 #include <CoreFoundation/CFCGTypes.h>
+#include <memory>
 #include <print>
 #include "metal_imports.hpp"
 
@@ -165,7 +166,13 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         };
 
         auto& currTree = this->viewDelegate->renderer->rootTree;
+
         auto root = currTree.getRoot();
+
+        if (!root) 
+            return;
+
+        
         auto htnode = currTree.hitTestRecursive(root, testPoint);
 
         if (!htnode)
