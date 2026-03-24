@@ -264,6 +264,8 @@ namespace NewArch {
         void atomizePhase(TreeNode* node, Constraints& constraints);
 
         void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+
+        
         void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
                              simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin);
