@@ -257,14 +257,14 @@ namespace NewArch {
                 .availableHeight = constraints.maxHeight
             };
 
-            simd_float2 explicitSize = resolveSize(ctx);
+            ResolvedSize resolvedSize = resolveSize(ctx);
 
-            float resolvedWidth = explicitSize.x;
-            float resolvedHeight = explicitSize.y;
+            auto resolvedWidth = resolvedSize.width;
+            auto resolvedHeight = resolvedSize.height;
 
             // Fall back to intrinsic size if not specified
             if (!desc.width || ! desc.height) {
-                auto intrinsic = fragment.fragmentStorage.intrinsicSize;
+                const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
                     resolvedWidth = intrinsic.x;
                     resolvedHeight = intrinsic.y;
@@ -280,8 +280,8 @@ namespace NewArch {
         Atomized atomize(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured) {
             std::vector<Atom> atoms;
 
-            float width = measured.explicitWidth;
-            float height = measured.explicitHeight;
+            float width = measured.explicitWidth.value_or(0.0);
+            float height = measured.explicitHeight.value_or(0.0);
 
             // auto atomsBuffer = fragment.fragmentStorage.atomsBuffer.get();
             size_t bufferLen = 6 * sizeof(ImagePoint);
@@ -334,7 +334,7 @@ namespace NewArch {
             return lr;
         }
 
-        Atomized reconcile(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+        Atomized postLayout(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
             return atomized;
         };
 
@@ -376,8 +376,8 @@ namespace NewArch {
 
             
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(measured.explicitWidth),
-                desc.cornerRadius.resolveOr(measured.explicitHeight)
+                desc.cornerRadius.resolveOr(layout.computedBox.width),
+                desc.cornerRadius.resolveOr(layout.computedBox.height)
             };
 
             ImageStyleUniforms styleUniforms {
@@ -390,7 +390,7 @@ namespace NewArch {
             
             if (placed.placements.size() > 0) {
                 auto offset = placed.placements.front();
-                simd_float2 halfExtent { measured.explicitWidth / 2.0f, measured.explicitHeight / 2.0f };
+                simd_float2 halfExtent { layout.computedBox.width / 2.0f, layout.computedBox.height / 2.0f };
                 simd_float2 rectCenter { offset.x + halfExtent.x, offset.y + halfExtent.y };
                 
                 geometryUniforms.rectCenter = rectCenter;

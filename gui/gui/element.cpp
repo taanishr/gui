@@ -199,14 +199,9 @@ namespace NewArch {
         layoutPhase(root, frameInfo, rootConstraints);
         root->calculateGlobalZIndex(0);
 
-        // std::println("\n\n");
+        // postLayout: resolve global positions (serial, top-down) + reconcile atoms
+        postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
 
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                node->atomized = node->element->reconcile(rootConstraints, *node->measured, *node->atomized, *node->layout);
-            }
-        );
-        
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
                 node->placed = node->element->place(rootConstraints, *node->measured, 
@@ -246,13 +241,12 @@ namespace NewArch {
         
         Constraints childConstraints {};
 
-        childConstraints.maxWidth = measured.explicitWidth;
-        childConstraints.maxHeight = measured.explicitHeight;
+        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);;
+        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight);
 
         for (auto& child : node->children) {
             measurePhase(child.get(), childConstraints);
         }
-
     }
 
 
@@ -472,8 +466,8 @@ namespace NewArch {
         // Recurse for children with updated constraints
         auto& measured = *node->measured;
         Constraints childConstraints{};
-        childConstraints.maxWidth = measured.explicitWidth;
-        childConstraints.maxHeight = measured.explicitHeight;
+        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
+        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight);
         childConstraints.frameInfo = constraints.frameInfo;
 
         for (auto& child : node->children) {
@@ -493,6 +487,7 @@ namespace NewArch {
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
         // precompute line fragments & line boxes
         bool prevInline = false;
+        bool lastFragmentHasBreakOpportunity = false;
         std::vector<LineBox> childrenLineBoxes;
         std::vector<std::vector<LineFragment>> childrenLineFragments;
         LineBox currentLineBox {};
@@ -519,6 +514,7 @@ namespace NewArch {
                 size_t idx = 0;
 
                 if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
+                    std::println("make new linebox");
                     childrenLineBoxes.push_back(currentLineBox);
                     currentLineBox = {};
                     currentLineBoxIndex++;
@@ -535,8 +531,8 @@ namespace NewArch {
                         runningAtomCount++;
                         idx++;
                         
-                        if (idx < text.size())
-                            continue;
+                        // if (idx < text.size())
+                        continue;
                     }else {
                         while (idx < text.size() && text[idx] == ' ') {
                             runningWidth += atoms[idx].width;
@@ -549,20 +545,24 @@ namespace NewArch {
                         LineFragment lineFragment {
                             .width = runningWidth,
                             .atomCount = runningAtomCount,
-                            .lineBoxIndex = currentLineBoxIndex,
-                            .fragmentIndex = currentLineBox.fragmentCount
                         };
+
+
+                        if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                            childrenLineBoxes.push_back(currentLineBox);
+                            currentLineBox = {};
+                            currentLineBoxIndex++;
+                        }
+
+                        lineFragment.lineBoxIndex = currentLineBoxIndex;
+                        lineFragment.fragmentIndex = currentLineBox.fragmentCount;
 
                         childLineFragments.push_back(lineFragment);
                         currentLineBox.pushFragment(lineFragment);
-                    
-                        childrenLineBoxes.push_back(currentLineBox);
-                        currentLineBox = {};
-                        currentLineBoxIndex++;
+                        lastFragmentHasBreakOpportunity = true;
 
                         runningWidth = 0.0;
                         runningAtomCount = 0;
-
                     }
                 
                 }
@@ -573,12 +573,20 @@ namespace NewArch {
                     LineFragment lineFragment {
                         .width = runningWidth,
                         .atomCount = runningAtomCount,
-                        .lineBoxIndex = currentLineBoxIndex,
-                        .fragmentIndex = currentLineBox.fragmentCount
                     };
+
+                    if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                        childrenLineBoxes.push_back(currentLineBox);
+                        currentLineBox = {};
+                        currentLineBoxIndex++;
+                    }
+
+                    lineFragment.lineBoxIndex = currentLineBoxIndex;
+                    lineFragment.fragmentIndex = currentLineBox.fragmentCount;
 
                     childLineFragments.push_back(lineFragment);
                     currentLineBox.pushFragment(lineFragment);
+                    lastFragmentHasBreakOpportunity = false;
 
                     runningWidth = 0.0;
                     runningAtomCount = 0;
@@ -596,88 +604,90 @@ namespace NewArch {
             childrenLineBoxes.push_back(currentLineBox);
         }
 
+        // std::println("line boxes: {}", childrenLineBoxes.size());
+
         return {childrenLineFragments, childrenLineBoxes};
     }
 
-    std::vector<float> buildFlexContext(TreeNode* node, Constraints& childConstraints) {
-        // contract: ensure is flex before caling this method
-        // basic algorithm; not finalized becuase must run in measurement pahse
+    // std::vector<float> buildFlexContext(TreeNode* node, Constraints& childConstraints) {
+    //     // contract: ensure is flex before caling this method
+    //     // basic algorithm; not finalized becuase must run in measurement pahse
 
-        // flex row impl
-        float maxWidth = childConstraints.maxWidth;
+    //     // flex row impl
+    //     float maxWidth = childConstraints.maxWidth;
 
-        // get flex shrink and grow as transforms
-        float totalWidth {};
-        float shrinkScaledTotalWidth {};
-        float growthScaledTotalWidth {};
+    //     // get flex shrink and grow as transforms
+    //     float totalWidth {};
+    //     float shrinkScaledTotalWidth {};
+    //     float growthScaledTotalWidth {};
 
-        std::vector<float> childWidths;
-        std::vector<float> shrinkScaledChildWidths;
-        std::vector<float> growthScaledChildWidths;
+    //     std::vector<float> childWidths;
+    //     std::vector<float> shrinkScaledChildWidths;
+    //     std::vector<float> growthScaledChildWidths;
 
-        for (auto& child : node->children) {
-            auto rawChild = child.get();
-            float childWidth = rawChild->measured->explicitWidth;
+    //     for (auto& child : node->children) {
+    //         auto rawChild = child.get();
+    //         float childWidth = rawChild->measured->explicitWidth;
 
-            auto flexGrow = getFlexGrow(rawChild);
-            float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+    //         auto flexGrow = getFlexGrow(rawChild);
+    //         float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
 
-            auto flexShrink = getFlexShrink(rawChild);
-            float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+    //         auto flexShrink = getFlexShrink(rawChild);
+    //         float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
 
-            childWidths.push_back(childWidth);
+    //         childWidths.push_back(childWidth);
 
-            if (resolvedFlexShrink > 0.0) {
-                shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
-                shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
-            }else {
-                shrinkScaledChildWidths.push_back(0.0);
-            }
+    //         if (resolvedFlexShrink > 0.0) {
+    //             shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
+    //             shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
+    //         }else {
+    //             shrinkScaledChildWidths.push_back(0.0);
+    //         }
 
-            if (resolvedFlexGrow > 0.0 ){
-                growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
-                growthScaledTotalWidth += childWidth * resolvedFlexGrow;
-            }else {
-                growthScaledChildWidths.push_back(0.0);
-            }
+    //         if (resolvedFlexGrow > 0.0 ){
+    //             growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
+    //             growthScaledTotalWidth += childWidth * resolvedFlexGrow;
+    //         }else {
+    //             growthScaledChildWidths.push_back(0.0);
+    //         }
 
-            totalWidth += childWidth;
-        }
+    //         totalWidth += childWidth;
+    //     }
         
 
-        std::vector<float> flexWidths;
+    //     std::vector<float> flexWidths;
 
-        float spaceRemaining = maxWidth - totalWidth;
+    //     float spaceRemaining = maxWidth - totalWidth;
 
-        if (spaceRemaining > 0) {
-            // grow
-            for (int i = 0; i < childWidths.size(); ++i) {
-                if (growthScaledChildWidths[i] > 0) {
-                    flexWidths.push_back(
-                        childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
-                    );
-                }else {
-                    flexWidths.push_back(childWidths[i]);
-                }
-            }
-        }else if (spaceRemaining < 0) {
-            for (int i = 0; i < childWidths.size(); ++i) {
-                if (shrinkScaledChildWidths[i] > 0) {
-                    flexWidths.push_back(
-                        childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
-                    );
-                }else {
-                    flexWidths.push_back(childWidths[i]);
-                }
-            }
-        }else {
-            for (int i = 0; i < childWidths.size(); ++i) {
-                flexWidths.push_back(childWidths[i]);
-            }
-        }
+    //     if (spaceRemaining > 0) {
+    //         // grow
+    //         for (int i = 0; i < childWidths.size(); ++i) {
+    //             if (growthScaledChildWidths[i] > 0) {
+    //                 flexWidths.push_back(
+    //                     childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
+    //                 );
+    //             }else {
+    //                 flexWidths.push_back(childWidths[i]);
+    //             }
+    //         }
+    //     }else if (spaceRemaining < 0) {
+    //         for (int i = 0; i < childWidths.size(); ++i) {
+    //             if (shrinkScaledChildWidths[i] > 0) {
+    //                 flexWidths.push_back(
+    //                     childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
+    //                 );
+    //             }else {
+    //                 flexWidths.push_back(childWidths[i]);
+    //             }
+    //         }
+    //     }else {
+    //         for (int i = 0; i < childWidths.size(); ++i) {
+    //             flexWidths.push_back(childWidths[i]);
+    //         }
+    //     }
 
-        return flexWidths;
-    }
+    //     return flexWidths;
+    // }
 
     // DONE SERIALLY
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
@@ -699,7 +709,7 @@ namespace NewArch {
         auto position = getPosition(node);
         if (position.has_value() && *position != Position::Static) {
             childConstraints.absoluteContainingBlock = {
-                .origin = {layout.computedBox.x, layout.computedBox.y},
+                .origin = {0.0f, 0.0f},
                 .width = layout.computedBox.width,
                 .height = layout.computedBox.height
             };
@@ -715,8 +725,12 @@ namespace NewArch {
         //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
         // }
 
-        float minY = constraints.origin.y;
-        float maxY = constraints.origin.y;
+        for (auto& lb : childrenLineBoxes) {
+            std::println("lb width: {}", lb.width);
+        }
+
+        float minY = layout.childConstraints.origin.y;
+        float maxY = layout.childConstraints.origin.y;
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
@@ -734,33 +748,83 @@ namespace NewArch {
             if (!childLayout.outOfFlow) {
                 childConstraints.cursor = childLayout.siblingCursor;
                 childConstraints.edgeIntent = childLayout.edgeIntent;
+                // std::println("childLayout.computedBox.y: {}, consumedHeight: {}", childLayout.computedBox.y, childLayout.consumedHeight);
+                
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
             }
         }
 
-        if (layout.computedBox.height == 0) {
-            float oldHeight = layout.computedBox.height;
-            layout.computedBox.height = maxY - minY;
+        if (!measured.explicitHeight.has_value()) {
+            layout.computedBox.height = maxY - minY + layout.resolvedPadding.top + layout.resolvedPadding.bottom;
             layout.consumedHeight = layout.computedBox.height;
-
-            std::println("old height: {} new height: {}", oldHeight, layout.computedBox.height);
         }
 
         node->layout = layout;
 
     }
 
-    void RenderTree::reconcilationPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
+    void RenderTree::postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
+                                      simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin) {
         assert(node->measured.has_value());
         assert(node->atomized.has_value());
         assert(node->layout.has_value());
-        
-        auto& measured = *node->measured;
-        auto& atomized = *node->atomized;
-        auto& layout = *node->layout;
 
-        auto reconciledAtomized = node->element->reconcile(constraints, measured, atomized, layout);
-        node->atomized = reconciledAtomized;
+        auto& layout = *node->layout;
+        auto position = getPosition(node).value_or(Position::Static);
+
+        auto& dp = layout.deferredPosition;
+        if (dp.needsRightResolution) {
+            float newX = dp.containingBlockWidth - dp.marginRight - layout.computedBox.width - dp.resolvedRight;
+            float deltaX = newX - layout.computedBox.x;
+            layout.computedBox.x = newX;
+            for (auto& offset : layout.atomOffsets) {
+                offset.x += deltaX;
+            }
+        }
+        if (dp.needsBottomResolution) {
+            float newY = dp.containingBlockHeight - dp.marginBottom - layout.computedBox.height - dp.resolvedBottom;
+            float deltaY = newY - layout.computedBox.y;
+            layout.computedBox.y = newY;
+            for (auto& offset : layout.atomOffsets) {
+                offset.y += deltaY;
+            }
+        }
+
+        simd_float2 baseOrigin;
+        if (position == Position::Fixed) {
+            baseOrigin = {0.0f, 0.0f};
+        } else if (position == Position::Absolute) {
+            baseOrigin = absBlockGlobalOrigin;
+        } else {
+            baseOrigin = parentGlobalOrigin;
+        }
+
+        layout.computedBox.x += baseOrigin.x;
+        layout.computedBox.y += baseOrigin.y;
+        for (auto& offset : layout.atomOffsets) {
+            offset.x += baseOrigin.x;
+            offset.y += baseOrigin.y;
+        }
+        node->globalOffset = baseOrigin;
+
+        node->atomized = node->element->postLayout(constraints, *node->measured,
+                                                    *node->atomized, layout);
+
+        simd_float2 currContentOrigin = {
+            layout.computedBox.x + layout.resolvedPadding.left,
+            layout.computedBox.y + layout.resolvedPadding.top
+        };
+
+        simd_float2 childAbsBlockOrigin = absBlockGlobalOrigin;
+        if (position != Position::Static) {
+            childAbsBlockOrigin = currContentOrigin;
+        }
+
+        // 6. Recurse into children
+        for (auto& child : node->children) {
+            postLayoutPhase(child.get(), frameInfo, constraints,
+                           currContentOrigin, childAbsBlockOrigin);
+        }
     }
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
