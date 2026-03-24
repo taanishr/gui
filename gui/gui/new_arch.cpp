@@ -379,9 +379,9 @@ namespace NewArch {
         float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
 
         lr.childConstraints = {
-            .origin = {paddingLeft, paddingTop},
-            .cursor = {paddingLeft, paddingTop},
-            .maxWidth = resolvedWidth - paddingLeft - paddingRight,
+            .origin = {0, 0},
+            .cursor = {0, 0},
+            .maxWidth = layoutInput.width.has_value() ? resolvedWidth - paddingLeft - paddingRight : constraints.absoluteContainingBlock.width,
             .maxHeight = resolvedHeight - paddingTop - paddingBottom,
             .frameInfo = constraints.frameInfo
         };
@@ -473,9 +473,9 @@ namespace NewArch {
         float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
 
         lr.childConstraints = {
-            .origin = {paddingLeft, paddingTop},
-            .cursor = {paddingLeft, paddingTop},
-            .maxWidth = resolvedWidth - paddingLeft - paddingRight,
+            .origin = {0, 0},
+            .cursor = {0, 0},
+            .maxWidth = layoutInput.width.has_value() ? resolvedWidth - paddingLeft - paddingRight : constraints.frameInfo.width,
             .maxHeight = resolvedHeight - paddingTop - paddingBottom,
             .frameInfo = constraints.frameInfo
         };
@@ -546,7 +546,7 @@ namespace NewArch {
 
         lr.outOfFlow = false;
 
-        float resolvedWidth = 0;
+        // float resolvedWidth = 0;
         float resolvedHeight = 0;
 
         float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
@@ -562,9 +562,13 @@ namespace NewArch {
         for (auto& atom : atomized.atoms) {
             atomOffsets.push_back(newCursor);
             newCursor.x += atom.width;
-            resolvedWidth += atom.width;
             resolvedHeight = std::max(resolvedHeight, atom.height);
         }
+
+        float resolvedWidth = layoutInput.width.has_value() ? 
+        *layoutInput.width
+            : 
+        constraints.maxWidth;
 
         lr.computedBox = {
             startingPos.x,
@@ -633,6 +637,7 @@ namespace NewArch {
         float lineHeight = 0;
         float totalHeight = 0;
         float totalWidth = 0;
+        float currentTotalWidth = 0;
         float minX = newCursor.x;
         float minY = newCursor.y;
 
@@ -650,10 +655,13 @@ namespace NewArch {
                                 ? constraints.origin.x + offset
                                 : constraints.origin.x + constraints.maxWidth - lineBox.width + offset;
 
-
             newCursor.x = startingX;
+            const auto& originx = constraints.origin.x;
+            std::println("origin.X: {} offset: {} startingX: {}", originx, offset, startingX);
+            minX = std::min(minX, newCursor.x);
 
             if (fragmentIdx == 0) {
+
                 float inlineMargin = isLtr ? margins.right : margins.left;
 
                 if (constraints.edgeIntent.edgeDisplayMode == Inline) {
@@ -682,6 +690,8 @@ namespace NewArch {
                 totalHeight += lineHeight;
                 lineHeight = 0;
                 newCursor.x = startingX;
+                totalWidth = std::max(currentTotalWidth, totalWidth);
+                currentTotalWidth = 0;
             }
 
 
@@ -691,16 +701,16 @@ namespace NewArch {
                 atomOffsets.push_back(newCursor);
                 newCursor.x += atom.width;
                 lineHeight = std::max(lineHeight, atom.height);
+                currentTotalWidth += atom.width;
             }
 
             prevLineBoxIndex = fragment.lineBoxIndex;
-            totalWidth += fragment.width;
         }
 
-        // Add trailing margin for sibling cursor
         newCursor.x += isLtr ? margins.right : -margins.left;
 
         totalHeight += lineHeight;
+        totalWidth = std::max(currentTotalWidth, totalWidth);
 
         lr.computedBox = {
             minX,
@@ -708,6 +718,7 @@ namespace NewArch {
             totalWidth,
             totalHeight
         };
+
 
         auto cbx = minX;
         auto cby = minY;
@@ -717,7 +728,7 @@ namespace NewArch {
         float paddingRight = layoutInput.paddingRight.resolveOr(constraints.maxWidth);
         float paddingBottom = layoutInput.paddingBottom.resolveOr(constraints.maxHeight);
 
-        lr.childConstraints.cursor = {paddingLeft, paddingTop};
+        lr.childConstraints.cursor = {0, 0};
         lr.childConstraints.maxWidth = totalWidth - paddingLeft - paddingRight;
         lr.childConstraints.maxHeight = totalHeight - paddingTop - paddingBottom;
         lr.childConstraints.frameInfo = constraints.frameInfo;

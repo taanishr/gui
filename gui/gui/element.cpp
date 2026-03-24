@@ -436,6 +436,8 @@ namespace NewArch {
             float width = getWidth(node).value_or(0.0f);
             if (width > 0) {
                 contentWidth = width;
+            } else {
+                contentWidth = constraints.maxWidth;
             }
 
             // Build a temporary LayoutInput for resolveAutoMargins
@@ -513,6 +515,8 @@ namespace NewArch {
                 auto& atoms = child->atomized->atoms;
                 size_t idx = 0;
 
+                std::println("childConstraints.maxWidth: {}", childConstraints.maxWidth);
+
                 if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
                     std::println("make new linebox");
                     childrenLineBoxes.push_back(currentLineBox);
@@ -531,7 +535,6 @@ namespace NewArch {
                         runningAtomCount++;
                         idx++;
                         
-                        // if (idx < text.size())
                         continue;
                     }else {
                         while (idx < text.size() && text[idx] == ' ') {
@@ -546,6 +549,7 @@ namespace NewArch {
                             .width = runningWidth,
                             .atomCount = runningAtomCount,
                         };
+
 
 
                         if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
@@ -725,12 +729,16 @@ namespace NewArch {
         //     std::println("fragment lb: {} fragment idx: {}", fragment.lineBoxIndex, fragment.fragmentIndex);
         // }
 
-        for (auto& lb : childrenLineBoxes) {
-            std::println("lb width: {}", lb.width);
-        }
+        // for (auto& lb : childrenLineBoxes) {
+        //     std::println("lb width: {}", lb.width);
+        // }
 
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
+
+        float minX = layout.childConstraints.origin.x;
+        float maxX = layout.childConstraints.origin.x;
+
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto& child = node->children[i];
@@ -740,7 +748,6 @@ namespace NewArch {
             childConstraints.lineFragments = childrenLineFragments[i];
             childConstraints.lineBoxes = childrenLineBoxes;
 
-
             childConstraints.inheritedProperties = constraints.inheritedProperties;
             layoutPhase(childAsPtr, frameInfo, childConstraints);
             auto childLayout = *childAsPtr->layout;
@@ -748,10 +755,16 @@ namespace NewArch {
             if (!childLayout.outOfFlow) {
                 childConstraints.cursor = childLayout.siblingCursor;
                 childConstraints.edgeIntent = childLayout.edgeIntent;
-                // std::println("childLayout.computedBox.y: {}, consumedHeight: {}", childLayout.computedBox.y, childLayout.consumedHeight);
+                std::println("childLayout.computedBox.x: {}, computedBox.width: {}", childLayout.computedBox.x,  childLayout.computedBox.width);
                 
+                maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
             }
+        }
+
+        if (!measured.explicitWidth.has_value() && *position != Position::Static) {
+            std::println("{}", maxX - minX);
+            layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
         }
 
         if (!measured.explicitHeight.has_value()) {

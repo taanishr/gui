@@ -466,9 +466,10 @@ namespace NewArch {
                 borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for now
             }
 
+            float minDim = std::min(layout.computedBox.width, layout.computedBox.height);
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(layout.computedBox.width),
-                desc.cornerRadius.resolveOr(layout.computedBox.height)
+                desc.cornerRadius.resolveOr(minDim),
+                desc.cornerRadius.resolveOr(minDim)
             };
             
             // style uniforms
