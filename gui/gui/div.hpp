@@ -129,7 +129,8 @@ namespace NewArch {
         std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
 
 
-        Size flexGrow, flexShrink;
+        Size flexGrow;
+        Size flexShrink;
 
         // Margins use Size to support Auto for centering
         Size margin;
@@ -494,8 +495,6 @@ namespace NewArch {
                 .style = styleUniforms,
                 .geometry = geometryUniforms
             };
-            
-            // std::memcpy(fragment.fragmentStorage.uniformsBuffer.get()->contents(), &uniforms, sizeof(DivUniforms));
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(DivUniforms));
             
