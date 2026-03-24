@@ -25,35 +25,23 @@ auto index() -> void {
 
 
 
-    // div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
-    //     .position(NewArch::Relative)
-    // (
-    //     div(NewArch::Size::percent(1.0), NewArch::Size::px(100), simd_float4{0.9,0.9,0.9,1.0})
-    //         .display(NewArch::Flex)
-    //     (
-    //         div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0}),
-    //         div()
-    //         .height(NewArch::Size::px(80))
-    //         .color(simd_float4{0.3,1.0,0.3,1.0})
-            
-    //         .flexGrow(NewArch::Size::px(1))
-    //         (
-    //             text("hello world fsdfsdfsdfsdfsdfsdf")
-    //         ),
-    //         div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{0.3,0.3,1.0,1.0})
-    //     )
-
-    // dont think this works? shrink seems... off? for test cases 5/6
-div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
-(
-    div(NewArch::Size::px(300), NewArch::Size::px(100), simd_float4{0.9,0.9,0.9,1.0})
-        .display(NewArch::Flex)
+    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
+        .position(NewArch::Relative)
     (
-        div(NewArch::Size::px(200), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0})
-            .flexShrink(NewArch::Size::px(0)),
-        div(NewArch::Size::px(200), NewArch::Size::px(80), simd_float4{0.3,1.0,0.3,1.0})
-    )
-);
-
+        div(NewArch::Size::percent(1.0), NewArch::Size::px(100), simd_float4{0.9,0.9,0.9,1.0})
+            .display(NewArch::Flex)
+        (
+            div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0}),
+            div()
+            .height(NewArch::Size::px(80))
+            .color(simd_float4{0.3,1.0,0.3,1.0})
+            
+            .flexGrow(NewArch::Size::px(1))
+            (
+                text("hello world fsdfsdfsdfsdfsdfsdf")
+            ),
+            div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{0.3,0.3,1.0,1.0})
+        )
+    );
 }
 
