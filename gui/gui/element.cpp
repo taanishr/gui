@@ -772,7 +772,9 @@ namespace NewArch {
 
             std::vector<float> flexWidths;
 
-            float spaceRemaining = constraints.maxWidth - totalWidth;
+            float spaceRemaining = measured.explicitWidth.value_or(constraints.maxWidth) - totalWidth;
+
+            std::println("maxWidth: {}, totalWidth: {}, space remaining: {}", constraints.maxWidth, totalWidth, spaceRemaining);
 
             if (spaceRemaining > 0) {
                 // grow

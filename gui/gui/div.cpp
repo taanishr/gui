@@ -14,6 +14,8 @@ NewArch::DivDescriptor::DivDescriptor()
     , paddingRight{std::nullopt}
     , paddingTop{std::nullopt}
     , paddingBottom{std::nullopt}
+    , flexGrow{Size::px(0.0)}
+    , flexShrink{Size::px(1.0)}
     , margin{Size::px(0)}
     , marginLeft{std::nullopt}
     , marginRight{std::nullopt}
