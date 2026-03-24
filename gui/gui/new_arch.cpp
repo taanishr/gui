@@ -568,6 +568,10 @@ namespace NewArch {
             : 
         constraints.maxWidth;
 
+        if (layoutInput.height.has_value()) {
+            resolvedHeight = *layoutInput.height;
+        }
+
         lr.computedBox = {
             startingPos.x,
             startingPos.y,

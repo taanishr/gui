@@ -103,6 +103,10 @@ namespace NewArch {
                             return this->margin;
                         }
 
+                        if (f.name == "flexDirection") {
+                            return this->flexDirection;
+                        }
+
                         if (f.name == "flexShrink") {
                             return this->flexShrink;
                         }
@@ -129,9 +133,10 @@ namespace NewArch {
         std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
 
 
+        FlexDirection flexDirection;
         Size flexGrow;
         Size flexShrink;
-
+    
         // Margins use Size to support Auto for centering
         Size margin;
         std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;

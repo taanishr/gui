@@ -33,7 +33,8 @@ auto index() -> void {
         (
             div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0}),
             div()
-            .height(NewArch::Size::px(80))
+            .width(NewArch::Size::px(80))
+            // .height(NewArch::Size::px(80))
             .color(simd_float4{0.3,1.0,0.3,1.0})
             
             .flexGrow(NewArch::Size::px(1))
