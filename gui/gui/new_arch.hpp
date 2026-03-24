@@ -211,6 +211,11 @@ namespace NewArch {
         Flex
     };
 
+    enum FlexDirection {
+        Row,
+        Col,
+    };  
+
     struct EdgeIntent {
         Display edgeDisplayMode{Display::Block};
         float intent{};

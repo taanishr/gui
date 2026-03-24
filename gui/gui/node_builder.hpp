@@ -58,6 +58,9 @@ namespace NewArch {
     concept HasHeight = requires{ std::declval<T&>().height; };
 
     template <typename T>
+    concept HasFlexDirection = requires{ std::declval<T&>().flexDirection; };
+
+    template <typename T>
     concept HasFlexGrow = requires{ std::declval<T&>().flexGrow; };
 
     template <typename T>
@@ -249,6 +252,14 @@ namespace NewArch {
             auto& rawElem = elem->element;
             auto& desc = rawElem.getDescriptor();
             desc.display = display;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexDirection(FlexDirection direction) requires HasFlexDirection<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& rawElem = elem->element;
+            auto& desc = rawElem.getDescriptor();
+            desc.flexDirection = direction;
             return *this;
         }
 

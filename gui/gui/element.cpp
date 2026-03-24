@@ -125,7 +125,7 @@ namespace NewArch {
         return std::nullopt;
     }
 
-        std::optional<Size> getFlexShrink(TreeNode* node) {
+    std::optional<Size> getFlexShrink(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "flexShrink"}}};
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
@@ -133,6 +133,17 @@ namespace NewArch {
         }
         return std::nullopt;
     }
+
+    std::optional<FlexDirection> getFlexDirection(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "flexDirection"}}};        
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<FlexDirection>(resp);
+        }
+        return std::nullopt;
+    }
+
+    
 
     uint64_t TreeNode::nextId = 0;
 
@@ -599,85 +610,63 @@ namespace NewArch {
         return {childrenLineFragments, childrenLineBoxes};
     }
 
-    // std::vector<float> buildFlexContext(TreeNode* node, Constraints& childConstraints) {
-    //     // contract: ensure is flex before caling this method
-    //     // basic algorithm; not finalized becuase must run in measurement pahse
 
-    //     // flex row impl
-    //     float maxWidth = childConstraints.maxWidth;
+    struct FlexAxis {
+        std::vector<float> childSizes;
+        std::vector<float> shrinkScaled;
+        std::vector<float> growthScaled;
 
-    //     // get flex shrink and grow as transforms
-        // float totalWidth {};
-        // float shrinkScaledTotalWidth {};
-        // float growthScaledTotalWidth {};
+        float totalSize {};
+        float shrinkScaledTotal {};
+        float growthScaledTotal {};
+        bool isRow {false};
 
-        // std::vector<float> childWidths;
-        // std::vector<float> shrinkScaledChildWidths;
-        // std::vector<float> growthScaledChildWidths;
+        FlexAxis(FlexDirection direction):
+            isRow{direction == FlexDirection::Row}
+        {}
 
-        // for (auto& child : node->children) {
-        //     auto rawChild = child.get();
-        //     float childWidth = rawChild->measured->explicitWidth;
+        void addChild(const LayoutResult& layout, float resolvedGrow, float resolvedShrink) {
+            float size = isRow ? layout.computedBox.width : layout.computedBox.height;
 
-        //     auto flexGrow = getFlexGrow(rawChild);
-        //     float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+            childSizes.push_back(size);
+            totalSize += size;
 
-        //     auto flexShrink = getFlexShrink(rawChild);
-        //     float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+            if (resolvedShrink > 0.0f) {
+                shrinkScaled.push_back(size * resolvedShrink);
+                shrinkScaledTotal += size * resolvedShrink;
+            } else {
+                shrinkScaled.push_back(0.0f);
+            }
 
-        //     childWidths.push_back(childWidth);
+            if (resolvedGrow > 0.0f) {
+                growthScaled.push_back(resolvedGrow);
+                growthScaledTotal += resolvedGrow;
+            } else {
+                growthScaled.push_back(0.0f);
+            }
+        }
 
-        //     if (resolvedFlexShrink > 0.0) {
-        //         shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
-        //         shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
-        //     }else {
-        //         shrinkScaledChildWidths.push_back(0.0);
-        //     }
+        std::vector<float> resolve(const Measured& measured, const Constraints& constraints) const {
+            float available = isRow
+                ? measured.explicitWidth.value_or(constraints.maxWidth)
+                : measured.explicitHeight.value_or(constraints.maxHeight);
 
-        //     if (resolvedFlexGrow > 0.0 ){
-        //         growthScaledChildWidths.push_back(childWidth * resolvedFlexGrow);
-        //         growthScaledTotalWidth += childWidth * resolvedFlexGrow;
-        //     }else {
-        //         growthScaledChildWidths.push_back(0.0);
-        //     }
+            std::vector<float> result;
 
-        //     totalWidth += childWidth;
-        // }
-        
+            float space = available - totalSize;
 
-        // std::vector<float> flexWidths;
-
-        // float spaceRemaining = maxWidth - totalWidth;
-
-        // if (spaceRemaining > 0) {
-        //     // grow
-        //     for (int i = 0; i < childWidths.size(); ++i) {
-        //         if (growthScaledChildWidths[i] > 0) {
-        //             flexWidths.push_back(
-        //                 childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
-        //             );
-        //         }else {
-        //             flexWidths.push_back(childWidths[i]);
-        //         }
-        //     }
-        // }else if (spaceRemaining < 0) {
-        //     for (int i = 0; i < childWidths.size(); ++i) {
-        //         if (shrinkScaledChildWidths[i] > 0) {
-        //             flexWidths.push_back(
-        //                 childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
-        //             );
-        //         }else {
-        //             flexWidths.push_back(childWidths[i]);
-        //         }
-        //     }
-        // }else {
-        //     for (int i = 0; i < childWidths.size(); ++i) {
-        //         flexWidths.push_back(childWidths[i]);
-        //     }
-        // }
-
-    //     return flexWidths;
-    // }
+            for (size_t i = 0; i < childSizes.size(); ++i) {
+                if (space > 0 && growthScaled[i] > 0) {
+                    result.push_back(childSizes[i] + (growthScaled[i] / growthScaledTotal) * space);
+                } else if (space < 0 && shrinkScaled[i] > 0) {
+                    result.push_back(childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space);
+                } else {
+                    result.push_back(childSizes[i]);
+                }
+            }
+            return result;
+        }
+    };
 
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         assert(node->measured.has_value());
@@ -709,7 +698,6 @@ namespace NewArch {
         auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
         childConstraints.lineBoxes = childrenLineBoxes;
 
-
         // prepare post layout context
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
@@ -719,15 +707,8 @@ namespace NewArch {
         auto display = getDisplay(node).value_or(Display::Block);
 
         if (display == Display::Flex) {
-            std::vector<LayoutResult*> flexChildrenLayouts;
-
-            float totalWidth {};
-            float shrinkScaledTotalWidth {};
-            float growthScaledTotalWidth {};
-
-            std::vector<float> childWidths;
-            std::vector<float> shrinkScaledChildWidths;
-            std::vector<float> growthScaledChildWidths;
+            auto flexDirection = getFlexDirection(node).value_or(FlexDirection::Row);
+            FlexAxis flexAxis {flexDirection};
 
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
@@ -743,84 +724,42 @@ namespace NewArch {
                     continue;
                 }
 
-                float childWidth = childLayout.computedBox.width;
-
                 auto flexGrow = getFlexGrow(childAsPtr);
-                float resolvedFlexGrow = flexGrow->resolveOr(0.0, 0.0);
+                float resolvedGrow = flexGrow->resolveOr(0.0, 0.0);
 
                 auto flexShrink = getFlexShrink(childAsPtr);
-                float resolvedFlexShrink = flexShrink->resolveOr(0.0, 1.0);
+                float resolvedShrink = flexShrink->resolveOr(0.0, 1.0);
 
-                childWidths.push_back(childWidth);
-
-                if (resolvedFlexShrink > 0.0) {
-                    shrinkScaledChildWidths.push_back(childWidth * resolvedFlexShrink);
-                    shrinkScaledTotalWidth += childWidth * resolvedFlexShrink;
-                }else {
-                    shrinkScaledChildWidths.push_back(0.0);
-                }
-
-                if (resolvedFlexGrow > 0.0 ){
-                    growthScaledChildWidths.push_back(resolvedFlexGrow);
-                    growthScaledTotalWidth += resolvedFlexGrow;
-                }else {
-                    growthScaledChildWidths.push_back(0.0);
-                }
-
-                totalWidth += childWidth;
+                flexAxis.addChild(childLayout, resolvedGrow, resolvedShrink);
             }
 
-            std::vector<float> flexWidths;
+            auto&& flexSizes = flexAxis.resolve(measured, constraints);
 
-            float spaceRemaining = measured.explicitWidth.value_or(constraints.maxWidth) - totalWidth;
-
-            // std::println("maxWidth: {}, totalWidth: {}, space remaining: {}", constraints.maxWidth, totalWidth, spaceRemaining);
-
-            if (spaceRemaining > 0) {
-                // grow
-                for (int i = 0; i < childWidths.size(); ++i) {
-                    if (growthScaledChildWidths[i] > 0) {
-                        flexWidths.push_back(
-                            childWidths[i] + (growthScaledChildWidths[i] / growthScaledTotalWidth) * spaceRemaining
-                        );
-                    }else {
-                        flexWidths.push_back(childWidths[i]);
-                    }
-                }
-            }else if (spaceRemaining < 0) {
-                for (int i = 0; i < childWidths.size(); ++i) {
-                    if (shrinkScaledChildWidths[i] > 0) {
-                        flexWidths.push_back(
-                            childWidths[i] + (shrinkScaledChildWidths[i] / shrinkScaledTotalWidth) * spaceRemaining
-                        );
-                    }else {
-                        flexWidths.push_back(childWidths[i]);
-                    }
-                }
-            }else {
-                for (int i = 0; i < childWidths.size(); ++i) {
-                    flexWidths.push_back(childWidths[i]);
-                }
-            }
-
-            float accumulatedX = 0;
+            float accumulated = 0;
             
             for (int i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
 
-                Constraints flexChildConstraints = childConstraints;
-                flexChildConstraints.maxWidth = flexWidths[i];
-                flexChildConstraints.origin.x = accumulatedX;
-                flexChildConstraints.cursor = {0, 0};
-                flexChildConstraints.lineFragments = childrenLineFragments[i];
-                flexChildConstraints.inheritedProperties = constraints.inheritedProperties;
+                childConstraints.cursor = {0, 0};
+                childConstraints.lineFragments = childrenLineFragments[i];
+                childConstraints.inheritedProperties = constraints.inheritedProperties;
 
-                childAsPtr->measured->explicitWidth = flexWidths[i];
 
-                layoutPhase(childAsPtr, frameInfo, flexChildConstraints);
+                if (flexDirection == FlexDirection::Row) {
+                    childConstraints.maxWidth = flexSizes[i];
+                    childConstraints.origin.x = accumulated;
+                    childAsPtr->measured->explicitWidth = flexSizes[i];
+                }else {
+                    childConstraints.maxHeight = flexSizes[i];
+                    childConstraints.cursor.y = accumulated;
+                    childAsPtr->measured->explicitHeight = flexSizes[i];
+                }
+
+                layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
 
+                // need to fix this; currently still sets constraints for out of flow elements, which is wrong
                 if (childLayout.outOfFlow) {
                     continue;
                 }
@@ -828,7 +767,7 @@ namespace NewArch {
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
 
-                accumulatedX += flexWidths[i];
+                accumulated += flexSizes[i];
             }
 
         }else {
