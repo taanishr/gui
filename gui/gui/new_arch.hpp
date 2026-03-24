@@ -189,7 +189,7 @@ namespace NewArch {
     concept DescriptorType = requires(
         D d,
         std::any payload
-    ) 
+    )
     {
         { d.request(payload) } -> std::same_as<std::any>;
     };
@@ -214,7 +214,29 @@ namespace NewArch {
     enum FlexDirection {
         Row,
         Col,
-    };  
+    };
+
+    struct SharedDescriptor {
+        Position position{Position::Static};
+        Display display{Display::Block};
+
+        std::optional<Size> width, height;
+        std::optional<Size> top, left, bottom, right;
+
+        Size margin{};
+        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
+
+        Size padding{};
+        std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
+
+        FlexDirection flexDirection{FlexDirection::Row};
+        Size flexGrow{Size::px(0.0)};
+        Size flexShrink{Size::px(1.0)};
+
+        Size cornerRadius{};
+        Size borderWidth{};
+        simd_float4 borderColor{0,0,0,1};
+    };
 
     struct EdgeIntent {
         Display edgeDisplayMode{Display::Block};
@@ -280,6 +302,27 @@ namespace NewArch {
             return marginLeft.isAuto() && marginRight.isAuto();
         }
     };
+
+    inline LayoutInput toLayoutInput(const SharedDescriptor& s, const Measured& m) {
+        LayoutInput li;
+        li.position = s.position;
+        li.display = s.display;
+        li.width = m.explicitWidth;
+        li.height = m.explicitHeight;
+        li.top = s.top;
+        li.left = s.left;
+        li.bottom = s.bottom;
+        li.right = s.right;
+        li.paddingTop = s.paddingTop.value_or(s.padding);
+        li.paddingRight = s.paddingRight.value_or(s.padding);
+        li.paddingBottom = s.paddingBottom.value_or(s.padding);
+        li.paddingLeft = s.paddingLeft.value_or(s.padding);
+        li.marginTop = s.marginTop.value_or(s.margin);
+        li.marginRight = s.marginRight.value_or(s.margin);
+        li.marginBottom = s.marginBottom.value_or(s.margin);
+        li.marginLeft = s.marginLeft.value_or(s.margin);
+        return li;
+    }
 
     struct SizeResolutionContext {
         Position position;

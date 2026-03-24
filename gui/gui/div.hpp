@@ -44,107 +44,21 @@ namespace NewArch {
     struct DivDescriptor {
         DivDescriptor();
 
-
         std::any request(std::any const& payloadAny) {
             if (!payloadAny.has_value()) return std::any{};
-
             if (auto payloadPtr = std::any_cast<DescriptorPayload>(&payloadAny)) {
                 return std::visit(Overloaded{
-                    [this](GetFull const&) -> std::any {
-                        return std::any(*this);
-                    },
+                    [this](GetFull const&) -> std::any { return std::any(*this); },
                     [this](GetField const& f) -> std::any {
-                        if (f.name == "color")    return this->color;
-                        if (f.name == "position") return this->position;
-                        if (f.name == "display") return this->display;
-                        if (f.name == "marginTop") {
-                            if (this->marginTop.has_value()) {
-                                return this->marginTop.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "marginBottom") {
-                            if (this->marginBottom.has_value()) {
-                                return this->marginBottom.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "paddingTop") {
-                            if (this->paddingTop.has_value()) {
-                                return this->paddingTop.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "paddingBottom") {
-                            if (this->paddingBottom.has_value()) {
-                                return this->paddingBottom.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "marginLeft") {
-                            if (this->marginLeft.has_value()) {
-                                return this->marginLeft.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "marginRight") {
-                            if (this->marginRight.has_value()) {
-                                return this->marginRight.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "width") {
-                            if (this->width.has_value()) {
-                                return this->width->resolveOr(0.0f);
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "margin") {
-                            return this->margin;
-                        }
-
-                        if (f.name == "flexDirection") {
-                            return this->flexDirection;
-                        }
-
-                        if (f.name == "flexShrink") {
-                            return this->flexShrink;
-                        }
-
-                        if (f.name == "flexGrow") {
-                            return this->flexGrow;
-                        }
+                        if (f.name == "color") return std::any{this->color};
                         return std::any{};
                     }
                 }, *payloadPtr);
             }
-
             return std::any{};
         }
 
-        std::optional<Size> width;
-        std::optional<Size> height;
-
         simd_float4 color;
-        Size cornerRadius;
-        Size borderWidth;
-        simd_float4 borderColor;
-        Size padding;
-        std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
-
-
-        FlexDirection flexDirection;
-        Size flexGrow;
-        Size flexShrink;
-    
-        // Margins use Size to support Auto for centering
-        Size margin;
-        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
-
-        std::optional<Size> top, left, bottom, right;
-
-        Display display;
-        Position position;
     };
 
     struct DivStyleUniforms {
@@ -286,32 +200,28 @@ namespace NewArch {
             return pipeline;
         }
         
-        // placement/encoder/etc...
-        Measured measure(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc /* constraints */) {
+        Measured measure(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, DivDescriptor& desc) {
             Measured measured {};
-
-            // starting with just one type of measurement; for now, we keep it simple, just desc width and height
             measured.id = fragment.id;
 
             SizeResolutionContext ctx {
-                .position = desc.position,
+                .position = shared.position,
                 .parentConstraints = constraints,
-                .top = desc.top,
-                .right = desc.right,
-                .bottom = desc.bottom,
-                .left = desc.left,
-                .requestedWidth = desc.width,
-                .requestedHeight = desc.height,
+                .top = shared.top,
+                .right = shared.right,
+                .bottom = shared.bottom,
+                .left = shared.left,
+                .requestedWidth = shared.width,
+                .requestedHeight = shared.height,
                 .availableWidth = constraints.maxWidth,
                 .availableHeight = constraints.maxHeight
             };
 
             auto resolvedSize = resolveSize(ctx);
 
-
             measured.explicitWidth = resolvedSize.width;
             measured.explicitHeight = resolvedSize.height;
-            
+
             return measured;
         }
         // resolve percents as explicit width/height, also resolve explicit width/height (like divs default 100% width?)
@@ -320,7 +230,7 @@ namespace NewArch {
         // and also, we know 100% width so divs can be easily resolved. this makes sense
         
         // after we resolved the measurements, we can actually atomize... question is, do I need a new struct in between?
-        Atomized atomize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured) {
+        Atomized atomize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, DivDescriptor& desc, Measured& measured) {
             std::vector<Atom> atoms {};
             
             // get measurements
@@ -358,44 +268,16 @@ namespace NewArch {
             };
         }
 
-        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized) {
-            LayoutInput li;
-            li.display = desc.display;
-            li.position = desc.position;
-
-            li.top = desc.top;
-            li.left = desc.left;
-            li.bottom = desc.bottom;
-            li.right = desc.right;
-
-            li.width = measured.explicitWidth;
-            li.height = measured.explicitHeight;
-
-            li.paddingTop = desc.padding;
-            li.paddingRight = desc.padding;
-            li.paddingBottom = desc.padding;
-            li.paddingLeft = desc.padding;
-
-            if (desc.paddingTop.has_value()) li.paddingTop = *desc.paddingTop;
-            if (desc.paddingRight.has_value()) li.paddingRight = *desc.paddingRight;
-            if (desc.paddingBottom.has_value()) li.paddingBottom = *desc.paddingBottom;
-            if (desc.paddingLeft.has_value()) li.paddingLeft = *desc.paddingLeft;
-
-            // Margins use Size to support Auto
-            li.marginTop = desc.marginTop.value_or(desc.margin);
-            li.marginRight = desc.marginRight.value_or(desc.margin);
-            li.marginBottom = desc.marginBottom.value_or(desc.margin);
-            li.marginLeft = desc.marginLeft.value_or(desc.margin);
-
+        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, DivDescriptor& desc, Measured& measured, Atomized& atomized) {
+            auto li = toLayoutInput(shared, measured);
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
-
             return lr;
         }
         
         // OHHH!  Do I need to alter my later passes to have a computed size? Computed width? Ok, makes sense.
 
 
-        Atomized postLayout(Fragment<S>& fragment, Constraints&, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+        Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
             std::vector<Atom> atoms {};
             
             // get measurements
@@ -432,8 +314,7 @@ namespace NewArch {
             };
         }
         
-        // TODO: Cache all this
-        Placed place(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) // also needs to take in constraints
+        Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr)
         {
             std::vector<AtomPlacement> placements;
             auto offsets = lr.atomOffsets;
@@ -458,29 +339,25 @@ namespace NewArch {
             };
         }
 
-        // finalizes uniforms and makes final object
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed)
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, DivDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed)
         {
-            // finalizes uniforms and return finalized object
-
             float borderWidth = 0.0;
 
-            if (desc.borderWidth.unit == Unit::Px) {
-                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for now
+            if (shared.borderWidth.unit == Unit::Px) {
+                borderWidth = shared.borderWidth.resolveOr(constraints.maxWidth);
             }
 
             float minDim = std::min(layout.computedBox.width, layout.computedBox.height);
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(minDim),
-                desc.cornerRadius.resolveOr(minDim)
+                shared.cornerRadius.resolveOr(minDim),
+                shared.cornerRadius.resolveOr(minDim)
             };
-            
-            // style uniforms
+
             DivStyleUniforms styleUniforms{
                 .color = desc.color,
-                .cornerRadius = cornerRadius, // eventually have it in two directions
+                .cornerRadius = cornerRadius,
                 .borderWidth = borderWidth,
-                .borderColor = desc.borderColor
+                .borderColor = shared.borderColor
             };
             
             // geometry uniforms
