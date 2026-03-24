@@ -130,7 +130,7 @@ namespace NewArch {
             return processor.encode(encoder, element.getFragment(), finalized);
         }
 
-        bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
+        bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) override {
             if (hitTestFunction) {
                 HitTestContext<U> ctx {
                     .finalized = std::any_cast<Finalized<U>>(finalized),
@@ -184,7 +184,7 @@ namespace NewArch {
             }
         }
 
-        void calculateGlobalZIndex(unsigned int parentGlobal) {
+        void calculateGlobalZIndex(uint64_t parentGlobal) {
             globalZIndex = parentGlobal + localZIndex;
             
             for (auto& child : children) {
@@ -234,6 +234,8 @@ namespace NewArch {
 
     std::vector<TreeNode*> collectAllNodes(TreeNode* root);
 
+    void precomputeMargins(TreeNode* node, Constraints& constraints);
+
     // pointers for raw views
     struct RenderTree {
         template<ElementType E, typename P>
@@ -258,9 +260,6 @@ namespace NewArch {
         std::unique_ptr<TreeNode> elementTree;
         LayoutEngine layoutEngine;
 
-        void precomputeMargins(TreeNode* node, Constraints& constraints);
-
-        
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
 

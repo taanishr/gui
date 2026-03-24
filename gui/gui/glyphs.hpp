@@ -33,7 +33,7 @@ struct Glyph {
     Quad quad;
     std::vector<simd_float2> points;
     int numContours;
-    std::vector<int> contourSizes;
+    std::vector<size_t> contourSizes;
     FT_Glyph_Metrics metrics;
 };
 

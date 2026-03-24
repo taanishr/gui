@@ -114,7 +114,7 @@ Glyph processContours(FT_Face face)
     std::vector<simd_float2> points;
     
     int contourStart = 0;
-    std::vector<int> contourSizes;
+    std::vector<size_t> contourSizes;
 
     float ascender = face->size->metrics.ascender;
 

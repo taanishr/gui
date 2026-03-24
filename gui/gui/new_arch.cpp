@@ -437,8 +437,6 @@ namespace NewArch {
         LayoutResult lr;
         lr.outOfFlow = true;
 
-        simd_float2 viewportOrigin = {0.0f, 0.0f};
-
         auto margins = constraints.resolvedMargins;
 
         PositionResolutionContext pctx {
@@ -656,8 +654,7 @@ namespace NewArch {
                                 : constraints.origin.x + constraints.maxWidth - lineBox.width + offset;
 
             newCursor.x = startingX;
-            const auto& originx = constraints.origin.x;
-            std::println("origin.X: {} offset: {} startingX: {}", originx, offset, startingX);
+            
             minX = std::min(minX, newCursor.x);
 
             if (fragmentIdx == 0) {
@@ -718,10 +715,6 @@ namespace NewArch {
             totalWidth,
             totalHeight
         };
-
-
-        auto cbx = minX;
-        auto cby = minY;
 
         float paddingLeft = layoutInput.paddingLeft.resolveOr(constraints.maxWidth);
         float paddingTop = layoutInput.paddingTop.resolveOr(constraints.maxHeight);
