@@ -44,50 +44,27 @@ namespace NewArch {
     struct TextDescriptor {
         TextDescriptor();
 
-        std::string text;
-        std::string font;
-        simd_float4 color;
-        Size fontSize;
-        
-        Display display;
-        Position position;
-
         std::any request(std::any const& payloadAny) {
             if (!payloadAny.has_value()) return std::any{};
-
             if (auto payloadPtr = std::any_cast<DescriptorPayload>(&payloadAny)) {
                 return std::visit(Overloaded{
-                    [this](GetFull const&) -> std::any {
-                        return std::any(*this);
-                    },
+                    [this](GetFull const&) -> std::any { return std::any(*this); },
                     [this](GetField const& f) -> std::any {
-                        if (f.name == "text")     return this->text;
-                        if (f.name == "font")     return this->font;
-                        if (f.name == "fontSize") return this->fontSize;
-                        if (f.name == "color")    return this->color;
-                        if (f.name == "marginLeft") {
-                            if (this->marginLeft.has_value()) {
-                                return this->marginLeft.value();
-                            }
-                            return std::any{};
-                        }
-                        if (f.name == "marginRight") {
-                            if (this->marginRight.has_value()) {
-                                return this->marginRight.value();
-                            }
-                            return std::any{};
-                        }
+                        if (f.name == "text")     return std::any{this->text};
+                        if (f.name == "font")     return std::any{this->font};
+                        if (f.name == "fontSize") return std::any{this->fontSize};
+                        if (f.name == "color")    return std::any{this->color};
                         return std::any{};
                     }
                 }, *payloadPtr);
             }
-
             return std::any{};
         }
 
-        // Margins use Size to support Auto
-        Size margin;
-        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
+        std::string text;
+        std::string font;
+        simd_float4 color;
+        Size fontSize;
     };
 
     struct TextUniforms {
@@ -230,7 +207,7 @@ namespace NewArch {
             return pipeline;
         }
         
-        Measured measure(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc) {
+        Measured measure(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc) {
             Measured measured;
 
             measured.id = fragment.id;
@@ -251,7 +228,7 @@ namespace NewArch {
             };
         }
         
-        Atomized atomize(Fragment<S>& fragment, Constraints&, TextDescriptor& desc, Measured&) {
+        Atomized atomize(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, TextDescriptor& desc, Measured&) {
             std::vector<Atom> atoms;
             std::vector<TextPoint> allAtomPoints;
             std::vector<int> metadata;
@@ -352,31 +329,17 @@ namespace NewArch {
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
 
-        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc, Measured& measured, Atomized& atomized) {
-            LayoutInput li;
-            li.display = desc.display;
-            li.position = desc.position;
-
-            // Pass explicit width/height (text is content-sized)
-            li.width = measured.explicitWidth;
-            li.height = measured.explicitHeight;
-
-            // Margins use Size to support Auto
-            li.marginTop = desc.marginTop.value_or(desc.margin);
-            li.marginRight = desc.marginRight.value_or(desc.margin);
-            li.marginBottom = desc.marginBottom.value_or(desc.margin);
-            li.marginLeft = desc.marginLeft.value_or(desc.margin);
-
+        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized) {
+            auto li = toLayoutInput(shared, measured);
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
-
             return lr;
         }
 
-        Atomized postLayout(Fragment<S>& fragment, Constraints&, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+        Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
             return atomized;
         };
 
-        Placed place(Fragment<S>& fragment, Constraints& constraints, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) {
+        Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
             
             auto offsets = lr.atomOffsets;
@@ -398,7 +361,7 @@ namespace NewArch {
             return Placed{ .id = fragment.id, .placements = placements };
         }
         
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints&, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
             TextUniforms uniforms {
                 .color = desc.color
             };

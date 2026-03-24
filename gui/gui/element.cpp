@@ -16,129 +16,26 @@
 namespace NewArch {
     ElementBase::~ElementBase() {};
 
-    // Helper functions for descriptor field access
-    std::optional<Position> getPosition(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "position"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Position>(resp);
-        }
-        return std::nullopt;
-    }
+    // Helper functions — shared properties read directly from TreeNode::shared
+    Position getPosition(TreeNode* node) { return node->shared.position; }
+    Display getDisplay(TreeNode* node) { return node->shared.display; }
+    Size getMarginTop(TreeNode* node) { return node->shared.marginTop.value_or(node->shared.margin); }
+    Size getMarginBottom(TreeNode* node) { return node->shared.marginBottom.value_or(node->shared.margin); }
+    Size getMarginLeft(TreeNode* node) { return node->shared.marginLeft.value_or(node->shared.margin); }
+    Size getMarginRight(TreeNode* node) { return node->shared.marginRight.value_or(node->shared.margin); }
+    Size getMargin(TreeNode* node) { return node->shared.margin; }
+    std::optional<Size> getPaddingTop(TreeNode* node) { return node->shared.paddingTop; }
+    std::optional<Size> getPaddingBottom(TreeNode* node) { return node->shared.paddingBottom; }
+    Size getFlexGrow(TreeNode* node) { return node->shared.flexGrow; }
+    Size getFlexShrink(TreeNode* node) { return node->shared.flexShrink; }
+    FlexDirection getFlexDirection(TreeNode* node) { return node->shared.flexDirection; }
 
-    std::optional<Display> getDisplay(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "display"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Display>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getMarginTop(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "marginTop"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getMarginBottom(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "marginBottom"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getPaddingTop(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "paddingTop"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getPaddingBottom(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "paddingBottom"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getMarginLeft(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "marginLeft"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getMarginRight(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "marginRight"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
+    // Element-specific requests still use the request system
     std::optional<std::string> getText(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "text"}}};
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
             return std::any_cast<std::string>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<float> getWidth(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "width"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<float>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getMargin(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "margin"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getFlexGrow(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "flexGrow"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Size> getFlexShrink(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "flexShrink"}}};
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<Size>(resp);
-        }
-        return std::nullopt;
-    }
-
-    std::optional<FlexDirection> getFlexDirection(TreeNode* node) {
-        std::any request{DescriptorPayload{GetField{.name = "flexDirection"}}};        
-        auto resp = node->element->request(RequestTarget::Descriptor, request);
-        if (resp.has_value()) {
-            return std::any_cast<FlexDirection>(resp);
         }
         return std::nullopt;
     }
@@ -192,7 +89,7 @@ namespace NewArch {
         
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
-                node->atomized = node->element->atomize(rootConstraints, *node->measured);
+                node->atomized = node->element->atomize(rootConstraints, node->shared, *node->measured);
             }
         );
     
@@ -207,14 +104,14 @@ namespace NewArch {
 
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
-                node->placed = node->element->place(rootConstraints, *node->measured, 
+                node->placed = node->element->place(rootConstraints, node->shared, *node->measured,
                                                     *node->atomized, *node->layout);
             }
         );
-        
+
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {
-                node->finalized = node->element->finalize(rootConstraints, *node->measured,
+                node->finalized = node->element->finalize(rootConstraints, node->shared, *node->measured,
                                                         *node->atomized, *node->layout, *node->placed);
             }
         );
@@ -239,7 +136,7 @@ namespace NewArch {
     }
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {
-        auto measured = node->element->measure(constraints);
+        auto measured = node->element->measure(constraints, node->shared);
         node->measured = measured;
         
         Constraints childConstraints {};
@@ -261,7 +158,8 @@ namespace NewArch {
 
 
         auto& measured  = *node->measured;
-        auto atomized = node->element->atomize(constraints, measured);
+        auto& shared = node->shared;
+        auto atomized = node->element->atomize(constraints, shared, measured);
         node->atomized = atomized;
     }
 
@@ -281,21 +179,15 @@ namespace NewArch {
             auto position = getPosition(child.get());
             auto display = getDisplay(child.get());
 
-            if (position.has_value() && display.has_value()) {
-                if ((*position == Position::Static || *position == Position::Relative) && *display == Display::Block) {
-                    if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
-                    lastInFlowCollapsableChild = child.get();
-                }
+            if ((position == Position::Static || position == Position::Relative) && display == Display::Block) {
+                if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
+                lastInFlowCollapsableChild = child.get();
             }
         }
 
         // check if out of flow
         auto currPosition = getPosition(node);
-        bool currOutOfFlow = false;
-
-        if (currPosition.has_value()) {
-            currOutOfFlow = *currPosition == Position::Absolute || *currPosition == Position::Fixed;
-        }
+        bool currOutOfFlow = currPosition == Position::Absolute || currPosition == Position::Fixed;
 
         if (currOutOfFlow) {
             firstInFlowCollapsableChild = nullptr;
@@ -314,8 +206,8 @@ namespace NewArch {
             lastInFlowCollapsableChild = nullptr;
         }
 
-        Size marginTop = getMarginTop(node).value_or(Size{});
-        Size marginBottom = getMarginBottom(node).value_or(Size{});
+        Size marginTop = getMarginTop(node);
+        Size marginBottom = getMarginBottom(node);
 
         // check if has top chains; if not, create new ones (which will be propagated to first and last child)
         CollapsedChain newCollapsedTopChain;
@@ -414,15 +306,14 @@ namespace NewArch {
         }
 
         // Determine position and display
-        auto position = getPosition(node).value_or(Position::Static);
-        auto display = getDisplay(node).value_or(Display::Block);
+        auto position = getPosition(node);
+        auto display = getDisplay(node);
 
-        // Get margin values from descriptor (with fallback to default margin)
-        Size defaultMargin = getMargin(node).value_or(Size{});
-        Size marginTop = getMarginTop(node).value_or(defaultMargin);
-        Size marginRight = getMarginRight(node).value_or(defaultMargin);
-        Size marginBottom = getMarginBottom(node).value_or(defaultMargin);
-        Size marginLeft = getMarginLeft(node).value_or(defaultMargin);
+        // Get margin values from shared descriptor
+        Size marginTop = getMarginTop(node);
+        Size marginRight = getMarginRight(node);
+        Size marginBottom = getMarginBottom(node);
+        Size marginLeft = getMarginLeft(node);
 
         ResolvedMargins margins{};
 
@@ -436,7 +327,9 @@ namespace NewArch {
                 contentHeight = std::max(contentHeight, atom.height);
             }
 
-            float width = getWidth(node).value_or(0.0f);
+            float width = node->shared.width.has_value()
+                ? node->shared.width->resolveOr(0.0f)
+                : 0.0f;
             if (width > 0) {
                 contentWidth = width;
             } else {
@@ -679,12 +572,12 @@ namespace NewArch {
 
         // attach precomputed margins and resolve existing node layout
         constraints.resolvedMargins = prelayout.resolvedMargins;
-        auto layout = node->element->layout(constraints, measured, atomized);
+        auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         // prepare child constraints
         auto childConstraints = layout.childConstraints;
         auto position = getPosition(node);
-        if (position.has_value() && *position != Position::Static) {
+        if (position != Position::Static) {
             childConstraints.absoluteContainingBlock = {
                 .origin = {0.0f, 0.0f},
                 .width = layout.computedBox.width,
@@ -704,10 +597,10 @@ namespace NewArch {
         float minX = layout.childConstraints.origin.x;
         float maxX = layout.childConstraints.origin.x;
 
-        auto display = getDisplay(node).value_or(Display::Block);
+        auto display = getDisplay(node);
 
         if (display == Display::Flex) {
-            auto flexDirection = getFlexDirection(node).value_or(FlexDirection::Row);
+            auto flexDirection = getFlexDirection(node);
             FlexAxis flexAxis {flexDirection};
 
             for (uint64_t i = 0; i < node->children.size(); ++i) {
@@ -725,10 +618,10 @@ namespace NewArch {
                 }
 
                 auto flexGrow = getFlexGrow(childAsPtr);
-                float resolvedGrow = flexGrow->resolveOr(0.0, 0.0);
+                float resolvedGrow = flexGrow.resolveOr(0.0, 0.0);
 
                 auto flexShrink = getFlexShrink(childAsPtr);
-                float resolvedShrink = flexShrink->resolveOr(0.0, 1.0);
+                float resolvedShrink = flexShrink.resolveOr(0.0, 1.0);
 
                 flexAxis.addChild(childLayout, resolvedGrow, resolvedShrink);
             }
@@ -792,7 +685,7 @@ namespace NewArch {
 
         // resize width/height of underspecified elements
         if (!measured.explicitWidth.has_value()) {
-            if (*position != Position::Static)
+            if (position != Position::Static)
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
         }
 
@@ -812,7 +705,7 @@ namespace NewArch {
         assert(node->layout.has_value());
 
         auto& layout = *node->layout;
-        auto position = getPosition(node).value_or(Position::Static);
+        auto position = getPosition(node);
 
         auto& dp = layout.deferredPosition;
         if (dp.needsRightResolution) {
@@ -849,7 +742,7 @@ namespace NewArch {
         }
         node->globalOffset = baseOrigin;
 
-        node->atomized = node->element->postLayout(constraints, *node->measured,
+        node->atomized = node->element->postLayout(constraints, node->shared, *node->measured,
                                                     *node->atomized, layout);
 
         simd_float2 currContentOrigin = {
@@ -877,7 +770,7 @@ namespace NewArch {
         auto& atomized = *node->atomized;
         auto& layout = *node->layout;
 
-        auto placed = node->element->place(constraints, measured, atomized, layout);
+        auto placed = node->element->place(constraints, node->shared, measured, atomized, layout);
         node->placed = placed;
     }
 
@@ -893,7 +786,7 @@ namespace NewArch {
         auto& atomized = *node->atomized;
         auto& layout = *node->layout;
         auto& placed = *node->placed;
-        auto finalized = node->element->finalize(constraints, measured, atomized, layout, placed);
+        auto finalized = node->element->finalize(constraints, node->shared, measured, atomized, layout, placed);
         node->finalized = finalized;
     }
 

@@ -31,19 +31,7 @@ namespace NewArch {
             return std::any{};
         }
 
-        std::optional<Size> width;
-        std::optional<Size> height;
         std::string path;
-        Size cornerRadius {};
-        Size borderWidth {};
-        simd_float4 borderColor = {0,0,0,1};
-
-        Display display;
-        Position position;
-
-        std::optional<Size> top, left, bottom, right;
-        Size margin;
-        std::optional<Size> marginLeft, marginRight, marginTop, marginBottom;
     };
 
     struct ImageStyleUniforms {
@@ -236,7 +224,7 @@ namespace NewArch {
 
         }
 
-        Measured measure(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc) {
+        Measured measure(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc) {
             Measured measured;
             measured.id = fragment.id;
 
@@ -244,26 +232,26 @@ namespace NewArch {
                 initializeTexture(fragment, desc.path);
             }
 
-            SizeResolutionContext ctx {
-                .position = desc.position,
+            SizeResolutionContext sizeCtx {
+                .position = shared.position,
                 .parentConstraints = constraints,
-                .top = desc.top,
-                .right = desc.right,
-                .bottom = desc.bottom,
-                .left = desc.left,
-                .requestedWidth = desc.width,
-                .requestedHeight = desc.height,
+                .top = shared.top,
+                .right = shared.right,
+                .bottom = shared.bottom,
+                .left = shared.left,
+                .requestedWidth = shared.width,
+                .requestedHeight = shared.height,
                 .availableWidth = constraints.maxWidth,
                 .availableHeight = constraints.maxHeight
             };
 
-            ResolvedSize resolvedSize = resolveSize(ctx);
+            ResolvedSize resolvedSize = resolveSize(sizeCtx);
 
             auto resolvedWidth = resolvedSize.width;
             auto resolvedHeight = resolvedSize.height;
 
             // Fall back to intrinsic size if not specified
-            if (!desc.width || ! desc.height) {
+            if (!shared.width || !shared.height) {
                 const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
                     resolvedWidth = intrinsic.x;
@@ -277,7 +265,7 @@ namespace NewArch {
             return measured;
         }
 
-        Atomized atomize(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured) {
+        Atomized atomize(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, ImageDescriptor& desc, Measured& measured) {
             std::vector<Atom> atoms;
 
             float width = measured.explicitWidth.value_or(0.0);
@@ -309,36 +297,17 @@ namespace NewArch {
             return Atomized{ .id = fragment.id, .atoms = atoms };
         }
 
-        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized) {
-            LayoutInput li;
-            li.display = desc.display;
-            li.position = desc.position;
-
-            li.top = desc.top;
-            li.left = desc.left;
-            li.bottom = desc.bottom;
-            li.right = desc.right;
-
-            // Pass explicit width/height for margin auto centering calculation
-            li.width = measured.explicitWidth;
-            li.height = measured.explicitHeight;
-
-            // Margins use Size to support Auto
-            li.marginTop = desc.marginTop.value_or(desc.margin);
-            li.marginRight = desc.marginRight.value_or(desc.margin);
-            li.marginBottom = desc.marginBottom.value_or(desc.margin);
-            li.marginLeft = desc.marginLeft.value_or(desc.margin);
-
+        LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc, Measured& measured, Atomized& atomized) {
+            auto li = toLayoutInput(shared, measured);
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
-
             return lr;
         }
 
-        Atomized postLayout(Fragment<S>& fragment, Constraints&, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+        Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
             return atomized;
         };
 
-        Placed place(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
+        Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
 
             auto offsets = lr.atomOffsets;
@@ -359,23 +328,22 @@ namespace NewArch {
             return Placed{ .id = fragment.id, .placements = placements };
         }
 
-        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
+        Finalized<U> finalize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
             float borderWidth = 0.0;
 
-            if (desc.borderWidth.unit == Unit::Px) {
-                borderWidth = desc.borderWidth.resolveOr(constraints.maxWidth); // default to width for now
+            if (shared.borderWidth.unit == Unit::Px) {
+                borderWidth = shared.borderWidth.resolveOr(constraints.maxWidth);
             }
 
-            
             simd_float2 cornerRadius {
-                desc.cornerRadius.resolveOr(layout.computedBox.width),
-                desc.cornerRadius.resolveOr(layout.computedBox.height)
+                shared.cornerRadius.resolveOr(layout.computedBox.width),
+                shared.cornerRadius.resolveOr(layout.computedBox.height)
             };
 
             ImageStyleUniforms styleUniforms {
                 .cornerRadius = cornerRadius,
                 .borderWidth = borderWidth,
-                .borderColor = desc.borderColor
+                .borderColor = shared.borderColor
             };
 
             ImageGeometryUniforms geometryUniforms;

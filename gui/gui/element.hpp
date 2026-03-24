@@ -45,6 +45,7 @@ namespace NewArch {
         P& proc,
         Fragment<S>& fragment,
         Constraints& constraints,
+        SharedDescriptor& shared,
         D& desc,
         Measured& measured,
         Atomized& atomized,
@@ -53,39 +54,36 @@ namespace NewArch {
         LayoutResult layout,
         MTL::RenderCommandEncoder* encoder
     ) {
-        { proc.measure(fragment, constraints, desc) } -> std::same_as<Measured>;
-        { proc.atomize(fragment, constraints, desc, measured) } -> std::same_as<Atomized>;
-        { proc.layout(fragment, constraints, desc, measured, atomized) } -> std::same_as<LayoutResult>;
+        { proc.measure(fragment, constraints, shared, desc) } -> std::same_as<Measured>;
+        { proc.atomize(fragment, constraints, shared, desc, measured) } -> std::same_as<Atomized>;
+        { proc.layout(fragment, constraints, shared, desc, measured, atomized) } -> std::same_as<LayoutResult>;
 
-        // TODO: add reconcile phase to fix atoms based on consumed height for container elements like divs
+        { proc.postLayout(fragment, constraints, shared, desc, measured, atomized, layout) } -> std::same_as<Atomized>;
 
-        { proc.postLayout(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Atomized>;
+        { proc.place(fragment, constraints, shared, desc, measured, atomized, layout) } -> std::same_as<Placed>;
 
-        { proc.place(fragment, constraints, desc, measured, atomized, layout) } -> std::same_as<Placed>;
-
-        { proc.finalize(fragment, constraints, desc, measured, atomized, layout, placed) } -> std::same_as<Finalized<U>>;
+        { proc.finalize(fragment, constraints, shared, desc, measured, atomized, layout, placed) } -> std::same_as<Finalized<U>>;
         { proc.setupHitTestFunction() } -> std::same_as<std::function<bool(HitTestContext<U>&, simd_float2)>>;
         proc.encode(encoder, fragment, finalized);
     };
 
-    // ughhh figure out type erasure route for finalized this annoys tf outta me bro
     struct ElementBase {
-        virtual Measured measure(Constraints& constraints) = 0;
-        virtual Atomized atomize(Constraints& constraints, Measured& measured) = 0;
-        virtual LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) = 0;
-        virtual Atomized postLayout(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
-        virtual Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
-        virtual std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) = 0;
+        virtual Measured measure(Constraints& constraints, SharedDescriptor& shared) = 0;
+        virtual Atomized atomize(Constraints& constraints, SharedDescriptor& shared, Measured& measured) = 0;
+        virtual LayoutResult layout(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized) = 0;
+        virtual Atomized postLayout(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
+        virtual Placed place(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout) = 0;
+        virtual std::any finalize(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) = 0;
         virtual std::any request(RequestTarget target, std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
         virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
-            return true; 
+            return true;
         }
 
         virtual ~ElementBase() = 0;
     };
 
-    template <ElementType E, typename P, typename S, typename D, typename U> 
+    template <ElementType E, typename P, typename S, typename D, typename U>
         requires ProcessorType<P, S, D, U>
     struct Element : ElementBase {
         Element(UIContext& ctx, E&& elem, P& proc):
@@ -93,30 +91,29 @@ namespace NewArch {
         {
             hitTestFunction = processor.setupHitTestFunction();
         }
-        
-        Measured measure(Constraints& constraints) override {
-            return processor.measure(element.getFragment(), constraints, element.getDescriptor());
+
+        Measured measure(Constraints& constraints, SharedDescriptor& shared) override {
+            return processor.measure(element.getFragment(), constraints, shared, element.getDescriptor());
         }
 
-        Atomized atomize(Constraints& constraints, Measured& measured) override {
-            return processor.atomize(element.getFragment(), constraints, element.getDescriptor(), measured);
+        Atomized atomize(Constraints& constraints, SharedDescriptor& shared, Measured& measured) override {
+            return processor.atomize(element.getFragment(), constraints, shared, element.getDescriptor(), measured);
         }
 
-
-        LayoutResult layout(Constraints& constraints, Measured& measured, Atomized& atomized) override {
-            return processor.layout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized);
+        LayoutResult layout(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized) override {
+            return processor.layout(element.getFragment(), constraints, shared, element.getDescriptor(), measured, atomized);
         }
 
-        Atomized postLayout(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
-            return processor.postLayout(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
+        Atomized postLayout(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
+            return processor.postLayout(element.getFragment(), constraints, shared, element.getDescriptor(), measured, atomized, layout);
         }
 
-        Placed place(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
-            return processor.place(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout);
+        Placed place(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout) override {
+            return processor.place(element.getFragment(), constraints, shared, element.getDescriptor(), measured, atomized, layout);
         }
 
-        std::any finalize(Constraints& constraints, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) override {
-            auto finalized = processor.finalize(element.getFragment(), constraints, element.getDescriptor(), measured, atomized, layout, placed);
+        std::any finalize(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) override {
+            auto finalized = processor.finalize(element.getFragment(), constraints, shared, element.getDescriptor(), measured, atomized, layout, placed);
             auto finalizedErased = finalized;
             return finalizedErased;
         }
@@ -227,7 +224,8 @@ namespace NewArch {
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
         simd_float2 globalOffset {0.0f, 0.0f};
-        
+        SharedDescriptor shared;
+
     private:
         static uint64_t nextId;
     };

@@ -52,8 +52,11 @@ public:
 
     std::chrono::high_resolution_clock clock {};
     
-    long long numSamples = 0;
-    long long totalMicros;
+    static constexpr int WINDOW_SIZE = 100;
+    std::array<long long, WINDOW_SIZE> samples{};
+    int sampleIndex = 0;
+    long long windowSum = 0;
+    int totalSamples = 0;
     
     static Renderer* current;
 private:

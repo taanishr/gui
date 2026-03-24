@@ -8,7 +8,6 @@ namespace NewArch {
         auto& ctx = ContextManager::getContext();
         auto& proc = getDivProcessor(ctx);
         Div elem {ctx};
-        auto& desc = elem.getDescriptor();
 
         auto currTree = TreeStack::getCurrentTree();
 
@@ -20,19 +19,18 @@ namespace NewArch {
         auto& ctx = ContextManager::getContext();
         auto& proc = getDivProcessor(ctx);
         Div elem {ctx};
-        auto& desc = elem.getDescriptor();
-        desc.width = width;
-        desc.height = height;
-        desc.color = color;
-        // alter descriptor and fragment via elem.getDescriptor() and elem.getFragment() (mutable references)
+        elem.getDescriptor().color = color;
 
         auto currTree = TreeStack::getCurrentTree();
 
-        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        builder.node->shared.width = width;
+        builder.node->shared.height = height;
+        return builder;
     }
 
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
-                 Size fontSize, simd_float4 color, 
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text,
+                 Size fontSize, simd_float4 color,
                  const std::string& font)
     {
         auto& ctx = ContextManager::getContext();
@@ -43,11 +41,12 @@ namespace NewArch {
         desc.fontSize = fontSize;
         desc.color = color;
         desc.font = font;
-        
 
         auto currTree = TreeStack::getCurrentTree();
-        
-        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
+
+        auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        builder.node->shared.display = Display::Inline;
+        return builder;
     }
 
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
@@ -56,13 +55,13 @@ namespace NewArch {
         auto& ctx = ContextManager::getContext();
         auto& proc = getImageProcessor(ctx);
         Image elem{ctx};
-        auto& desc = elem.getDescriptor();
-        desc.path = path;
-        desc.width = width;
-        desc.height = height;
+        elem.getDescriptor().path = path;
 
         auto currTree = TreeStack::getCurrentTree();
 
-        return NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        builder.node->shared.width = width;
+        builder.node->shared.height = height;
+        return builder;
     }
 }

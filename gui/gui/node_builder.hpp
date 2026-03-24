@@ -12,12 +12,7 @@
 #include "context_manager.hpp"
 
 namespace NewArch {
-    template<typename T>
-    concept HasDisplay = requires { std::declval<T&>().display; };
-
-    template<typename T>
-    concept HasPosition = requires { std::declval<T&>().position; };
-    
+    // Element-specific concepts (only for properties that vary by element type)
     template<typename T>
     concept HasText = requires { std::declval<T&>().text; };
 
@@ -29,60 +24,6 @@ namespace NewArch {
 
     template<typename T>
     concept HasFontSize = requires { std::declval<T&>().fontSize; };
-
-    template<typename T>
-    concept HasCornerRadius = requires { std::declval<T&>().cornerRadius; };
-
-    template<typename T>
-    concept HasBorderWidth = requires { std::declval<T&>().borderWidth; };
-
-    template<typename T>
-    concept HasBorderColor = requires { std::declval<T&>().borderColor; };
-
-    template <typename T>
-    concept HasTop = requires{ std::declval<T&>().top; };
-
-    template <typename T>
-    concept HasRight = requires{ std::declval<T&>().right; };
-
-    template <typename T>
-    concept HasBottom = requires{ std::declval<T&>().bottom; };
-
-    template <typename T>
-    concept HasLeft = requires{ std::declval<T&>().left; };
-
-    template <typename T>
-    concept HasWidth = requires{ std::declval<T&>().width; };
-
-    template <typename T>
-    concept HasHeight = requires{ std::declval<T&>().height; };
-
-    template <typename T>
-    concept HasFlexDirection = requires{ std::declval<T&>().flexDirection; };
-
-    template <typename T>
-    concept HasFlexGrow = requires{ std::declval<T&>().flexGrow; };
-
-    template <typename T>
-    concept HasFlexShrink = requires{ std::declval<T&>().flexShrink; };
-
-    template <typename T>
-    concept HasPadding = requires(T& t) { 
-        { t.padding } -> std::convertible_to<Size>;
-        { t.paddingTop } -> std::same_as<std::optional<Size>&>;
-        { t.paddingRight } -> std::same_as<std::optional<Size>&>;
-        { t.paddingBottom } -> std::same_as<std::optional<Size>&>;
-        { t.paddingLeft } -> std::same_as<std::optional<Size>&>;
-    };
-
-    template <typename T>
-    concept HasMargin = requires(T& t) {
-        { t.margin } -> std::same_as<Size&>;
-        { t.marginTop } -> std::same_as<std::optional<Size>&>;
-        { t.marginRight } -> std::same_as<std::optional<Size>&>;
-        { t.marginBottom } -> std::same_as<std::optional<Size>&>;
-        { t.marginLeft } -> std::same_as<std::optional<Size>&>;
-    };
 
 
     template <ElementType E, typename P>
@@ -132,256 +73,179 @@ namespace NewArch {
             return *this;
         }
 
-        NodeBuilder<E,P>& position(Position position) requires HasPosition<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.position = position;
-            return *this;
-        }
-        
-        NodeBuilder<E,P>& borderColor(simd_float4 color) requires HasBorderColor<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.borderColor = color;
+        // --- Shared property setters (write to node->shared) ---
+
+        NodeBuilder<E,P>& position(Position position) {
+            node->shared.position = position;
             return *this;
         }
 
+        NodeBuilder<E,P>& display(Display display) {
+            node->shared.display = display;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& width(Size width) {
+            node->shared.width = width;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& height(Size height) {
+            node->shared.height = height;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& top(Size top) {
+            node->shared.top = top;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& right(Size right) {
+            node->shared.right = right;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& bottom(Size bottom) {
+            node->shared.bottom = bottom;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& left(Size left) {
+            node->shared.left = left;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexDirection(FlexDirection direction) {
+            node->shared.flexDirection = direction;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexGrow(Size grow) {
+            node->shared.flexGrow = grow;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& flexShrink(Size shrink) {
+            node->shared.flexShrink = shrink;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& cornerRadius(Size radius) {
+            node->shared.cornerRadius = radius;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& borderWidth(Size width) {
+            node->shared.borderWidth = width;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& borderColor(simd_float4 color) {
+            node->shared.borderColor = color;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& padding(Size padding) {
+            node->shared.padding = padding;
+            node->shared.paddingTop = padding;
+            node->shared.paddingRight = padding;
+            node->shared.paddingBottom = padding;
+            node->shared.paddingLeft = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingTop(Size padding) {
+            node->shared.paddingTop = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingRight(Size padding) {
+            node->shared.paddingRight = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingBottom(Size padding) {
+            node->shared.paddingBottom = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& paddingLeft(Size padding) {
+            node->shared.paddingLeft = padding;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& margin(float margin) {
+            return this->margin(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& margin(Size margin) {
+            node->shared.margin = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginTop(float margin) {
+            return this->marginTop(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginTop(Size margin) {
+            node->shared.marginTop = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginRight(float margin) {
+            return this->marginRight(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginRight(Size margin) {
+            node->shared.marginRight = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginBottom(float margin) {
+            return this->marginBottom(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginBottom(Size margin) {
+            node->shared.marginBottom = margin;
+            return *this;
+        }
+
+        NodeBuilder<E,P>& marginLeft(float margin) {
+            return this->marginLeft(Size::px(margin));
+        }
+
+        NodeBuilder<E,P>& marginLeft(Size margin) {
+            node->shared.marginLeft = margin;
+            return *this;
+        }
+
+        // --- Element-specific setters (write to typed descriptor) ---
+
         NodeBuilder<E,P>& color(simd_float4 color) requires HasColor<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
+            auto& desc = elem->element.getDescriptor();
             desc.color = color;
             return *this;
         }
 
         NodeBuilder<E,P>& text(const std::string& text) requires HasText<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
+            auto& desc = elem->element.getDescriptor();
             desc.text = text;
             return *this;
         }
 
         NodeBuilder<E,P>& font(const std::string& fontPath) requires HasFont<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
+            auto& desc = elem->element.getDescriptor();
             desc.font = fontPath;
             return *this;
         }
 
         NodeBuilder<E,P>& fontSize(Size size) requires HasFontSize<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
+            auto& desc = elem->element.getDescriptor();
             desc.fontSize = size;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& cornerRadius(Size radius) requires HasCornerRadius<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.cornerRadius = radius;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& borderWidth(Size width) requires HasBorderWidth<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.borderWidth = width;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& top(Size top) requires HasTop<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.top = top;
-            return *this;
-        }
-
-
-        NodeBuilder<E,P>& right(Size right) requires HasRight<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.right = right;
-            return *this;
-        }
-
-
-        NodeBuilder<E,P>& bottom(Size bottom) requires HasBottom<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.bottom = bottom;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& left(Size left) requires HasLeft<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.left = left;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& width(Size width) requires HasWidth<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.width = width;
-            return *this;
-        }
-
-
-        NodeBuilder<E,P>& height(Size height) requires HasHeight<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.height = height;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& display(Display display) requires HasDisplay<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.display = display;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexDirection(FlexDirection direction) requires HasFlexDirection<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.flexDirection = direction;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexGrow(Size grow) requires HasFlexGrow<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.flexGrow = grow;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexShrink(Size shrink) requires HasFlexShrink<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.flexShrink = shrink;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& padding(Size padding) requires HasPadding<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.padding = padding;
-            desc.paddingTop = padding;
-            desc.paddingRight = padding;
-            desc.paddingBottom = padding;
-            desc.paddingLeft = padding;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingTop(Size padding) requires HasPadding<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.paddingTop = padding;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingRight(Size padding) requires HasPadding<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.paddingRight = padding;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingBottom(Size padding) requires HasPadding<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.paddingBottom = padding;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingLeft(Size padding) requires HasPadding<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.paddingLeft = padding;
-            return *this;
-        }
-
-        // margin - accepts float (converts to Size::px) or Size directly
-
-        NodeBuilder<E,P>& margin(float margin) requires HasMargin<typename E::DescriptorType> {
-            return this->margin(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& margin(Size margin) requires HasMargin<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.margin = margin;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginTop(float margin) requires HasMargin<typename E::DescriptorType> {
-            return this->marginTop(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginTop(Size margin) requires HasMargin<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.marginTop = margin;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginRight(float margin) requires HasMargin<typename E::DescriptorType> {
-            return this->marginRight(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginRight(Size margin) requires HasMargin<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.marginRight = margin;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginBottom(float margin) requires HasMargin<typename E::DescriptorType> {
-            return this->marginBottom(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginBottom(Size margin) requires HasMargin<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.marginBottom = margin;
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginLeft(float margin) requires HasMargin<typename E::DescriptorType> {
-            return this->marginLeft(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginLeft(Size margin) requires HasMargin<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& rawElem = elem->element;
-            auto& desc = rawElem.getDescriptor();
-            desc.marginLeft = margin;
             return *this;
         }
 

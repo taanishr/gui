@@ -31,13 +31,11 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     rootTree{}
 {
     auto rootElem = Div(ctx);
-    auto& desc = rootElem.getDescriptor();
-    desc.width = NewArch::Size::percent(1.0);
-    desc.height = NewArch::Size::percent(1.0);
-    desc.color = simd_float4{0,0,0,0};
+    rootElem.getDescriptor().color = simd_float4{0,0,0,0};
 
-
-    rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
+    auto* rootNode = rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
+    rootNode->shared.width = NewArch::Size::percent(1.0);
+    rootNode->shared.height = NewArch::Size::percent(1.0);
     makeResources();
 }
 
@@ -82,16 +80,20 @@ void Renderer::draw() {
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
 
-    ++numSamples;
-    totalMicros += micros;  // running sum in µs
+    windowSum -= samples[sampleIndex % WINDOW_SIZE];
+    samples[sampleIndex % WINDOW_SIZE] = micros;
+    windowSum += micros;
 
-   if (numSamples % 100 == 0) {
-       double avgMs = (totalMicros / static_cast<double>(numSamples)) / 1000.0;
-       std::println("Average time over {} samples: {} ms", numSamples, avgMs);
-   }
-    
+    ++sampleIndex;
+    ++totalSamples;
+
+    if (totalSamples % 100 == 0) {
+        int count = std::min(totalSamples, WINDOW_SIZE);
+        double avgMs = (windowSum / static_cast<double>(count)) / 1000.0;
+        std::println("Rolling avg (last {} frames): {:.3f} ms", count, avgMs);
+    }
+
     renderCommandEncoder->endEncoding();
-    
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
         this->frameSemaphore.release();
