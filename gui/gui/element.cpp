@@ -29,6 +29,7 @@ namespace NewArch {
     Size getFlexGrow(TreeNode* node) { return node->shared.flexGrow; }
     Size getFlexShrink(TreeNode* node) { return node->shared.flexShrink; }
     FlexDirection getFlexDirection(TreeNode* node) { return node->shared.flexDirection; }
+    JustifyContent getJustifyContent(TreeNode* node) { return node->shared.justifyContent; }
 
     // Element-specific requests still use the request system
     std::optional<std::string> getText(TreeNode* node) {
@@ -442,8 +443,6 @@ namespace NewArch {
                             .atomCount = runningAtomCount,
                         };
 
-
-
                         if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
                             childrenLineBoxes.push_back(currentLineBox);
                             currentLineBox = {};
@@ -460,7 +459,6 @@ namespace NewArch {
                         runningWidth = 0.0;
                         runningAtomCount = 0;
                     }
-                
                 }
 
                 if (runningAtomCount > 0) {                        
@@ -512,10 +510,13 @@ namespace NewArch {
         float totalSize {};
         float shrinkScaledTotal {};
         float growthScaledTotal {};
+        float spaceAfterRedistribution {};
         bool isRow {false};
+        JustifyContent justifyContent;
 
-        FlexAxis(FlexDirection direction):
-            isRow{direction == FlexDirection::Row}
+        FlexAxis(FlexDirection direction, JustifyContent justifyContent):
+            isRow{direction == FlexDirection::Row},
+            justifyContent{justifyContent}
         {}
 
         void addChild(const LayoutResult& layout, float resolvedGrow, float resolvedShrink) {
@@ -539,13 +540,14 @@ namespace NewArch {
             }
         }
 
-        std::vector<float> resolve(const Measured& measured, const Constraints& constraints) const {
+        std::vector<float> resolve(const Measured& measured, const Constraints& constraints) {
             float available = isRow
-                ? measured.explicitWidth.value_or(constraints.maxWidth)
-                : measured.explicitHeight.value_or(constraints.maxHeight);
+                ? measured.explicitWidth.value_or(totalSize)
+                : measured.explicitHeight.value_or(totalSize);
 
             std::vector<float> result;
 
+            float sizeAfterRedistribution {0};
             float space = available - totalSize;
 
             for (size_t i = 0; i < childSizes.size(); ++i) {
@@ -556,8 +558,56 @@ namespace NewArch {
                 } else {
                     result.push_back(childSizes[i]);
                 }
+
+                sizeAfterRedistribution += result.back();
             }
+
+            this->spaceAfterRedistribution = available - sizeAfterRedistribution;
+            
             return result;
+        }
+
+        struct Alignment {
+            float initialOffset{};
+            float spaceBetween{};
+        };
+
+        Alignment getAlignment() {
+            Alignment alignment;
+
+            switch (justifyContent) {
+                case NewArch::JustifyContent::flexStart: {
+                    break;
+                }
+                case NewArch::JustifyContent::flexEnd: {
+                    alignment.initialOffset = this->spaceAfterRedistribution;
+                    break;
+                }
+                case NewArch::JustifyContent::center: {
+                    alignment.initialOffset = this->spaceAfterRedistribution / 2.0f;
+                    break;
+                }
+                case NewArch::JustifyContent::spaceBetween: {
+                    alignment.spaceBetween = this->spaceAfterRedistribution / (this->childSizes.size() - 1);
+                    break;  
+                }
+                case NewArch::JustifyContent::spaceAround: {
+                    float gap = this->spaceAfterRedistribution / (this->childSizes.size());
+                    alignment.initialOffset = gap / 2.0f;
+                    alignment.spaceBetween = gap;
+                    break;
+                }
+                case NewArch::JustifyContent::spaceEvenly: {
+                    float gap = this->spaceAfterRedistribution / (this->childSizes.size() + 1);
+                    alignment.initialOffset = gap;
+                    alignment.spaceBetween = gap;
+                    break;
+                }
+                default:
+                    break;
+            };  
+
+            return alignment;
         }
     };
 
@@ -601,7 +651,10 @@ namespace NewArch {
 
         if (display == Display::Flex) {
             auto flexDirection = getFlexDirection(node);
-            FlexAxis flexAxis {flexDirection};
+            auto justifyContent = getJustifyContent(node);
+            FlexAxis flexAxis {flexDirection, justifyContent};
+
+            childConstraints.shrinkToFit = (flexDirection == FlexDirection::Row);
 
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
@@ -627,8 +680,10 @@ namespace NewArch {
             }
 
             auto&& flexSizes = flexAxis.resolve(measured, constraints);
+            auto&& alignment = flexAxis.getAlignment();
 
-            float accumulated = 0;
+            float accumulated = alignment.initialOffset;
+            childConstraints.shrinkToFit = false;
             
             for (int i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
@@ -644,6 +699,7 @@ namespace NewArch {
                     childConstraints.origin.x = accumulated;
                     childAsPtr->measured->explicitWidth = flexSizes[i];
                 }else {
+                    childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
                     childConstraints.maxHeight = flexSizes[i];
                     childConstraints.cursor.y = accumulated;
                     childAsPtr->measured->explicitHeight = flexSizes[i];
@@ -660,7 +716,7 @@ namespace NewArch {
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
 
-                accumulated += flexSizes[i];
+                accumulated += flexSizes[i] + alignment.spaceBetween;
             }
 
         }else {
@@ -685,7 +741,7 @@ namespace NewArch {
 
         // resize width/height of underspecified elements
         if (!measured.explicitWidth.has_value()) {
-            if (position != Position::Static)
+            if (position != Position::Static || constraints.shrinkToFit)
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
         }
 

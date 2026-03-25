@@ -216,6 +216,15 @@ namespace NewArch {
         Col,
     };
 
+    enum JustifyContent {
+        flexStart,
+        flexEnd,
+        center,
+        spaceBetween,
+        spaceAround,
+        spaceEvenly
+    };
+
     struct SharedDescriptor {
         Position position{Position::Static};
         Display display{Display::Block};
@@ -230,6 +239,7 @@ namespace NewArch {
         std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
 
         FlexDirection flexDirection{FlexDirection::Row};
+        JustifyContent justifyContent{JustifyContent::flexStart};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
 
@@ -282,6 +292,8 @@ namespace NewArch {
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
+
+        bool shrinkToFit{false};
     };
 
     struct LayoutInput {

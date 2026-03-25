@@ -9,6 +9,7 @@
 #include "new_arch.hpp"
 #include <algorithm>
 #include <memory>
+#include <print>
 #include "context_manager.hpp"
 
 namespace NewArch {
@@ -118,6 +119,11 @@ namespace NewArch {
         NodeBuilder<E,P>& flexDirection(FlexDirection direction) {
             node->shared.flexDirection = direction;
             return *this;
+        }
+
+        NodeBuilder& justifyContent(JustifyContent justifyContent) { 
+            node->shared.justifyContent = justifyContent; 
+            return *this; 
         }
 
         NodeBuilder<E,P>& flexGrow(Size grow) {
