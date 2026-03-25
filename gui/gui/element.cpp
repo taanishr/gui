@@ -510,6 +510,7 @@ namespace NewArch {
         float totalSize {};
         float shrinkScaledTotal {};
         float growthScaledTotal {};
+        float maxCrossSize;
         float spaceAfterRedistribution {};
         bool isRow {false};
         JustifyContent justifyContent;
@@ -521,6 +522,7 @@ namespace NewArch {
 
         void addChild(const LayoutResult& layout, float resolvedGrow, float resolvedShrink) {
             float size = isRow ? layout.computedBox.width : layout.computedBox.height;
+            float crossSize = isRow ? layout.computedBox.height : layout.computedBox.width;
 
             childSizes.push_back(size);
             totalSize += size;
@@ -538,6 +540,8 @@ namespace NewArch {
             } else {
                 growthScaled.push_back(0.0f);
             }
+
+            maxCrossSize = std::max(crossSize, maxCrossSize);
         }
 
         std::vector<float> resolve(const Measured& measured, const Constraints& constraints) {
@@ -558,7 +562,7 @@ namespace NewArch {
                 } else {
                     result.push_back(childSizes[i]);
                 }
-
+                
                 sizeAfterRedistribution += result.back();
             }
 
@@ -698,10 +702,12 @@ namespace NewArch {
                     childConstraints.maxWidth = flexSizes[i];
                     childConstraints.origin.x = accumulated;
                     childAsPtr->measured->explicitWidth = flexSizes[i];
+                    childAsPtr->measured->explicitHeight = childAsPtr->measured->explicitHeight.value_or(measured.explicitHeight.value_or(flexAxis.maxCrossSize));
                 }else {
                     childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
                     childConstraints.maxHeight = flexSizes[i];
                     childConstraints.cursor.y = accumulated;
+                    childAsPtr->measured->explicitWidth = childAsPtr->measured->explicitWidth.value_or(measured.explicitWidth.value_or(flexAxis.maxCrossSize));
                     childAsPtr->measured->explicitHeight = flexSizes[i];
                 }
 
