@@ -111,6 +111,9 @@ build_shaders() {
 build_cpp() {
     mkdir -p "$OBJ_DIR"
 
+    local LLVM_PREFIX
+    LLVM_PREFIX="$(brew --prefix llvm)"
+
     local OBJS=()
     local any_rebuilt=0
 
@@ -122,7 +125,9 @@ build_cpp() {
 
         if needs_rebuild "$src" "$obj"; then
             echo "  compile: $src"
-            if ! clang++ "${CXXFLAGS[@]}" -c "$src" -o "$obj"; then
+            if ! "$LLVM_PREFIX/bin/clang++" "${CXXFLAGS[@]}" \
+                -I"$LLVM_PREFIX/include/c++/v1" \
+                -c "$src" -o "$obj"; then
                 echo "Error: compile failed for $src"
                 return 1
             fi
@@ -134,11 +139,15 @@ build_cpp() {
     local bin="$BIN_OUT/$BINARY_NAME"
     if [[ $any_rebuilt -eq 1 || ! -f "$bin" ]]; then
         echo "Linking $BINARY_NAME..."
-        if ! clang++ -std=c++23 -isysroot "$SDK_PATH" \
+        if ! "$LLVM_PREFIX/bin/clang++" \
+            -std=c++23 \
+            -isysroot "$SDK_PATH" \
             -fno-objc-arc \
             -stdlib=libc++ \
             "${OBJS[@]}" \
             "$LIB_MTK_EXT" "$LIB_APPKIT_EXT" "$LIB_FREETYPE" \
+            -L"$LLVM_PREFIX/lib/c++" \
+            -Wl,-rpath,"$LLVM_PREFIX/lib/c++" \
             -L/opt/homebrew/lib -lpng -lbz2 -lz \
             -framework Metal -framework MetalKit -framework Foundation \
             -framework QuartzCore -framework AppKit -framework Cocoa \
@@ -146,7 +155,7 @@ build_cpp() {
             -lswiftCore -lswiftMetal -lswiftMetalKit \
             -lswiftFoundation -lswiftQuartzCore -lswiftAppKit \
             -Wl,-rpath,/usr/lib/swift \
-            -lc++ -lc++abi \
+            -lc++ \
             -o "$bin"; then
             echo "Error: link failed"
             return 1

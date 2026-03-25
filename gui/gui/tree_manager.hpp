@@ -21,6 +21,6 @@ namespace NewArch {
             return treeStack.back();
         }
         
-        static thread_local std::vector<RenderTree*> treeStack;
+        static std::vector<RenderTree*> treeStack;
     };
 }
