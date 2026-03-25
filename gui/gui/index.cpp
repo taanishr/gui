@@ -26,23 +26,25 @@ auto index() -> void {
 
 
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
-        .position(NewArch::Relative)
+        .position(NewArch::Position::Relative)
     (
         div()
             // .width(NewArch::Size::percent(1.0))
             // .height(NewArch::Size::px(100.0))
             .color(simd_float4{0.9,0.9,0.9,1.0})
-            .display(NewArch::Flex)
-            .flexDirection(NewArch::Col)
+            .display(NewArch::Display::Flex)
+
+            .alignItems(NewArch::AlignItems::center)
+            // .flexDirection(NewArch::FlexDirection::Col)
         (
-            div(NewArch::Size::px(100), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0}),
+            div(NewArch::Size::px(90), NewArch::Size::px(80), simd_float4{1.0,0.3,0.3,1.0}),
             div()
             // .width(NewArch::Size::px(80))
             .color(simd_float4{0.3,1.0,0.3,1.0})
             (
-                text("hello world fsdfsdfsdfsdfsdfsdf")
+                text("hello world fsdfsdfsdfsdfsdfsdf").fontSize(NewArch::Size::pt(16.0))
             )
-            ,div(NewArch::Size::px(120), NewArch::Size::px(90), simd_float4{0.3,0.3,1.0,1.0})
+            ,div(NewArch::Size::px(90), NewArch::Size::px(90), simd_float4{0.3,0.3,1.0,1.0})
         )
     );
 

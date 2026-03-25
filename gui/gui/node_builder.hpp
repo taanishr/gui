@@ -126,6 +126,11 @@ namespace NewArch {
             return *this; 
         }
 
+        NodeBuilder& alignItems(AlignItems alignItems) { 
+            node->shared.alignItems = alignItems; 
+            return *this; 
+        }
+
         NodeBuilder<E,P>& flexGrow(Size grow) {
             node->shared.flexGrow = grow;
             return *this;

@@ -198,25 +198,25 @@ namespace NewArch {
     struct GetField { std::string name; };
     using DescriptorPayload = std::variant<GetFull, GetField>;
 
-    enum Position {
+    enum class Position {
         Absolute,
         Fixed,
         Static,
         Relative,
     };
 
-    enum Display {
+    enum class Display {
         Block,
         Inline,
         Flex
     };
 
-    enum FlexDirection {
+    enum class FlexDirection {
         Row,
         Col,
     };
 
-    enum JustifyContent {
+    enum class JustifyContent {
         flexStart,
         flexEnd,
         center,
@@ -224,6 +224,13 @@ namespace NewArch {
         spaceAround,
         spaceEvenly
     };
+
+    enum class AlignItems {
+        stretch,
+        flexStart,
+        flexEnd,
+        center,
+    };  
 
     struct SharedDescriptor {
         Position position{Position::Static};
@@ -240,6 +247,7 @@ namespace NewArch {
 
         FlexDirection flexDirection{FlexDirection::Row};
         JustifyContent justifyContent{JustifyContent::flexStart};
+        AlignItems alignItems{AlignItems::stretch};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
 

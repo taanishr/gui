@@ -665,7 +665,7 @@ namespace NewArch {
 
                 float inlineMargin = isLtr ? margins.right : margins.left;
 
-                if (constraints.edgeIntent.edgeDisplayMode == Inline) {
+                if (constraints.edgeIntent.edgeDisplayMode == Display::Inline) {
                     if (constraints.edgeIntent.collapsable) {
                         float collapsed = std::max(inlineMargin, constraints.edgeIntent.intent);
                         newCursor.x += collapsed;
@@ -712,7 +712,7 @@ namespace NewArch {
 
         totalHeight += lineHeight;
         totalWidth = std::max(currentTotalWidth, totalWidth);
-
+        
         lr.computedBox = {
             minX,
             minY,
@@ -736,7 +736,7 @@ namespace NewArch {
         lr.siblingCursor = newCursor;
 
         lr.edgeIntent = {
-            .edgeDisplayMode = Inline,
+            .edgeDisplayMode = Display::Inline,
             .intent = isLtr ? margins.right : margins.left,
             .collapsable = false,
         };

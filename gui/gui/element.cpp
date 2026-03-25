@@ -30,6 +30,7 @@ namespace NewArch {
     Size getFlexShrink(TreeNode* node) { return node->shared.flexShrink; }
     FlexDirection getFlexDirection(TreeNode* node) { return node->shared.flexDirection; }
     JustifyContent getJustifyContent(TreeNode* node) { return node->shared.justifyContent; }
+    AlignItems getAlignItems(TreeNode* node) { return node->shared.alignItems; }
 
     // Element-specific requests still use the request system
     std::optional<std::string> getText(TreeNode* node) {
@@ -613,6 +614,7 @@ namespace NewArch {
 
             return alignment;
         }
+
     };
 
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
@@ -656,14 +658,24 @@ namespace NewArch {
         if (display == Display::Flex) {
             auto flexDirection = getFlexDirection(node);
             auto justifyContent = getJustifyContent(node);
+            auto alignItems = getAlignItems(node);
             FlexAxis flexAxis {flexDirection, justifyContent};
 
-            childConstraints.shrinkToFit = (flexDirection == FlexDirection::Row);
+            bool needsCrossShrink = (flexDirection == FlexDirection::Col && alignItems != AlignItems::stretch)
+                                 || (flexDirection == FlexDirection::Row);
+            childConstraints.shrinkToFit = needsCrossShrink;
 
+            // std::println("childConstraints.lineBoxes: {}", childrenLineBoxes.size());
+
+
+            std::println("max width: {}", childConstraints.maxWidth);
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
 
+                childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
+                std::println("max width: {}", childConstraints.maxWidth);
+                
                 childConstraints.lineFragments = childrenLineFragments[i];
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
@@ -688,7 +700,7 @@ namespace NewArch {
 
             float accumulated = alignment.initialOffset;
             childConstraints.shrinkToFit = false;
-            
+
             for (int i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
@@ -702,12 +714,55 @@ namespace NewArch {
                     childConstraints.maxWidth = flexSizes[i];
                     childConstraints.origin.x = accumulated;
                     childAsPtr->measured->explicitWidth = flexSizes[i];
-                    childAsPtr->measured->explicitHeight = childAsPtr->measured->explicitHeight.value_or(measured.explicitHeight.value_or(flexAxis.maxCrossSize));
+
+                    float crossSize = measured.explicitHeight.value_or(flexAxis.maxCrossSize);
+                    switch (alignItems) {
+                        case AlignItems::stretch: {
+                            childAsPtr->measured->explicitHeight = childAsPtr->measured->explicitHeight.value_or(crossSize);
+                            break;
+                        }
+                        case AlignItems::flexStart: {
+                            childConstraints.cursor.y = 0.0;
+                            break;
+                        }
+                        case AlignItems::center: {
+                            childConstraints.cursor.y = (crossSize - childAsPtr->layout->computedBox.height) / 2.0f;
+                            break;
+                        }
+                        case AlignItems::flexEnd: {
+                            childConstraints.cursor.y = crossSize - childAsPtr->layout->computedBox.height;
+                            break;
+                        }
+                    }
                 }else {
-                    childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
+                    float crossSize = measured.explicitWidth.value_or(constraints.maxWidth);
+                    childConstraints.maxWidth = crossSize;
                     childConstraints.maxHeight = flexSizes[i];
                     childConstraints.cursor.y = accumulated;
-                    childAsPtr->measured->explicitWidth = childAsPtr->measured->explicitWidth.value_or(measured.explicitWidth.value_or(flexAxis.maxCrossSize));
+                    
+                    switch (alignItems) {
+                        case AlignItems::stretch: {
+                            childAsPtr->measured->explicitWidth = childAsPtr->measured->explicitWidth.value_or(measured.explicitWidth.value_or(crossSize));
+                            break;
+                        }
+                        case AlignItems::flexStart: {
+                            childConstraints.origin.x = 0.0;
+                            childConstraints.shrinkToFit = true;
+                            break;
+                        }
+                        case AlignItems::center: {
+                            // std::println("linebox #: {}", childrenLineBoxes.size());
+                            // std::println("crossSize: {} cw: {}", crossSize, childAsPtr->layout->computedBox.width);
+                            childConstraints.origin.x = (crossSize - childAsPtr->layout->computedBox.width) / 2.0f;
+                            childConstraints.shrinkToFit = true;
+                            break;
+                        }
+                        case AlignItems::flexEnd: {
+                            childConstraints.origin.x = crossSize - childAsPtr->layout->computedBox.width;
+                            childConstraints.shrinkToFit = true;
+                            break;
+                        }
+                    }
                     childAsPtr->measured->explicitHeight = flexSizes[i];
                 }
 

@@ -112,7 +112,7 @@ Glyph processContours(FT_Face face)
     // iterate over contours
     Quad quad {.topLeft = {0,0}, .bottomRight = {0,0}};
     std::vector<simd_float2> points;
-    
+
     int contourStart = 0;
     std::vector<size_t> contourSizes;
 
@@ -120,27 +120,27 @@ Glyph processContours(FT_Face face)
 
     for (int c = 0; c < numContours; ++c) {
         Contour contour = processContour(rawPoints, tags, contourStart, contours[c], ascender);
-        
+
         // handle quad
         if (contour.quad.topLeft.x < quad.topLeft.x)
             quad.topLeft.x = contour.quad.topLeft.x;
-        
+
         if (contour.quad.topLeft.y < quad.topLeft.y)
             quad.topLeft.y = contour.quad.topLeft.y;
-        
+
         if (contour.quad.bottomRight.x > quad.bottomRight.x)
             quad.bottomRight.x = contour.quad.bottomRight.x;
-        
+
         if (contour.quad.bottomRight.y > quad.bottomRight.y)
             quad.bottomRight.y = contour.quad.bottomRight.y;
-        
-        
+
+
         // flatten points
         points.insert(points.end(), contour.points.begin(), contour.points.end());
-        
+
         // process sizes
         contourSizes.push_back(contour.points.size());
-        
+
         contourStart = contours[c] + 1;
     }
 
