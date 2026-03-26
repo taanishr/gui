@@ -91,6 +91,7 @@ namespace NewArch {
             case NewArch::Position::Relative:
             case NewArch::Position::Static: {
                 switch (ctx.layoutInput.display) {
+                    case NewArch::Display::Flex:
                     case NewArch::Display::Block: {
                         float startingX = ctx.constraints.origin.x;
                         float startingY = ctx.constraints.cursor.y;
