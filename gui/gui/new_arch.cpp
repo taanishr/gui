@@ -758,7 +758,7 @@ namespace NewArch {
     LayoutResult LayoutEngine::resolveNormalFlow(Constraints& constraints, simd_float2 current_cursor, LayoutInput& layoutInput, Atomized& atomized) {
         LayoutResult lr;
 
-        if (layoutInput.display == Display::Block) {
+        if (layoutInput.display == Display::Block || layoutInput.display == Display::Flex) {
             lr = layoutBlockNormalFlow(constraints, current_cursor, layoutInput, atomized);
         }else {
             lr = layoutInlineNormalFlow(constraints, current_cursor, layoutInput, atomized);

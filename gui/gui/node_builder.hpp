@@ -126,9 +126,24 @@ namespace NewArch {
             return *this; 
         }
 
-        NodeBuilder& alignItems(AlignItems alignItems) { 
-            node->shared.alignItems = alignItems; 
-            return *this; 
+        NodeBuilder& alignItems(AlignItems alignItems) {
+            node->shared.alignItems = alignItems;
+            return *this;
+        }
+
+        NodeBuilder& flexWrap(FlexWrap wrap) {
+            node->shared.flexWrap = wrap;
+            return *this;
+        }
+
+        NodeBuilder& alignContent(AlignContent ac) {
+            node->shared.alignContent = ac;
+            return *this;
+        }
+
+        NodeBuilder& alignSelf(AlignSelf as) {
+            node->shared.alignSelf = as;
+            return *this;
         }
 
         NodeBuilder<E,P>& flexGrow(Size grow) {
