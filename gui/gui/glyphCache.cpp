@@ -7,31 +7,28 @@
 
 #include "glyphCache.hpp"
 
-std::size_t GlyphFaceHash::operator()(const std::pair<FontName, FontSize>& cacheKey) const
+std::size_t GlyphFaceHash::operator()(const FontName& fontName) const
 {
     std::size_t hv = 0;
     
-    hash_combine(hv, cacheKey.first);
-    hash_combine(hv, cacheKey.second);
+    hash_combine(hv, fontName);
     
     return hv;
 }
 
-std::size_t GlyphCacheHash::operator()(const std::tuple<FontName, FontSize, char>& fontKey) const
+std::size_t GlyphCacheHash::operator()(const std::pair<FontName, char>& fontKey) const
 {
     std::size_t hv = 0;
     
     hash_combine(hv, std::get<0>(fontKey));
     hash_combine(hv, std::get<1>(fontKey));
-    hash_combine(hv, std::get<2>(fontKey));
     
     return hv;
 }
 
 bool GlyphQuery::operator==(const GlyphQuery& other) const {
     return ch == other.ch
-        && fontName == other.fontName
-        && fontSize == other.fontSize;
+        && fontName == other.fontName;
 }
 
 std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
@@ -40,7 +37,6 @@ std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
     
     hash_combine(hv, queryKey.ch);
     hash_combine(hv, queryKey.fontName);
-    hash_combine(hv, queryKey.fontSize);
     
     return hv;
 }
@@ -60,12 +56,12 @@ GlyphCache::~GlyphCache() {
 }
 
 const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
-    return GlyphCache::retrieve(glyphQuery.fontName, glyphQuery.fontSize, glyphQuery.ch);
+    return GlyphCache::retrieve(glyphQuery.fontName, glyphQuery.ch);
 }
                                   
-const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char ch)
+const Glyph& GlyphCache::retrieve(const FontName& font, char ch)
 {
-    GlyphQuery query{ch, font, fontSize};
+    GlyphQuery query{ch, font};
 
     {
         std::shared_lock<std::shared_mutex> readLock(cacheMutex);
@@ -83,17 +79,17 @@ const Glyph& GlyphCache::retrieve(const FontName& font, FontSize fontSize, char 
             return it->second;
         }
         
-        bool faceCached = fontFaces.find({font, fontSize}) != fontFaces.end();
+        bool faceCached = fontFaces.find({font}) != fontFaces.end();
         
         if (!faceCached) {
             FT_Face newFace = nullptr;
             FT_New_Face(this->ft, font.c_str(), 0, &newFace);
-            FT_Set_Pixel_Sizes(newFace, 0, fontSize);
+            FT_Set_Pixel_Sizes(newFace, 0, BASE_PIXEL_HEIGHT);
             
-            fontFaces[{font, fontSize}] = newFace;
+            fontFaces[{font}] = newFace;
         }
         
-        auto fontFace = fontFaces[{font, fontSize}];
+        auto fontFace = fontFaces[{font}];
 
         FT_Load_Char(fontFace, ch, FT_LOAD_DEFAULT);
         

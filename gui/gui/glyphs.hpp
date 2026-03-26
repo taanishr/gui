@@ -13,6 +13,8 @@
 #include "printers.hpp"
 #include "metal_imports.hpp"
 
+constexpr float BASE_PIXEL_HEIGHT = 256.0f;
+
 enum class Segment {
     Line,
     Conic,

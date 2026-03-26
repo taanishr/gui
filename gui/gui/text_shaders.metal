@@ -11,6 +11,7 @@
 using namespace metal;
 struct TextUniforms {
     float4 color;
+    float fontSize;
 };
 
 struct TextVertexIn {
@@ -29,12 +30,15 @@ struct TextVertexOut {
 vertex TextVertexOut vertex_text(
     TextVertexIn in [[stage_in]],
     constant float2* offsets [[buffer(1)]],
-    constant FrameInfo* frameInfo [[buffer(2)]]
+    constant FrameInfo* frameInfo [[buffer(2)]],
+    constant TextUniforms* uniforms [[buffer(3)]]
 )
 {
     TextVertexOut out;
-    
-    float2 adjustedPos = (in.position)/64.0f + offsets[in.atom_id];
+
+    float scale = uniforms->fontSize/BASE_PIXEL_HEIGHT;
+
+    float2 adjustedPos = (in.position * scale)/64.0f + offsets[in.atom_id];
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
@@ -44,7 +48,7 @@ vertex TextVertexOut vertex_text(
 }
 
 int countIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY) {
-    float eps = 1e-6;
+    float eps = 1e-3;
     
     float minY = min(min(p0.y, p1.y), p2.y);
     float maxY = max(max(p0.y, p1.y), p2.y);
@@ -123,6 +127,7 @@ float approximateDistance(float2 p0, float2 p1, float2 p2, float2 q) {
     return distance(q, B);
 }
 
+
 fragment float4 fragment_text(
     TextVertexOut in [[stage_in]],
     constant float2* bezierPoints [[buffer(0)]],
@@ -131,6 +136,7 @@ fragment float4 fragment_text(
 )
 {
     float4 fragPt = in.worldPosition;
+
     int metadataIndex = in.metadataIndex;
     int bezierIndex = glyphMeta[metadataIndex];
     int numContours = glyphMeta[metadataIndex+1];
@@ -138,6 +144,7 @@ fragment float4 fragment_text(
     
     int intersections = 0;
     int coff = 0;
+
     for (int ci = 0; ci < numContours; ++ci) {
         int contourSize = glyphMeta[metadataIndex+2+ci];
         
@@ -146,27 +153,25 @@ fragment float4 fragment_text(
             auto p1 = bezierPoints[bezierIndex+coff+1];
             auto p2 = bezierPoints[bezierIndex+coff+2];
             
-            minDist = min(minDist, approximateDistance(p0, p1, p2, fragPt.xy));
+            float d = approximateDistance(p0, p1, p2, fragPt.xy);
+            minDist = min(minDist, d);
             
             intersections += countIntersections(p0, p1, p2, fragPt.x, fragPt.y);
         }
     }
-    
+
     bool inside = intersections & 1;
-    
+
     float sd = inside ? -minDist : minDist;
-    
-    float px = fwidth(sd);
+
+    float px = fwidth(fragPt.x);
 
     float coverage = clamp(0.5 - sd/px, 0.0, 1.0);
-    
-    
+
     float alpha = coverage * uniforms->color.w;
 
     float3 rgb = uniforms->color.rgb;
     return float4(rgb * alpha, alpha);
-    
-//    return float4(1,0,0,1);
 }
 
 

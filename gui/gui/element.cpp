@@ -668,13 +668,11 @@ namespace NewArch {
             // std::println("childConstraints.lineBoxes: {}", childrenLineBoxes.size());
 
 
-            std::println("max width: {}", childConstraints.maxWidth);
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
 
                 childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
-                std::println("max width: {}", childConstraints.maxWidth);
                 
                 childConstraints.lineFragments = childrenLineFragments[i];
                 childConstraints.inheritedProperties = constraints.inheritedProperties;

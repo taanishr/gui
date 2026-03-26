@@ -712,7 +712,7 @@ namespace NewArch {
 
         totalHeight += lineHeight;
         totalWidth = std::max(currentTotalWidth, totalWidth);
-        
+
         lr.computedBox = {
             minX,
             minY,

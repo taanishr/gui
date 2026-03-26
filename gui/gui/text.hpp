@@ -69,6 +69,7 @@ namespace NewArch {
 
     struct TextUniforms {
         simd_float4 color;
+        float fontSize;
     };
 
 
@@ -262,7 +263,7 @@ namespace NewArch {
                     fontSize = desc.fontSize.resolveOr(0.0);
                 }
 
-                GlyphQuery glyphQuery { ch, desc.font, fontSize };
+                GlyphQuery glyphQuery { ch, desc.font };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;
@@ -308,8 +309,9 @@ namespace NewArch {
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
-                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF;
-                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF;
+                float scale = fontSize / BASE_PIXEL_HEIGHT;
+                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
+                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF * scale;
 
                 atoms.push_back(atom);
             }
@@ -348,12 +350,11 @@ namespace NewArch {
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
 
             fragment.fragmentStorage.placementsBuffer.write(ctx.frameIndex, offsets.data(), bufferLen);
-        
 
             for (int i = 0; i < offsets.size(); ++i) {
                 placements.push_back({
                     .placementBufferHandle = fragment.fragmentStorage.placementsBuffer.getBufferHandle(ctx.frameIndex),
-                    .x = offsets[i].x,
+                    .x = offsets[i].x ,
                     .y = offsets[i].y
                 });
             }
@@ -362,8 +363,15 @@ namespace NewArch {
         }
         
         Finalized<U> finalize(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) {
+            float fontSize;
+
+            if (desc.fontSize.unit == Unit::Pt) {
+                fontSize = desc.fontSize.resolveOr(0.0);
+            }
+
             TextUniforms uniforms {
-                .color = desc.color
+                .color = desc.color,
+                .fontSize = fontSize
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(TextUniforms));
@@ -390,6 +398,7 @@ namespace NewArch {
             encoder->setVertexBuffer(atomBuf, 0, 0);
             encoder->setVertexBuffer(placementBuf, 0, 1);
             encoder->setVertexBuffer(frameInfoBuf, 0, 2);
+            encoder->setVertexBuffer(uniformsBuf, 0, 3);
 
             encoder->setFragmentBuffer(bezierBuf, 0, 0);
             encoder->setFragmentBuffer(metaBuf, 0, 1);

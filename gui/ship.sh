@@ -71,9 +71,22 @@ usage() {
 }
 
 needs_rebuild() {
-    local src="$1" obj="$2"
+    local src="$1" obj="$2" dep="$3"
     # Rebuild if obj missing or src is newer
-    [[ ! -f "$obj" ]] || [[ "$src" -nt "$obj" ]]
+    [[ ! -f "$obj" ]] || [[ "$src" -nt "$obj" ]] && return 0
+    # Check header dependencies from .d file
+    [[ -f "$dep" ]] || return 0
+    while IFS= read -r line; do
+        # Strip trailing backslash continuations and leading whitespace
+        line="${line%\\}"
+        line="${line#"${line%%[![:space:]]*}"}"
+        # Skip the target: prefix on the first line
+        line="${line#*: }"
+        for hdr in $line; do
+            [[ -f "$hdr" && "$hdr" -nt "$obj" ]] && return 0
+        done
+    done < "$dep"
+    return 1
 }
 
 build_shaders() {
@@ -88,7 +101,7 @@ build_shaders() {
     for m in gui/*.metal; do
         [[ -f "$m" ]] || { echo "No .metal files found"; return 1; }
         local air="$BIN_OUT/$(basename "$m" .metal).air"
-        if needs_rebuild "$m" "$air"; then
+        if needs_rebuild "$m" "$air" ""; then
             echo "  shader: $m"
             "$METAL" -c "$m" -o "$air"
         fi
@@ -119,14 +132,16 @@ build_cpp() {
 
     for src in gui/*.cpp; do
         [[ -f "$src" ]] || continue
-        local base obj
+        local base obj dep
         base="$(basename "$src" .cpp)"
         obj="$OBJ_DIR/${base}.o"
+        dep="$OBJ_DIR/${base}.d"
 
-        if needs_rebuild "$src" "$obj"; then
+        if needs_rebuild "$src" "$obj" "$dep"; then
             echo "  compile: $src"
             if ! "$LLVM_PREFIX/bin/clang++" "${CXXFLAGS[@]}" \
                 -I"$LLVM_PREFIX/include/c++/v1" \
+                -MMD -MF "$dep" \
                 -c "$src" -o "$obj"; then
                 echo "Error: compile failed for $src"
                 return 1
