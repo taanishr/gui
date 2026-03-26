@@ -230,7 +230,31 @@ namespace NewArch {
         FlexStart,
         FlexEnd,
         Center,
-    };  
+    };
+
+    enum class FlexWrap {
+        NoWrap,
+        Wrap,
+        WrapReverse
+    };
+
+    enum class AlignContent {
+        Stretch,
+        FlexStart,
+        FlexEnd,
+        Center,
+        SpaceBetween,
+        SpaceAround,
+        SpaceEvenly
+    };
+
+    enum class AlignSelf {
+        Auto,
+        Stretch,
+        FlexStart,
+        FlexEnd,
+        Center
+    };
 
     struct SharedDescriptor {
         Position position{Position::Static};
@@ -248,6 +272,9 @@ namespace NewArch {
         FlexDirection flexDirection{FlexDirection::Row};
         JustifyContent justifyContent{JustifyContent::FlexStart};
         AlignItems alignItems{AlignItems::Stretch};
+        FlexWrap flexWrap{FlexWrap::NoWrap};
+        AlignContent alignContent{AlignContent::Stretch};
+        AlignSelf alignSelf{AlignSelf::Auto};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
         Size flexGap{Size::px(0)};
