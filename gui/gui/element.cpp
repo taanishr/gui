@@ -388,6 +388,79 @@ namespace NewArch {
         precomputeMargins(node, constraints, collapsedChainMap);
     }
 
+    std::pair<std::vector<LineFragment>, std::vector<LineBox>> buildInlineBoxesForChild(TreeNode* child, float maxWidth) {
+        std::vector<LineFragment> fragments;
+        std::vector<LineBox> lineBoxes;
+        LineBox currentLineBox{};
+        size_t currentLineBoxIndex = 0;
+        bool lastFragmentHasBreakOpportunity = false;
+
+        auto textResp = getText(child);
+        if (textResp.has_value()) {
+            auto margins = child->preLayout->resolvedMargins;
+            auto text = *textResp;
+            auto& atoms = child->atomized->atoms;
+
+            float runningWidth = margins.left;
+            size_t runningAtomCount = 0;
+            size_t idx = 0;
+
+            while (idx < text.size() && idx < atoms.size()) {
+                if (text[idx] != ' ') {
+                    runningWidth += atoms[idx].width;
+                    runningAtomCount++;
+                    idx++;
+                    continue;
+                }
+
+                while (idx < text.size() && text[idx] == ' ') {
+                    runningWidth += atoms[idx].width;
+                    runningAtomCount++;
+                    idx++;
+                }
+
+                runningWidth += margins.right;
+
+                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+
+                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > maxWidth) {
+                    lineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                }
+
+                frag.lineBoxIndex = currentLineBoxIndex;
+                frag.fragmentIndex = currentLineBox.fragmentCount;
+                fragments.push_back(frag);
+                currentLineBox.pushFragment(frag);
+                lastFragmentHasBreakOpportunity = true;
+                runningWidth = 0.0;
+                runningAtomCount = 0;
+            }
+
+            if (runningAtomCount > 0) {
+                runningWidth += margins.right;
+                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+
+                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > maxWidth) {
+                    lineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                }
+
+                frag.lineBoxIndex = currentLineBoxIndex;
+                frag.fragmentIndex = currentLineBox.fragmentCount;
+                fragments.push_back(frag);
+                currentLineBox.pushFragment(frag);
+            }
+        }
+
+        if (currentLineBox.fragmentCount > 0)
+            lineBoxes.push_back(currentLineBox);
+
+        return {fragments, lineBoxes};
+    }
+
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
         // precompute line fragments & line boxes
         bool prevInline = false;
@@ -895,9 +968,6 @@ namespace NewArch {
             childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
         }
 
-        auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
-        childConstraints.lineBoxes = childrenLineBoxes;
-
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
         float minX = layout.childConstraints.origin.x;
@@ -920,14 +990,17 @@ namespace NewArch {
 
             // Compute available main for line-breaking decisions
             float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
+            float childMaxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
 
             // Pass 1: measure children and collect flex info
             std::vector<size_t> inFlowIndices;
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto childAsPtr = node->children[i].get();
 
-                childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
-                childConstraints.lineFragments = childrenLineFragments[i];
+                auto [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
+                childConstraints.lineFragments = frags;
+                childConstraints.lineBoxes = boxes;
+                childConstraints.maxWidth = childMaxWidth;
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
@@ -942,21 +1015,17 @@ namespace NewArch {
                 inFlowIndices.push_back(i);
             }
 
-            // Resolve grow/shrink per line
-            // For nowrap, availableMain uses totalSize fallback (no grow if no explicit size)
             float totalSizeFallback = 0;
             for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
             totalSizeFallback += flex.currentLine.totalSize;
             float availableMain = flex.axis.availableMain(measured, totalSizeFallback);
             auto resolved = flex.resolveSizes(availableMain);
 
-            // Resolve gap against container size
             float gapBasis = flexDirection == FlexDirection::Row
                 ? measured.explicitWidth.value_or(constraints.maxWidth)
                 : measured.explicitHeight.value_or(resolved.overallTotalAfter);
             float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
-            // Compute cross-axis available space
             float naturalCross = 0;
             for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
             float crossFallback = flexDirection == FlexDirection::Row
@@ -972,11 +1041,10 @@ namespace NewArch {
                 auto childAsPtr = node->children[i].get();
                 auto& p = placements[pi];
 
-                childConstraints.cursor = {0, 0};
-                childConstraints.lineFragments = childrenLineFragments[i];
+                auto [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
+                childConstraints.lineFragments = frags;
+                childConstraints.lineBoxes = boxes;
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
-
-                // still need to skip if out of flow
 
                 // Main axis
                 flex.axis.setMainPosition(childConstraints, p.mainOffset);
@@ -1004,6 +1072,9 @@ namespace NewArch {
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
             }
         } else {
+            auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
+            childConstraints.lineBoxes = childrenLineBoxes;
+
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
