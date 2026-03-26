@@ -504,42 +504,88 @@ namespace NewArch {
     }
 
 
-    struct FlexAxis {
+    // ── Axis abstraction ─────────────────────────────────────────────
+    // Maps logical main/cross operations to physical x/y based on flex direction.
+    struct AxisHelper {
+        bool isRow;
+        bool isReversed{false};
+
+        AxisHelper(FlexDirection dir):
+            isRow{dir == FlexDirection::Row},
+            isReversed{false}
+        {}
+
+        float mainSize(const LayoutResult& lr) const {
+            return isRow ? lr.computedBox.width : lr.computedBox.height;
+        }
+        float crossSize(const LayoutResult& lr) const {
+            return isRow ? lr.computedBox.height : lr.computedBox.width;
+        }
+
+        void setMainExplicit(Measured& m, float v) const {
+            if (isRow) m.explicitWidth = v;
+            else       m.explicitHeight = v;
+        }
+        void setCrossExplicit(Measured& m, float v) const {
+            if (isRow) m.explicitHeight = v;
+            else       m.explicitWidth = v;
+        }
+        std::optional<float> crossExplicit(const Measured& m) const {
+            return isRow ? m.explicitHeight : m.explicitWidth;
+        }
+
+        void setMainPosition(Constraints& c, float v) const {
+            if (isRow) c.origin.x = v;
+            else       c.cursor.y = v;
+        }
+        void setCrossPosition(Constraints& c, float v) const {
+            if (isRow) c.cursor.y = v;
+            else       c.origin.x = v;
+        }
+
+        void setMainMaxSize(Constraints& c, float v) const {
+            if (isRow) c.maxWidth = v;
+            else       c.maxHeight = v;
+        }
+        void setCrossMaxSize(Constraints& c, float v) const {
+            if (isRow) c.maxHeight = v;
+            else       c.maxWidth = v;
+        }
+
+        float availableMain(const Measured& m, float fallback) const {
+            return isRow ? m.explicitWidth.value_or(fallback) : m.explicitHeight.value_or(fallback);
+        }
+        float availableCross(const Measured& m, float fallback) const {
+            return isRow ? m.explicitHeight.value_or(fallback) : m.explicitWidth.value_or(fallback);
+        }
+    };
+
+    // ── FlexLine ────────────────────────────────────────────────────
+    // Represents one line of flex items (one line in nowrap, multiple with wrap).
+    struct FlexLine {
         std::vector<float> childSizes;
         std::vector<float> shrinkScaled;
         std::vector<float> growthScaled;
 
-        float totalSize {};
-        float totalSizeAfterRedistribution {};
-        float shrinkScaledTotal {};
-        float growthScaledTotal {};
-        float maxCrossSize {};
-        float spaceAfterRedistribution {};
-        bool isRow {false};
-        JustifyContent justifyContent;
+        float totalSize{};
+        float shrinkScaledTotal{};
+        float growthScaledTotal{};
+        float maxCrossSize{};
 
-        FlexAxis(FlexDirection direction, JustifyContent justifyContent):
-            isRow{direction == FlexDirection::Row},
-            justifyContent{justifyContent}
-        {}
+        void addChild(float mainSize, float crossSize, float grow, float shrink) {
+            childSizes.push_back(mainSize);
+            totalSize += mainSize;
 
-        void addChild(const LayoutResult& layout, float resolvedGrow, float resolvedShrink) {
-            float size = isRow ? layout.computedBox.width : layout.computedBox.height;
-            float crossSize = isRow ? layout.computedBox.height : layout.computedBox.width;
-
-            childSizes.push_back(size);
-            totalSize += size;
-
-            if (resolvedShrink > 0.0f) {
-                shrinkScaled.push_back(size * resolvedShrink);
-                shrinkScaledTotal += size * resolvedShrink;
+            if (shrink > 0.0f) {
+                shrinkScaled.push_back(mainSize * shrink);
+                shrinkScaledTotal += mainSize * shrink;
             } else {
                 shrinkScaled.push_back(0.0f);
             }
 
-            if (resolvedGrow > 0.0f) {
-                growthScaled.push_back(resolvedGrow);
-                growthScaledTotal += resolvedGrow;
+            if (grow > 0.0f) {
+                growthScaled.push_back(grow);
+                growthScaledTotal += grow;
             } else {
                 growthScaled.push_back(0.0f);
             }
@@ -547,77 +593,145 @@ namespace NewArch {
             maxCrossSize = std::max(crossSize, maxCrossSize);
         }
 
-        std::vector<float> resolve(const Measured& measured, const Constraints& constraints) {
-            float available = isRow
-                ? measured.explicitWidth.value_or(totalSize)
-                : measured.explicitHeight.value_or(totalSize);
+        size_t count() const { return childSizes.size(); }
 
-            std::vector<float> result;
+        // Redistribute space among children via grow/shrink. Returns resolved sizes.
+        struct ResolveResult {
+            std::vector<float> sizes;
+            float totalAfter{};
+            float remainingSpace{};
+        };
 
-            float sizeAfterRedistribution {0};
-            float space = available - totalSize;
+        ResolveResult resolve(float availableMain) const {
+            ResolveResult result;
+            float space = availableMain - totalSize;
 
             for (size_t i = 0; i < childSizes.size(); ++i) {
                 if (space > 0 && growthScaled[i] > 0) {
-                    result.push_back(childSizes[i] + (growthScaled[i] / growthScaledTotal) * space);
+                    result.sizes.push_back(childSizes[i] + (growthScaled[i] / growthScaledTotal) * space);
                 } else if (space < 0 && shrinkScaled[i] > 0) {
-                    result.push_back(childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space);
+                    result.sizes.push_back(childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space);
                 } else {
-                    result.push_back(childSizes[i]);
+                    result.sizes.push_back(childSizes[i]);
                 }
-                
-                sizeAfterRedistribution += result.back();
+                result.totalAfter += result.sizes.back();
             }
-
-            totalSizeAfterRedistribution = sizeAfterRedistribution;
-            this->spaceAfterRedistribution = available - sizeAfterRedistribution;
-            
+            result.remainingSpace = availableMain - result.totalAfter;
             return result;
         }
+    };
 
-        struct Alignment {
-            float initialOffset{};
-            float spaceBetween{};
+    // ── Space distribution (shared by justify-content and align-content) ──
+    struct Alignment {
+        float initialOffset{};
+        float spaceBetween{};
+    };
+
+    template <typename AlignEnum>
+    Alignment distributeSpace(float remainingSpace, size_t itemCount, AlignEnum mode) {
+        Alignment a;
+        // Map enum values by name — works for both JustifyContent and AlignContent
+        // since they share the same value names.
+        if constexpr (std::is_same_v<AlignEnum, JustifyContent>) {
+            switch (mode) {
+                case JustifyContent::FlexStart: break;
+                case JustifyContent::FlexEnd:
+                    a.initialOffset = remainingSpace; break;
+                case JustifyContent::Center:
+                    a.initialOffset = remainingSpace / 2.0f; break;
+                case JustifyContent::SpaceBetween:
+                    if (itemCount > 1) a.spaceBetween = remainingSpace / (itemCount - 1); break;
+                case JustifyContent::SpaceAround: {
+                    float gap = remainingSpace / itemCount;
+                    a.initialOffset = gap / 2.0f;
+                    a.spaceBetween = gap;
+                    break;
+                }
+                case JustifyContent::SpaceEvenly: {
+                    float gap = remainingSpace / (itemCount + 1);
+                    a.initialOffset = gap;
+                    a.spaceBetween = gap;
+                    break;
+                }
+            }
+        }
+        return a;
+    }
+
+    // ── FlexLayout ──────────────────────────────────────────────────
+    // Coordinates the full flex algorithm: line breaking, grow/shrink, justify, align.
+    struct FlexLayout {
+        AxisHelper axis;
+        JustifyContent justifyContent;
+        AlignItems alignItems;
+
+        FlexLine currentLine;
+
+        struct ChildPlacement {
+            float mainOffset;
+            float crossOffset;
+            float mainSize;
+            std::optional<float> crossSizeOverride; // for stretch
+            bool needsCrossShrinkToFit{false};
         };
 
-        Alignment getAlignment() {
-            Alignment alignment;
+        FlexLayout(FlexDirection dir, JustifyContent jc, AlignItems ai):
+            axis{dir}, justifyContent{jc}, alignItems{ai}
+        {}
 
-            switch (justifyContent) {
-                case NewArch::JustifyContent::FlexStart: {
-                    break;
-                }
-                case NewArch::JustifyContent::FlexEnd: {
-                    alignment.initialOffset = this->spaceAfterRedistribution;
-                    break;
-                }
-                case NewArch::JustifyContent::Center: {
-                    alignment.initialOffset = this->spaceAfterRedistribution / 2.0f;
-                    break;
-                }
-                case NewArch::JustifyContent::SpaceBetween: {
-                    alignment.spaceBetween = this->spaceAfterRedistribution / (this->childSizes.size() - 1);
-                    break;  
-                }
-                case NewArch::JustifyContent::SpaceAround: {
-                    float gap = this->spaceAfterRedistribution / (this->childSizes.size());
-                    alignment.initialOffset = gap / 2.0f;
-                    alignment.spaceBetween = gap;
-                    break;
-                }
-                case NewArch::JustifyContent::SpaceEvenly: {
-                    float gap = this->spaceAfterRedistribution / (this->childSizes.size() + 1);
-                    alignment.initialOffset = gap;
-                    alignment.spaceBetween = gap;
-                    break;
-                }
-                default:
-                    break;
-            };  
-
-            return alignment;
+        void addChild(const LayoutResult& layout, float grow, float shrink) {
+            currentLine.addChild(
+                axis.mainSize(layout),
+                axis.crossSize(layout),
+                grow, shrink
+            );
         }
 
+        // Resolve grow/shrink without computing placements. Returns totalAfter for gap resolution.
+        FlexLine::ResolveResult resolveSizes(float availableMain) {
+            return currentLine.resolve(availableMain);
+        }
+
+        std::vector<ChildPlacement> computePlacements(
+            const FlexLine::ResolveResult& lineResult,
+            float availableCross, float gap
+        ) {
+            auto align = distributeSpace(lineResult.remainingSpace, currentLine.count(), justifyContent);
+
+            std::vector<ChildPlacement> placements;
+            float accumulated = align.initialOffset;
+
+            for (size_t i = 0; i < currentLine.count(); ++i) {
+                ChildPlacement p;
+                p.mainOffset = accumulated;
+                p.mainSize = lineResult.sizes[i];
+
+                float lineCrossSize = availableCross;
+                switch (alignItems) {
+                    case AlignItems::Stretch:
+                        p.crossOffset = 0.0f;
+                        p.crossSizeOverride = lineCrossSize;
+                        break;
+                    case AlignItems::FlexStart:
+                        p.crossOffset = 0.0f;
+                        p.needsCrossShrinkToFit = !axis.isRow;
+                        break;
+                    case AlignItems::Center:
+                        p.crossOffset = lineCrossSize;
+                        p.needsCrossShrinkToFit = !axis.isRow;
+                        break;
+                    case AlignItems::FlexEnd:
+                        p.crossOffset = lineCrossSize;
+                        p.needsCrossShrinkToFit = !axis.isRow;
+                        break;
+                }
+
+                accumulated += lineResult.sizes[i] + align.spaceBetween + gap;
+                placements.push_back(p);
+            }
+
+            return placements;
+        }
     };
 
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
@@ -629,11 +743,9 @@ namespace NewArch {
         auto& atomized = *node->atomized;
         auto& prelayout = *node->preLayout;
 
-        // attach precomputed margins and resolve existing node layout
         constraints.resolvedMargins = prelayout.resolvedMargins;
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
-        // prepare child constraints
         auto childConstraints = layout.childConstraints;
         auto position = getPosition(node);
         if (position != Position::Static) {
@@ -646,11 +758,9 @@ namespace NewArch {
             childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
         }
 
-        // construct line boxes (if any)
         auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
         childConstraints.lineBoxes = childrenLineBoxes;
 
-        // prepare post layout context
         float minY = layout.childConstraints.origin.y;
         float maxY = layout.childConstraints.origin.y;
         float minX = layout.childConstraints.origin.x;
@@ -662,129 +772,90 @@ namespace NewArch {
             auto flexDirection = getFlexDirection(node);
             auto justifyContent = getJustifyContent(node);
             auto alignItems = getAlignItems(node);
-            FlexAxis flexAxis {flexDirection, justifyContent};
+
+            FlexLayout flex{flexDirection, justifyContent, alignItems};
 
             bool needsCrossShrink = (flexDirection == FlexDirection::Col && alignItems != AlignItems::Stretch)
                                  || (flexDirection == FlexDirection::Row);
             childConstraints.shrinkToFit = needsCrossShrink;
 
-            // std::println("childConstraints.lineBoxes: {}", childrenLineBoxes.size());
-
-
+            std::vector<size_t> inFlowIndices;
             for (uint64_t i = 0; i < node->children.size(); ++i) {
-                auto& child = node->children[i];
-                auto childAsPtr = child.get();
+                auto childAsPtr = node->children[i].get();
 
                 childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
-                
                 childConstraints.lineFragments = childrenLineFragments[i];
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
 
-                if (childLayout.outOfFlow) {
-                    continue;
-                }
+                if (childLayout.outOfFlow) continue;
 
-                auto flexGrow = getFlexGrow(childAsPtr);
-                float resolvedGrow = flexGrow.resolveOr(0.0, 0.0);
-
-                auto flexShrink = getFlexShrink(childAsPtr);
-                float resolvedShrink = flexShrink.resolveOr(0.0, 1.0);
-
-                flexAxis.addChild(childLayout, resolvedGrow, resolvedShrink);
+                float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
+                float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
+                flex.addChild(childLayout, resolvedGrow, resolvedShrink);
+                inFlowIndices.push_back(i);
             }
 
-            auto&& flexSizes = flexAxis.resolve(measured, constraints);
-            auto&& alignment = flexAxis.getAlignment();
-            float mainAxisSize = flexDirection == FlexDirection::Row ? measured.explicitWidth.value_or(constraints.maxWidth) : measured.explicitHeight.value_or(flexAxis.totalSizeAfterRedistribution);
+            float availableMain = flex.axis.availableMain(measured, flex.currentLine.totalSize);
+            auto lineResult = flex.resolveSizes(availableMain);
 
-            float flexGap = getFlexGap(node).resolveOr(mainAxisSize);
+            float gapBasis = flexDirection == FlexDirection::Row
+                ? measured.explicitWidth.value_or(constraints.maxWidth)
+                : measured.explicitHeight.value_or(lineResult.totalAfter);
+            float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
-            // std::println("flex gap: {} mxs: {}", flexGap, mainAxisSize);
-
-            float accumulated = alignment.initialOffset;
+            float availableCross = flex.axis.availableCross(measured,
+                flexDirection == FlexDirection::Row
+                    ? flex.currentLine.maxCrossSize
+                    : constraints.maxWidth);
+            auto placements = flex.computePlacements(lineResult, availableCross, resolvedGap);
             childConstraints.shrinkToFit = false;
 
-            for (int i = 0; i < node->children.size(); ++i) {
-                auto& child = node->children[i];
-                auto childAsPtr = child.get();
+            for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
+                size_t i = inFlowIndices[pi];
+                auto childAsPtr = node->children[i].get();
+                auto& p = placements[pi];
 
                 childConstraints.cursor = {0, 0};
                 childConstraints.lineFragments = childrenLineFragments[i];
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
+                flex.axis.setMainPosition(childConstraints, p.mainOffset);
+                flex.axis.setMainMaxSize(childConstraints, p.mainSize);
+                flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
 
-                if (flexDirection == FlexDirection::Row) {
-                    childConstraints.maxWidth = flexSizes[i];
-                    childConstraints.origin.x = accumulated;
-                    childAsPtr->measured->explicitWidth = flexSizes[i];
+                flex.axis.setCrossMaxSize(childConstraints, availableCross);
+                childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
 
-                    float crossSize = measured.explicitHeight.value_or(flexAxis.maxCrossSize);
-                    switch (alignItems) {
-                        case AlignItems::Stretch: {
-                            childAsPtr->measured->explicitHeight = childAsPtr->measured->explicitHeight.value_or(crossSize);
-                            break;
+                switch (alignItems) {
+                    case AlignItems::Stretch:
+                        if (!flex.axis.crossExplicit(*childAsPtr->measured).has_value()) {
+                            flex.axis.setCrossExplicit(*childAsPtr->measured, availableCross);
                         }
-                        case AlignItems::FlexStart: {
-                            childConstraints.cursor.y = 0.0;
-                            break;
-                        }
-                        case AlignItems::Center: {
-                            childConstraints.cursor.y = (crossSize - childAsPtr->layout->computedBox.height) / 2.0f;
-                            break;
-                        }
-                        case AlignItems::FlexEnd: {
-                            childConstraints.cursor.y = crossSize - childAsPtr->layout->computedBox.height;
-                            break;
-                        }
-                    }
-                }else {
-                    float crossSize = measured.explicitWidth.value_or(constraints.maxWidth);
-                    childConstraints.maxWidth = crossSize;
-                    childConstraints.maxHeight = flexSizes[i];
-                    childConstraints.cursor.y = accumulated;
-                    
-                    switch (alignItems) {
-                        case AlignItems::Stretch: {
-                            childAsPtr->measured->explicitWidth = childAsPtr->measured->explicitWidth.value_or(measured.explicitWidth.value_or(crossSize));
-                            break;
-                        }
-                        case AlignItems::FlexStart: {
-                            childConstraints.origin.x = 0.0;
-                            childConstraints.shrinkToFit = true;
-                            break;
-                        }
-                        case AlignItems::Center: {
-                            childConstraints.origin.x = (crossSize - childAsPtr->layout->computedBox.width) / 2.0f;
-                            childConstraints.shrinkToFit = true;
-                            break;
-                        }
-                        case AlignItems::FlexEnd: {
-                            childConstraints.origin.x = crossSize - childAsPtr->layout->computedBox.width;
-                            childConstraints.shrinkToFit = true;
-                            break;
-                        }
-                    }
-                    childAsPtr->measured->explicitHeight = flexSizes[i];
+                        break;
+                    case AlignItems::FlexStart:
+                        flex.axis.setCrossPosition(childConstraints, 0.0f);
+                        break;
+                    case AlignItems::Center:
+                        flex.axis.setCrossPosition(childConstraints,
+                            (availableCross - flex.axis.crossSize(*childAsPtr->layout)) / 2.0f);
+                        break;
+                    case AlignItems::FlexEnd:
+                        flex.axis.setCrossPosition(childConstraints,
+                            availableCross - flex.axis.crossSize(*childAsPtr->layout));
+                        break;
                 }
 
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
 
-                // need to fix this; currently still sets constraints for out of flow elements, which is wrong
-                if (childLayout.outOfFlow) {
-                    continue;
-                }
-
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
-
-                accumulated += flexSizes[i] + alignment.spaceBetween + flexGap;
             }
 
-        }else {
+        } else {
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
