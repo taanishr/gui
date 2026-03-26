@@ -581,28 +581,28 @@ namespace NewArch {
             Alignment alignment;
 
             switch (justifyContent) {
-                case NewArch::JustifyContent::flexStart: {
+                case NewArch::JustifyContent::FlexStart: {
                     break;
                 }
-                case NewArch::JustifyContent::flexEnd: {
+                case NewArch::JustifyContent::FlexEnd: {
                     alignment.initialOffset = this->spaceAfterRedistribution;
                     break;
                 }
-                case NewArch::JustifyContent::center: {
+                case NewArch::JustifyContent::Center: {
                     alignment.initialOffset = this->spaceAfterRedistribution / 2.0f;
                     break;
                 }
-                case NewArch::JustifyContent::spaceBetween: {
+                case NewArch::JustifyContent::SpaceBetween: {
                     alignment.spaceBetween = this->spaceAfterRedistribution / (this->childSizes.size() - 1);
                     break;  
                 }
-                case NewArch::JustifyContent::spaceAround: {
+                case NewArch::JustifyContent::SpaceAround: {
                     float gap = this->spaceAfterRedistribution / (this->childSizes.size());
                     alignment.initialOffset = gap / 2.0f;
                     alignment.spaceBetween = gap;
                     break;
                 }
-                case NewArch::JustifyContent::spaceEvenly: {
+                case NewArch::JustifyContent::SpaceEvenly: {
                     float gap = this->spaceAfterRedistribution / (this->childSizes.size() + 1);
                     alignment.initialOffset = gap;
                     alignment.spaceBetween = gap;
@@ -661,7 +661,7 @@ namespace NewArch {
             auto alignItems = getAlignItems(node);
             FlexAxis flexAxis {flexDirection, justifyContent};
 
-            bool needsCrossShrink = (flexDirection == FlexDirection::Col && alignItems != AlignItems::stretch)
+            bool needsCrossShrink = (flexDirection == FlexDirection::Col && alignItems != AlignItems::Stretch)
                                  || (flexDirection == FlexDirection::Row);
             childConstraints.shrinkToFit = needsCrossShrink;
 
@@ -715,19 +715,19 @@ namespace NewArch {
 
                     float crossSize = measured.explicitHeight.value_or(flexAxis.maxCrossSize);
                     switch (alignItems) {
-                        case AlignItems::stretch: {
+                        case AlignItems::Stretch: {
                             childAsPtr->measured->explicitHeight = childAsPtr->measured->explicitHeight.value_or(crossSize);
                             break;
                         }
-                        case AlignItems::flexStart: {
+                        case AlignItems::FlexStart: {
                             childConstraints.cursor.y = 0.0;
                             break;
                         }
-                        case AlignItems::center: {
+                        case AlignItems::Center: {
                             childConstraints.cursor.y = (crossSize - childAsPtr->layout->computedBox.height) / 2.0f;
                             break;
                         }
-                        case AlignItems::flexEnd: {
+                        case AlignItems::FlexEnd: {
                             childConstraints.cursor.y = crossSize - childAsPtr->layout->computedBox.height;
                             break;
                         }
@@ -739,23 +739,23 @@ namespace NewArch {
                     childConstraints.cursor.y = accumulated;
                     
                     switch (alignItems) {
-                        case AlignItems::stretch: {
+                        case AlignItems::Stretch: {
                             childAsPtr->measured->explicitWidth = childAsPtr->measured->explicitWidth.value_or(measured.explicitWidth.value_or(crossSize));
                             break;
                         }
-                        case AlignItems::flexStart: {
+                        case AlignItems::FlexStart: {
                             childConstraints.origin.x = 0.0;
                             childConstraints.shrinkToFit = true;
                             break;
                         }
-                        case AlignItems::center: {
+                        case AlignItems::Center: {
                             // std::println("linebox #: {}", childrenLineBoxes.size());
                             // std::println("crossSize: {} cw: {}", crossSize, childAsPtr->layout->computedBox.width);
                             childConstraints.origin.x = (crossSize - childAsPtr->layout->computedBox.width) / 2.0f;
                             childConstraints.shrinkToFit = true;
                             break;
                         }
-                        case AlignItems::flexEnd: {
+                        case AlignItems::FlexEnd: {
                             childConstraints.origin.x = crossSize - childAsPtr->layout->computedBox.width;
                             childConstraints.shrinkToFit = true;
                             break;

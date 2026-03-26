@@ -217,19 +217,19 @@ namespace NewArch {
     };
 
     enum class JustifyContent {
-        flexStart,
-        flexEnd,
-        center,
-        spaceBetween,
-        spaceAround,
-        spaceEvenly
+        FlexStart,
+        FlexEnd,
+        Center,
+        SpaceBetween,
+        SpaceAround,
+        SpaceEvenly
     };
 
     enum class AlignItems {
-        stretch,
-        flexStart,
-        flexEnd,
-        center,
+        Stretch,
+        FlexStart,
+        FlexEnd,
+        Center,
     };  
 
     struct SharedDescriptor {
@@ -246,8 +246,8 @@ namespace NewArch {
         std::optional<Size> paddingLeft, paddingRight, paddingTop, paddingBottom;
 
         FlexDirection flexDirection{FlexDirection::Row};
-        JustifyContent justifyContent{JustifyContent::flexStart};
-        AlignItems alignItems{AlignItems::stretch};
+        JustifyContent justifyContent{JustifyContent::FlexStart};
+        AlignItems alignItems{AlignItems::Stretch};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
 
