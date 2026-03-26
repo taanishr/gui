@@ -31,6 +31,7 @@ namespace NewArch {
     FlexDirection getFlexDirection(TreeNode* node) { return node->shared.flexDirection; }
     JustifyContent getJustifyContent(TreeNode* node) { return node->shared.justifyContent; }
     AlignItems getAlignItems(TreeNode* node) { return node->shared.alignItems; }
+    Size getFlexGap(TreeNode* node) { return node->shared.flexGap; }
 
     // Element-specific requests still use the request system
     std::optional<std::string> getText(TreeNode* node) {
@@ -509,9 +510,10 @@ namespace NewArch {
         std::vector<float> growthScaled;
 
         float totalSize {};
+        float totalSizeAfterRedistribution {};
         float shrinkScaledTotal {};
         float growthScaledTotal {};
-        float maxCrossSize;
+        float maxCrossSize {};
         float spaceAfterRedistribution {};
         bool isRow {false};
         JustifyContent justifyContent;
@@ -567,6 +569,7 @@ namespace NewArch {
                 sizeAfterRedistribution += result.back();
             }
 
+            totalSizeAfterRedistribution = sizeAfterRedistribution;
             this->spaceAfterRedistribution = available - sizeAfterRedistribution;
             
             return result;
@@ -695,6 +698,11 @@ namespace NewArch {
 
             auto&& flexSizes = flexAxis.resolve(measured, constraints);
             auto&& alignment = flexAxis.getAlignment();
+            float mainAxisSize = flexDirection == FlexDirection::Row ? measured.explicitWidth.value_or(constraints.maxWidth) : measured.explicitHeight.value_or(flexAxis.totalSizeAfterRedistribution);
+
+            float flexGap = getFlexGap(node).resolveOr(mainAxisSize);
+
+            // std::println("flex gap: {} mxs: {}", flexGap, mainAxisSize);
 
             float accumulated = alignment.initialOffset;
             childConstraints.shrinkToFit = false;
@@ -749,8 +757,6 @@ namespace NewArch {
                             break;
                         }
                         case AlignItems::Center: {
-                            // std::println("linebox #: {}", childrenLineBoxes.size());
-                            // std::println("crossSize: {} cw: {}", crossSize, childAsPtr->layout->computedBox.width);
                             childConstraints.origin.x = (crossSize - childAsPtr->layout->computedBox.width) / 2.0f;
                             childConstraints.shrinkToFit = true;
                             break;
@@ -775,7 +781,7 @@ namespace NewArch {
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
 
-                accumulated += flexSizes[i] + alignment.spaceBetween;
+                accumulated += flexSizes[i] + alignment.spaceBetween + flexGap;
             }
 
         }else {
