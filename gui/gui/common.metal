@@ -10,6 +10,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
+constant constexpr float BASE_PIXEL_HEIGHT = 256.0;
+
 struct FrameInfo {
     float width;
     float height;

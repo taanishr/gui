@@ -10,6 +10,7 @@
 #include <limits>
 #include "freetype/ftbbox.h"
 
+
 simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
@@ -17,7 +18,7 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
 
 Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender) {
     Quad quad {.topLeft = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, .bottomRight = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()}};
-    std::vector<int> offsets {};
+    
     std::vector<simd_float2> points {};
     std::vector<simd_float2> pointsBuffer {};
 
@@ -31,13 +32,13 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
             quad.topLeft.x = currentPoint.x;
         
         if (currentPoint.y < quad.topLeft.y)
-            quad.topLeft.y = currentPoint.y - 1.0f;
+            quad.topLeft.y = currentPoint.y;
         
         if (currentPoint.x > quad.bottomRight.x)
             quad.bottomRight.x = currentPoint.x;
         
         if (currentPoint.y > quad.bottomRight.y)
-            quad.bottomRight.y = currentPoint.y + 1.0f;
+            quad.bottomRight.y = currentPoint.y;
 
         // contour handling
         switch (tags[p]) {
@@ -134,6 +135,8 @@ Glyph processContours(FT_Face face)
         if (contour.quad.bottomRight.y > quad.bottomRight.y)
             quad.bottomRight.y = contour.quad.bottomRight.y;
 
+
+        quad.bottomRight += BASE_PIXEL_HEIGHT;
 
         // flatten points
         points.insert(points.end(), contour.points.begin(), contour.points.end());
