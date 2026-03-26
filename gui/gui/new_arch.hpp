@@ -250,6 +250,7 @@ namespace NewArch {
         AlignItems alignItems{AlignItems::Stretch};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
+        Size flexGap{Size::px(0)};
 
         Size cornerRadius{};
         Size borderWidth{};

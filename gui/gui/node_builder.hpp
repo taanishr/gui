@@ -136,6 +136,11 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder<E,P>& flexGap(Size gap) {
+            node->shared.flexGap = gap;
+            return *this;
+        }
+
         NodeBuilder<E,P>& flexShrink(Size shrink) {
             node->shared.flexShrink = shrink;
             return *this;
