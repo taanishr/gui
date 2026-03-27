@@ -214,6 +214,8 @@ namespace NewArch {
     enum class FlexDirection {
         Row,
         Col,
+        RowReverse,
+        ColReverse
     };
 
     enum class JustifyContent {
