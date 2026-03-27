@@ -584,12 +584,16 @@ namespace NewArch {
     // Maps logical main/cross operations to physical x/y based on flex direction.
     struct AxisHelper {
         bool isRow;
-        bool isReversed{false};
+        bool isReversed;
 
         AxisHelper(FlexDirection dir):
-            isRow{dir == FlexDirection::Row},
-            isReversed{false}
+            isRow{dir == FlexDirection::Row || dir == FlexDirection::RowReverse},
+            isReversed{dir == FlexDirection::RowReverse || dir == FlexDirection::ColReverse}
         {}
+
+        void applyDirection(Direction dir) {
+            if (dir == Direction::rtl && isRow) isReversed = !isReversed;
+        }
 
         float mainSize(const LayoutResult& lr) const {
             return isRow ? lr.computedBox.width : lr.computedBox.height;
@@ -792,9 +796,8 @@ namespace NewArch {
             float childCross = axis.crossSize(layout);
             availableMain = avMain;
 
-            // Line breaking for wrap mode
             if (flexWrap != FlexWrap::NoWrap && currentLine.count() > 0) {
-                float totalWithGap = currentLine.totalSize; // gap accounted for at placement time
+                float totalWithGap = currentLine.totalSize;
                 if (totalWithGap + childMain > avMain) {
                     lines.push_back(std::move(currentLine));
                     currentLine = FlexLine{};
@@ -806,7 +809,6 @@ namespace NewArch {
             childCrossSizes.push_back(childCross);
         }
 
-        // Finalize lines and resolve grow/shrink per line.
         struct ResolveResult {
             std::vector<std::vector<float>> lineSizes; // per-line resolved main sizes
             std::vector<float> lineTotalsAfter;        // per-line total after redistribution
@@ -814,7 +816,6 @@ namespace NewArch {
         };
 
         ResolveResult resolveSizes(float avMain) {
-            // Finalize current line
             if (currentLine.count() > 0) {
                 lines.push_back(std::move(currentLine));
                 currentLine = FlexLine{};
@@ -836,7 +837,6 @@ namespace NewArch {
         ) {
             size_t lineCount = lines.size();
 
-            // Compute per-line cross sizes and offsets
             std::vector<float> lineCrossSizes(lineCount);
             std::vector<float> lineCrossOffsets(lineCount);
 
@@ -900,8 +900,7 @@ namespace NewArch {
                     ChildPlacement p;
                     p.mainOffset = accumulated;
                     p.mainSize = resolved.lineSizes[li][ci];
-
-                    // Determine effective alignment for this child
+                    
                     AlignSelf selfAlign = childAlignSelfs[childIdx];
                     AlignItems effectiveAlign = alignItems;
                     if (selfAlign != AlignSelf::Auto) {
@@ -932,6 +931,10 @@ namespace NewArch {
                             p.crossOffset = lineCrossBase + lineCross - childCross;
                             p.needsCrossShrinkToFit = !axis.isRow;
                             break;
+                    }
+
+                    if (axis.isReversed) {
+                        p.mainOffset = availableMain - accumulated - p.mainSize;
                     }
 
                     accumulated += resolved.lineSizes[li][ci] + mainAlign.spaceBetween + gap;
@@ -983,9 +986,9 @@ namespace NewArch {
             auto flexWrap = getFlexWrap(node);
 
             FlexLayout flex{flexDirection, justifyContent, alignItems, alignContentVal, flexWrap};
+            flex.axis.applyDirection(constraints.inheritedProperties.direction);
 
-            bool needsCrossShrink = (flexDirection == FlexDirection::Col && alignItems != AlignItems::Stretch)
-                                 || (flexDirection == FlexDirection::Row);
+            bool needsCrossShrink = flex.axis.isRow || alignItems != AlignItems::Stretch;
             childConstraints.shrinkToFit = needsCrossShrink;
 
             // Compute available main for line-breaking decisions
@@ -1019,16 +1022,17 @@ namespace NewArch {
             for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
             totalSizeFallback += flex.currentLine.totalSize;
             float availableMain = flex.axis.availableMain(measured, totalSizeFallback);
+            flex.availableMain = availableMain;
             auto resolved = flex.resolveSizes(availableMain);
 
-            float gapBasis = flexDirection == FlexDirection::Row
+            float gapBasis = flex.axis.isRow
                 ? measured.explicitWidth.value_or(constraints.maxWidth)
                 : measured.explicitHeight.value_or(resolved.overallTotalAfter);
             float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
             float naturalCross = 0;
             for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
-            float crossFallback = flexDirection == FlexDirection::Row
+            float crossFallback = flex.axis.isRow
                 ? naturalCross : constraints.maxWidth;
             float availableCross = flex.axis.availableCross(measured, crossFallback);
 
@@ -1036,6 +1040,12 @@ namespace NewArch {
             childConstraints.shrinkToFit = false;
 
             // Pass 2: apply placements and re-layout
+            // row reverse:
+                // start it at the end of container height and subtract offset
+
+            // col reverse:
+                // start it at the END of container height and subtract offset
+
             for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
                 size_t i = inFlowIndices[pi];
                 auto childAsPtr = node->children[i].get();

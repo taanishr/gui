@@ -212,10 +212,11 @@ namespace NewArch {
 
             if (storage.texture && storage.intrinsicSize.x > 0.0f) return;
 
+            // optimization: downsample images
             storage.texture = NS::TransferPtr(
                 MTKTextures::createTexture(getTextureLoader(), path)
             );
-
+            
             if (storage.texture) {
                 storage.intrinsicSize = { (float)storage.texture->width(), (float)storage.texture->height() };
             } else {

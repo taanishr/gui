@@ -116,7 +116,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
                 false
              );
     
-    
     device = MTL::CreateSystemDefaultDevice();
 
     view = MTK::View::alloc()->init(frame, device);
