@@ -843,6 +843,7 @@ namespace NewArch {
             if (lineCount == 1) {
                 // Single line: align-content has no effect.
                 // The full cross space goes to this line; align-items handles positioning.
+                std::println("availableCross: {}", availableCross);
                 lineCrossSizes[0] = availableCross;
                 lineCrossOffsets[0] = 0.0f;
             } else {
@@ -924,6 +925,7 @@ namespace NewArch {
                             p.needsCrossShrinkToFit = !axis.isRow;
                             break;
                         case AlignItems::Center:
+                            std::println("lineCross: {}", lineCross);
                             p.crossOffset = lineCrossBase + (lineCross - childCross) / 2.0f;
                             p.needsCrossShrinkToFit = !axis.isRow;
                             break;
@@ -979,6 +981,8 @@ namespace NewArch {
         auto display = getDisplay(node);
 
         if (display == Display::Flex) {
+            constraints.shrinkToFit = true; // unlike block, flex elements resize to child size
+
             auto flexDirection = getFlexDirection(node);
             auto justifyContent = getJustifyContent(node);
             auto alignItems = getAlignItems(node);
@@ -1021,7 +1025,10 @@ namespace NewArch {
             float totalSizeFallback = 0;
             for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
             totalSizeFallback += flex.currentLine.totalSize;
-            float availableMain = flex.axis.availableMain(measured, totalSizeFallback);
+            auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
+            float availableMain = explicitMain.has_value()
+                ? (flex.axis.isRow ? layout.childConstraints.maxWidth : layout.childConstraints.maxHeight)
+                : totalSizeFallback;
             flex.availableMain = availableMain;
             auto resolved = flex.resolveSizes(availableMain);
 
@@ -1031,10 +1038,13 @@ namespace NewArch {
             float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
             float naturalCross = 0;
+
+            // setting natural cross as the fallback
             for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
-            float crossFallback = flex.axis.isRow
-                ? naturalCross : constraints.maxWidth;
-            float availableCross = flex.axis.availableCross(measured, crossFallback);
+            auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
+            float availableCross = explicitCross.has_value()
+                ? (flex.axis.isRow ? layout.childConstraints.maxHeight : layout.childConstraints.maxWidth)
+                : naturalCross;
 
             auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
             childConstraints.shrinkToFit = false;
@@ -1078,6 +1088,8 @@ namespace NewArch {
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
 
+                std::println("cl.x: {} cl.w: {}", childLayout.computedBox.x, childLayout.computedBox.width);
+
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
             }
@@ -1097,7 +1109,7 @@ namespace NewArch {
                 if (!childLayout.outOfFlow) {
                     childConstraints.cursor = childLayout.siblingCursor;
                     childConstraints.edgeIntent = childLayout.edgeIntent;
-                    
+                
                     maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                     maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
                 }
@@ -1106,8 +1118,14 @@ namespace NewArch {
 
         // resize width/height of underspecified elements
         if (!measured.explicitWidth.has_value()) {
-            if (position != Position::Static || constraints.shrinkToFit)
+            if (position != Position::Static || constraints.shrinkToFit) {
+                if (display == Display::Flex) {
+                    // std::println("resizing the flex elem");
+                    // std::println("minX: {} maxX: {}", minX, maxX);
+                }
+
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
+            }
         }
 
         if (!measured.explicitHeight.has_value()) {
