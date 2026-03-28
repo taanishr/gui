@@ -311,11 +311,9 @@ namespace NewArch {
             }
         }
 
-        // Determine position and display
         auto position = getPosition(node);
         auto display = getDisplay(node);
 
-        // Get margin values from shared descriptor
         Size marginTop = getMarginTop(node);
         Size marginRight = getMarginRight(node);
         Size marginBottom = getMarginBottom(node);
@@ -342,7 +340,6 @@ namespace NewArch {
                 contentWidth = constraints.maxWidth;
             }
 
-            // Build a temporary LayoutInput for resolveAutoMargins
             LayoutInput li{
                 .position = position,
                 .display = display,
@@ -356,7 +353,6 @@ namespace NewArch {
 
             margins = LayoutEngine::resolveAutoMargins(li, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
         } else {
-            // Inline, fixed, absolute: use simple resolution
             margins = {
                 .top = marginTop.resolveOr(0.0f, 0.0f),
                 .right = marginRight.resolveOr(0.0f, 0.0f),
@@ -367,7 +363,6 @@ namespace NewArch {
 
         node->preLayout->resolvedMargins = margins;
 
-        // Recurse for children with updated constraints
         auto& measured = *node->measured;
         Constraints childConstraints{};
         childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
@@ -462,7 +457,6 @@ namespace NewArch {
     }
 
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
-        // precompute line fragments & line boxes
         bool prevInline = false;
         bool lastFragmentHasBreakOpportunity = false;
         std::vector<LineBox> childrenLineBoxes;
@@ -580,8 +574,6 @@ namespace NewArch {
     }
 
 
-    // ── Axis abstraction ─────────────────────────────────────────────
-    // Maps logical main/cross operations to physical x/y based on flex direction.
     struct AxisHelper {
         bool isRow;
         bool isReversed;
@@ -640,8 +632,7 @@ namespace NewArch {
         }
     };
 
-    // ── FlexLine ────────────────────────────────────────────────────
-    // Represents one line of flex items (one line in nowrap, multiple with wrap).
+
     struct FlexLine {
         std::vector<float> childSizes;
         std::vector<float> shrinkScaled;
@@ -675,7 +666,6 @@ namespace NewArch {
 
         size_t count() const { return childSizes.size(); }
 
-        // Redistribute space among children via grow/shrink. Returns resolved sizes.
         struct ResolveResult {
             std::vector<float> sizes;
             float totalAfter{};
@@ -701,7 +691,6 @@ namespace NewArch {
         }
     };
 
-    // ── Space distribution (shared by justify-content and align-content) ──
     struct Alignment {
         float initialOffset{};
         float spaceBetween{};
@@ -750,7 +739,7 @@ namespace NewArch {
 
     DistributeMode toDistributeMode(AlignContent ac) {
         switch (ac) {
-            case AlignContent::Stretch:      return DistributeMode::FlexStart; // stretch handled separately
+            case AlignContent::Stretch:      return DistributeMode::FlexStart;
             case AlignContent::FlexStart:    return DistributeMode::FlexStart;
             case AlignContent::FlexEnd:      return DistributeMode::FlexEnd;
             case AlignContent::Center:       return DistributeMode::Center;
@@ -760,8 +749,7 @@ namespace NewArch {
         }
     }
 
-    // ── FlexLayout ──────────────────────────────────────────────────
-    // Coordinates the full flex algorithm: line breaking, grow/shrink, justify, align.
+
     struct FlexLayout {
         AxisHelper axis;
         JustifyContent justifyContent;
@@ -771,7 +759,6 @@ namespace NewArch {
 
         std::vector<FlexLine> lines;
         FlexLine currentLine;
-        // Per-child metadata parallel to the order children are added
         std::vector<AlignSelf> childAlignSelfs;
         std::vector<float> childCrossSizes;
         float availableMain{};
@@ -810,8 +797,8 @@ namespace NewArch {
         }
 
         struct ResolveResult {
-            std::vector<std::vector<float>> lineSizes; // per-line resolved main sizes
-            std::vector<float> lineTotalsAfter;        // per-line total after redistribution
+            std::vector<std::vector<float>> lineSizes; 
+            std::vector<float> lineTotalsAfter;       
             float overallTotalAfter{};
         };
 
@@ -981,7 +968,6 @@ namespace NewArch {
         auto display = getDisplay(node);
 
         if (display == Display::Flex) {
-            constraints.shrinkToFit = true; // unlike block, flex elements resize to child size
 
             auto flexDirection = getFlexDirection(node);
             auto justifyContent = getJustifyContent(node);
@@ -999,17 +985,52 @@ namespace NewArch {
             float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
             float childMaxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
 
-            // Pass 1: measure children and collect flex info
-            std::vector<size_t> inFlowIndices;
+            // Pass 1: intrinsic sizes
+            float minIntrinsicX = minX;
+            float maxIntrinsicX = maxX;
+            float minIntrinsicY = minY;
+            float maxIntrinsicY = maxY;
+
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto childAsPtr = node->children[i].get();
 
-                auto [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
+                auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                 childConstraints.lineFragments = frags;
                 childConstraints.lineBoxes = boxes;
                 childConstraints.maxWidth = childMaxWidth;
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
+                layoutPhase(childAsPtr, frameInfo, childConstraints);
+                auto& childLayout = *childAsPtr->layout;
+                
+                bool sizeIndefinite = !measured.explicitWidth.has_value() &&
+                    (!childAsPtr->measured->explicitWidth.has_value() || childAsPtr->shared.width->unit == Unit::Percent);
+
+                if (!sizeIndefinite) {
+                    maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
+                    maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+                }
+            }
+
+
+            // Pass 2: measure children and collect flex info
+            std::vector<size_t> inFlowIndices;
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto childAsPtr = node->children[i].get();
+
+                auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
+                childConstraints.lineFragments = frags;
+                childConstraints.lineBoxes = boxes;
+                childConstraints.maxWidth = childMaxWidth;
+                childConstraints.inheritedProperties = constraints.inheritedProperties;
+
+                bool sizeIndefinite = !measured.explicitWidth.has_value() &&
+                    (!childAsPtr->measured->explicitWidth.has_value() || childAsPtr->shared.width->unit == Unit::Percent);
+
+                if (sizeIndefinite) {
+                    childAsPtr->measured->explicitWidth = maxIntrinsicX - minIntrinsicX;
+                }
+                
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
 
@@ -1030,6 +1051,7 @@ namespace NewArch {
                 ? (flex.axis.isRow ? layout.childConstraints.maxWidth : layout.childConstraints.maxHeight)
                 : totalSizeFallback;
             flex.availableMain = availableMain;
+
             auto resolved = flex.resolveSizes(availableMain);
 
             float gapBasis = flex.axis.isRow
@@ -1049,19 +1071,14 @@ namespace NewArch {
             auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
             childConstraints.shrinkToFit = false;
 
-            // Pass 2: apply placements and re-layout
-            // row reverse:
-                // start it at the end of container height and subtract offset
-
-            // col reverse:
-                // start it at the END of container height and subtract offset
+            // Pass 3: apply placements and re-layout
 
             for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
                 size_t i = inFlowIndices[pi];
                 auto childAsPtr = node->children[i].get();
                 auto& p = placements[pi];
 
-                auto [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
+                auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                 childConstraints.lineFragments = frags;
                 childConstraints.lineBoxes = boxes;
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
@@ -1087,8 +1104,6 @@ namespace NewArch {
 
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto& childLayout = *childAsPtr->layout;
-
-                std::println("cl.x: {} cl.w: {}", childLayout.computedBox.x, childLayout.computedBox.width);
 
                 maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                 maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
@@ -1116,14 +1131,11 @@ namespace NewArch {
             }
         }
 
+        // percent/auto does not contribute to parent intrinsic size. But we don't use intrinsic sizes to compute this. huh
+        
         // resize width/height of underspecified elements
         if (!measured.explicitWidth.has_value()) {
             if (position != Position::Static || constraints.shrinkToFit) {
-                if (display == Display::Flex) {
-                    // std::println("resizing the flex elem");
-                    // std::println("minX: {} maxX: {}", minX, maxX);
-                }
-
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
             }
         }
