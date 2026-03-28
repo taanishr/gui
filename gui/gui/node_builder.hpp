@@ -161,6 +161,38 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder& gridTemplateColumns(std::vector<Size> tracks) {
+            node->shared.gridTemplateColumns = std::move(tracks);
+            return *this;
+        }
+
+        NodeBuilder& gridTemplateRows(std::vector<Size> tracks) {
+            node->shared.gridTemplateRows = std::move(tracks);
+            return *this;
+        }
+
+        NodeBuilder& gridColumnGap(Size gap) {
+            node->shared.gridColumnGap = gap;
+            return *this;
+        }
+
+        NodeBuilder& gridRowGap(Size gap) {
+            node->shared.gridRowGap = gap;
+            return *this;
+        }
+
+        NodeBuilder& gridColumn(int start, int end = 0) {
+            node->shared.gridPlacement.colStart = start;
+            node->shared.gridPlacement.colEnd = end;
+            return *this;
+        }
+
+        NodeBuilder& gridRow(int start, int end = 0) {
+            node->shared.gridPlacement.rowStart = start;
+            node->shared.gridPlacement.rowEnd = end;
+            return *this;
+        }
+
         NodeBuilder<E,P>& cornerRadius(Size radius) {
             node->shared.cornerRadius = radius;
             return *this;

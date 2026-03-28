@@ -6,7 +6,8 @@ namespace NewArch {
         Px,
         Percent,
         Auto,
-        Pt
+        Pt,
+        Fr
     };
 
     struct Size {
@@ -29,8 +30,10 @@ namespace NewArch {
                 return {v, Unit::Percent};
         }
         static Size autoSize()        { return {0.0f, Unit::Auto}; }
+        static Size fr(float v)       { return {v, Unit::Fr}; }
 
         bool isAuto() const { return unit == Unit::Auto; }
+        bool isFr() const { return unit == Unit::Fr; }
 
         std::optional<float> resolve(float referenceSize) const {
             switch (unit) {
@@ -42,6 +45,8 @@ namespace NewArch {
                     return std::nullopt;
                 case Unit::Pt:
                     return value;
+                case Unit::Fr:
+                    return std::nullopt;
                 default:
                     return std::nullopt;
             }
