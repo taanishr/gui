@@ -827,9 +827,6 @@ namespace NewArch {
             std::vector<float> lineCrossOffsets(lineCount);
 
             if (lineCount == 1) {
-                // Single line: align-content has no effect.
-                // The full cross space goes to this line; align-items handles positioning.
-                std::println("availableCross: {}", availableCross);
                 lineCrossSizes[0] = availableCross;
                 lineCrossOffsets[0] = 0.0f;
             } else {
@@ -911,7 +908,6 @@ namespace NewArch {
                             p.needsCrossShrinkToFit = !axis.isRow;
                             break;
                         case AlignItems::Center:
-                            std::println("lineCross: {}", lineCross);
                             p.crossOffset = lineCrossBase + (lineCross - childCross) / 2.0f;
                             p.needsCrossShrinkToFit = !axis.isRow;
                             break;
