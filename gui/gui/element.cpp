@@ -1271,7 +1271,7 @@ namespace NewArch {
                 items.push_back({i, c0, c1, r0, r1});
             }
 
-            // Phase C2: initial child layout (for auto track sizing)
+         // Phase C2: initial child layout (for auto track sizing)
             for (auto& item : items) {
                 auto childAsPtr = node->children[item.childIdx].get();
                 if (!childAsPtr->layout.has_value() || !hasIndefiniteChild) {
@@ -1287,6 +1287,7 @@ namespace NewArch {
             // Phase C3: track sizing
             struct TrackInfo { float offset; float size; };
 
+            // make this not a lambda??? should be in its own data structure in my refactor
             auto resolveTracks = [&](const std::vector<Size>& defs, float available, float gap,
                                      bool isCol) -> std::vector<TrackInfo> {
                 size_t n = defs.size();
