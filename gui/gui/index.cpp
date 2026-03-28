@@ -23,8 +23,8 @@ auto index() -> void {
 
     };
 
-    // // images cause like a 60mb increase in memory usage lol; need to investigate
-    //     // turns out they just were not being downsampled
+    // images cause like a 60mb increase in memory usage lol; need to investigate
+    // turns out they just were not being downsampled
 
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
         .display(NewArch::Display::Flex)
