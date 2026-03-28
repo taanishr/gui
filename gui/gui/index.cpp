@@ -26,68 +26,64 @@ auto index() -> void {
     // images cause like a 60mb increase in memory usage lol; need to investigate
     // turns out they just were not being downsampled
 
-    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
-        .display(NewArch::Display::Flex)
-        .alignItems(NewArch::AlignItems::Center)
-        .justifyContent(NewArch::JustifyContent::Center)
+    using S = NewArch::Size;
+
+    // Grid demo: holy grail layout
+    div(S::percent(1.0), S::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
+        .display(NewArch::Display::Grid)
+        .gridTemplateColumns({S::fr(1), S::fr(2), S::fr(1)})
+        .gridTemplateRows({S::px(60), S::fr(1), S::px(40)})
+        .gridColumnGap(S::px(8))
+        .gridRowGap(S::px(8))
+        .padding(S::px(8))
     (
-        div()
-            .color(simd_float4{1.0,1.0,1.0,1.0})
-            .cornerRadius(NewArch::Size::px(16))
-            .padding(NewArch::Size::px(12))
+        // Header — spans all 3 columns
+        div().gridColumn(1, 4).gridRow(1, 2)
+            .color(simd_float4{0.2,0.4,0.8,1.0})
+            .cornerRadius(S::px(8))
             .display(NewArch::Display::Flex)
-            .flexDirection(NewArch::FlexDirection::Col)
-            .alignItems(NewArch::AlignItems::Center) // expands maxWidth for... some reason?
-            .flexGap(NewArch::Size::px(12))
+            .alignItems(NewArch::AlignItems::Center)
+            .justifyContent(NewArch::JustifyContent::Center)
         (
-            image("/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
-                .cornerRadius(NewArch::Size::percent(0.5))
-            ,text("Sarah Johnson")
-                .fontSize(NewArch::Size::pt(18))
-                .color(simd_float4{0.1,0.1,0.1,1.0})
-            ,text("Product Designer @ Figma")
-                .fontSize(NewArch::Size::pt(13))
-                .color(simd_float4{0.5,0.5,0.5,1.0})
-            ,
-            div(NewArch::Size::percent(1.0), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                .display(NewArch::Display::Flex)
-                .justifyContent(NewArch::JustifyContent::SpaceAround)
-            (
-                div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text("284").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0})
-                    ,text("Posts").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                )
-                ,div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text("12.4k").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text("Followers").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                ),
-                div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text("891").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text("Following").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                )
-            )
-            ,
-            div(NewArch::Size::px(120), NewArch::Size::px(40), simd_float4{0.4,0.3,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(20))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::Center)
-                .addEventListener(EventType::MouseDown, onClick)
-            (
-                text("Follow").fontSize(NewArch::Size::pt(14)).color(simd_float4{1.0,1.0,1.0,1.0})
-            )
+            text("Header").fontSize(S::pt(20)).color(simd_float4{1,1,1,1})
+        ),
+
+        // Left sidebar
+        div().gridColumn(1, 2).gridRow(2, 3)
+            .color(simd_float4{0.9,0.9,0.95,1.0})
+            .cornerRadius(S::px(8))
+            .padding(S::px(12))
+        (
+            text("Sidebar").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+        ),
+
+        // Main content
+        div().gridColumn(2, 3).gridRow(2, 3)
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(S::px(8))
+            .padding(S::px(12))
+        (
+            text("Main Content").fontSize(S::pt(14)).color(simd_float4{0.1,0.1,0.1,1})
+        ),
+
+        // Right sidebar
+        div().gridColumn(3, 4).gridRow(2, 3)
+            .color(simd_float4{0.9,0.9,0.95,1.0})
+            .cornerRadius(S::px(8))
+            .padding(S::px(12))
+        (
+            text("Panel").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+        ),
+
+        // Footer — spans all 3 columns
+        div().gridColumn(1, 4).gridRow(3, 4)
+            .color(simd_float4{0.3,0.3,0.35,1.0})
+            .cornerRadius(S::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .justifyContent(NewArch::JustifyContent::Center)
+        (
+            text("Footer").fontSize(S::pt(14)).color(simd_float4{1,1,1,1})
         )
     );
 }

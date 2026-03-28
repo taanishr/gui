@@ -208,7 +208,8 @@ namespace NewArch {
     enum class Display {
         Block,
         Inline,
-        Flex
+        Flex,
+        Grid
     };
 
     enum class FlexDirection {
@@ -258,6 +259,13 @@ namespace NewArch {
         Center
     };
 
+    struct GridPlacement {
+        int colStart{0};  // 1-based line number, 0 = auto
+        int colEnd{0};    // 0 = colStart+1 (span 1)
+        int rowStart{0};
+        int rowEnd{0};
+    };
+
     struct SharedDescriptor {
         Position position{Position::Static};
         Display display{Display::Block};
@@ -280,6 +288,15 @@ namespace NewArch {
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
         Size flexGap{Size::px(0)};
+
+        // Grid container properties
+        std::vector<Size> gridTemplateColumns{};
+        std::vector<Size> gridTemplateRows{};
+        Size gridColumnGap{Size::px(0)};
+        Size gridRowGap{Size::px(0)};
+
+        // Grid item properties
+        GridPlacement gridPlacement{};
 
         Size cornerRadius{};
         Size borderWidth{};
