@@ -37,12 +37,10 @@ public:
     
     void release();
     
-    // delete copy constructors
     SwiftObject(const SwiftObject& other) = delete;
     
     SwiftObject& operator=(const SwiftObject& other) = delete;
     
-    // enable move semantics
     SwiftObject(SwiftObject&& other);
     
     SwiftObject& operator=(SwiftObject&& other);
