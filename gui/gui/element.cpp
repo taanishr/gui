@@ -1,10 +1,12 @@
 #include "element.hpp"
 #include "fragment_types.hpp"
+#include "sizing.hpp"
 #include "new_arch.hpp"
 #include "printers.hpp"
 #include <algorithm>
 #include <any>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <print>
 #include <ranges>
@@ -150,10 +152,19 @@ namespace NewArch {
         auto measured = node->element->measure(constraints, node->shared);
         node->measured = measured;
         
+        float paddingLeft = node->shared.paddingLeft.value_or(Size{}).resolveOr(constraints.maxWidth);
+        float paddingTop = node->shared.paddingTop.value_or(Size{}).resolveOr(constraints.maxHeight);
+        float paddingRight = node->shared.paddingRight.value_or(Size{}).resolveOr(constraints.maxWidth);
+        float paddingBottom = node->shared.paddingBottom.value_or(Size{}).resolveOr(constraints.maxHeight);
+
         Constraints childConstraints {};
 
-        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);;
-        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight);
+        // std::println("padidngLeft: {} paddingRight: {}", paddingLeft, paddingRight);
+    
+        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth) - paddingLeft - paddingRight;
+        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight) - paddingTop - paddingBottom;
+        
+        // std::println("maxWidth: {}", childConstraints.maxWidth);
 
         for (auto& child : node->children) {
             measurePhase(child.get(), childConstraints);
@@ -594,6 +605,7 @@ namespace NewArch {
         float mainSize(const LayoutResult& lr) const {
             return isRow ? lr.computedBox.width : lr.computedBox.height;
         }
+
         float crossSize(const LayoutResult& lr) const {
             return isRow ? lr.computedBox.height : lr.computedBox.width;
         }
@@ -784,7 +796,10 @@ namespace NewArch {
         void addChild(const LayoutResult& layout, float grow, float shrink,
                       AlignSelf selfAlign, float avMain) {
             float childMain = axis.mainSize(layout);
+
             float childCross = axis.crossSize(layout);
+
+            
             availableMain = avMain;
 
             if (flexWrap != FlexWrap::NoWrap && currentLine.count() > 0) {
@@ -906,7 +921,16 @@ namespace NewArch {
                     switch (effectiveAlign) {
                         case AlignItems::Stretch:
                             p.crossOffset = lineCrossBase;
+
+                            if (abs(lineCross - 42.0) < 1.0) {
+                                // lineCross = 70;
+                            }
+
                             p.crossSizeOverride = lineCross;
+                            if (p.crossSizeOverride.has_value()) {
+                                // std::println("override: {}", *p.crossSizeOverride);
+                            }
+                            
                             break;
                         case AlignItems::FlexStart:
                             p.crossOffset = lineCrossBase;
@@ -946,6 +970,31 @@ namespace NewArch {
         auto& prelayout = *node->preLayout;
 
         constraints.resolvedMargins = prelayout.resolvedMargins;
+
+        if ((node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) ||
+           ( node->shared.height.has_value() && node->shared.height->unit == Unit::Percent)
+        
+        ) {
+            SizeResolutionContext sizeCtx {
+                .position = node->shared.position,
+                .parentConstraints = constraints,
+                .top = node->shared.top,
+                .right = node->shared.right,
+                .bottom = node->shared.bottom,
+                .left = node->shared.left,
+                .requestedWidth = node->shared.width,
+                .requestedHeight = node->shared.height,
+                .availableWidth = constraints.maxWidth,
+                .availableHeight = constraints.maxHeight
+            };
+
+            auto newSize = resolveSize(sizeCtx);
+            
+            node->measured->explicitWidth = newSize.width;
+            node->measured->explicitHeight = newSize.height;
+        }
+
+
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         auto childConstraints = layout.childConstraints;
@@ -978,7 +1027,7 @@ namespace NewArch {
             FlexLayout flex{flexDirection, justifyContent, alignItems, alignContentVal, flexWrap};
             flex.axis.applyDirection(constraints.inheritedProperties.direction);
 
-            bool needsCrossShrink = flex.axis.isRow || alignItems != AlignItems::Stretch;
+            bool needsCrossShrink = flex.axis.isRow || alignItems != AlignItems::Stretch || !measured.explicitWidth.has_value();
             childConstraints.shrinkToFit = needsCrossShrink;
 
             float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
@@ -986,14 +1035,16 @@ namespace NewArch {
 
             // Per-axis indefinite check: parent has no explicit size in that dimension
             // and child resolves to a percent of it (which would be meaningless).
+
+            // also check if neither parent nor child has value??
             auto isXIndefinite = [&](TreeNode* child) {
                 return !measured.explicitWidth.has_value() &&
-                    child->shared.width.has_value() && child->shared.width->unit == Unit::Percent;
+                    (!child->shared.width.has_value() || (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent));
             };
 
             auto isYIndefinite = [&](TreeNode* child) {
                 return !measured.explicitHeight.has_value() &&
-                    child->shared.height.has_value() && child->shared.height->unit == Unit::Percent;
+                    (child->shared.height.has_value() && child->shared.height->unit == Unit::Percent);
             };
 
             bool hasIndefiniteChild = false;
@@ -1004,31 +1055,52 @@ namespace NewArch {
                 }
             }
 
+            
+
             // Phase A+B: resolve intrinsic sizes for indefinite children
             if (hasIndefiniteChild) {
                 float maxIntrinsicX = minX;
                 float maxIntrinsicY = minY;
 
-                // Phase A: lay out only definite children to determine intrinsic content size
+                // std::println("childMaxWidth: {}", childMaxWidth);
+
+                // Phase A: lay out all children to determine intrinsic content size.
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
                     bool xIndef = isXIndefinite(childAsPtr);
                     bool yIndef = isYIndefinite(childAsPtr);
 
-                    if (xIndef && yIndef) continue;
+                    std::optional<float> savedWidth, savedHeight;
+                    if (xIndef) {
+                        savedWidth = childAsPtr->measured->explicitWidth;
+                        childAsPtr->measured->explicitWidth = std::nullopt;
+                    }
+                    if (yIndef) {
+                        savedHeight = childAsPtr->measured->explicitHeight;
+                        childAsPtr->measured->explicitHeight = std::nullopt;
+                    }
 
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
                     childConstraints.lineBoxes = boxes;
                     childConstraints.maxWidth = childMaxWidth;
                     childConstraints.inheritedProperties = constraints.inheritedProperties;
+                    bool isIndef = xIndef || yIndef;
+                    bool savedShrink = childConstraints.shrinkToFit;
+                    if (isIndef) childConstraints.shrinkToFit = true;
 
                     layoutPhase(childAsPtr, frameInfo, childConstraints);
                     auto& childLayout = *childAsPtr->layout;
 
-                    if (!xIndef) maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
-                    if (!yIndef) maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+                    maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
+                    maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+
+                    if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
+                    if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
+                    childConstraints.shrinkToFit = savedShrink;
+                    childConstraints.cursor = childLayout.siblingCursor;
                 }
+
 
                 // Phase B: lay out indefinite children with corrected sizes
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
@@ -1038,8 +1110,15 @@ namespace NewArch {
 
                     if (!xIndef && !yIndef) continue;
 
-                    if (xIndef) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
-                    if (yIndef) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
+                    // i wanted to resize the cross only ended up resizing... main too when its row. Need a better fix
+                    if (xIndef && flexDirection == FlexDirection::Col) {
+                        // std::println("new explicit width: {}", maxIntrinsicX - minX);
+                        childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
+                    }
+
+                    if (yIndef && flexDirection == FlexDirection::Row) {
+                        childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
+                    }
 
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
@@ -1048,11 +1127,15 @@ namespace NewArch {
                     childConstraints.inheritedProperties = constraints.inheritedProperties;
 
                     layoutPhase(childAsPtr, frameInfo, childConstraints);
+
+                    auto& childLayout = *childAsPtr->layout;
+                    childConstraints.cursor = childLayout.siblingCursor;
                 }
             }
 
             // Phase C: collect flex info from all children (using cached layout results)
             std::vector<size_t> inFlowIndices;
+
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto childAsPtr = node->children[i].get();
 
@@ -1062,6 +1145,7 @@ namespace NewArch {
                     childConstraints.lineFragments = frags;
                     childConstraints.lineBoxes = boxes;
                     childConstraints.maxWidth = childMaxWidth;
+
                     childConstraints.inheritedProperties = constraints.inheritedProperties;
 
                     layoutPhase(childAsPtr, frameInfo, childConstraints);
@@ -1100,6 +1184,8 @@ namespace NewArch {
             float availableCross = explicitCross.has_value()
                 ? (flex.axis.isRow ? layout.childConstraints.maxHeight : layout.childConstraints.maxWidth)
                 : naturalCross;
+
+            // std::println("maxw: {} natural cross: {} avail cross: {}\n\n", layout.childConstraints.maxWidth, naturalCross, availableCross);
 
             auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
             childConstraints.shrinkToFit = false;
@@ -1178,24 +1264,43 @@ namespace NewArch {
                 float maxIntrinsicX = minX;
                 float maxIntrinsicY = minY;
 
+                // Phase A: lay out all children; indefinite ones get shrink-to-fit
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
                     bool xIndef = isXIndefinite(childAsPtr);
                     bool yIndef = isYIndefinite(childAsPtr);
-                    if (xIndef && yIndef) continue;
+
+                    std::optional<float> savedWidth, savedHeight;
+                    if (xIndef) {
+                        savedWidth = childAsPtr->measured->explicitWidth;
+                        childAsPtr->measured->explicitWidth = std::nullopt;
+                    }
+                    if (yIndef) {
+                        savedHeight = childAsPtr->measured->explicitHeight;
+                        childAsPtr->measured->explicitHeight = std::nullopt;
+                    }
 
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
                     childConstraints.lineBoxes = boxes;
                     childConstraints.maxWidth = childMaxWidth;
                     childConstraints.inheritedProperties = constraints.inheritedProperties;
+                    bool isIndef = xIndef || yIndef;
+                    bool savedShrink = childConstraints.shrinkToFit;
+                    if (isIndef) childConstraints.shrinkToFit = true;
+
                     layoutPhase(childAsPtr, frameInfo, childConstraints);
                     auto& childLayout = *childAsPtr->layout;
 
-                    if (!xIndef) maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
-                    if (!yIndef) maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+                    maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
+                    maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+
+                    if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
+                    if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
+                    childConstraints.shrinkToFit = savedShrink;
                 }
 
+                // Phase B: lay out indefinite children with corrected sizes
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
                     bool xIndef = isXIndefinite(childAsPtr);
@@ -1473,6 +1578,7 @@ namespace NewArch {
                 offset.x += deltaX;
             }
         }
+
         if (dp.needsBottomResolution) {
             float newY = dp.containingBlockHeight - dp.marginBottom - layout.computedBox.height - dp.resolvedBottom;
             float deltaY = newY - layout.computedBox.y;

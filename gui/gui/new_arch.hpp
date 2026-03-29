@@ -418,7 +418,7 @@ namespace NewArch {
     };
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
-    ResolvedSize resolveSize(const SizeResolutionContext& positionContext);
+    ResolvedSize resolveSize(const SizeResolutionContext& sizeContext);
 
 
     using ChainID = uint64_t;
