@@ -1102,7 +1102,7 @@ namespace NewArch {
                 }
 
 
-                // Phase B: lay out indefinite children with corrected sizes
+                // Phase B: lay out indefinite children with corrected cross-axis sizes
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
                     bool xIndef = isXIndefinite(childAsPtr);
@@ -1110,15 +1110,14 @@ namespace NewArch {
 
                     if (!xIndef && !yIndef) continue;
 
-                    // i wanted to resize the cross only ended up resizing... main too when its row. Need a better fix
-                    if (xIndef && flexDirection == FlexDirection::Col) {
-                        // std::println("new explicit width: {}", maxIntrinsicX - minX);
-                        childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
-                    }
+                    // Only set the cross-axis dimension; main axis is handled by the flex algorithm
+                    bool setCrossWidth = xIndef && !flex.axis.isRow;
+                    bool setCrossHeight = yIndef && flex.axis.isRow;
 
-                    if (yIndef && flexDirection == FlexDirection::Row) {
-                        childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
-                    }
+                    if (!setCrossWidth && !setCrossHeight) continue;
+
+                    if (setCrossWidth) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
+                    if (setCrossHeight) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
 
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
@@ -1212,10 +1211,15 @@ namespace NewArch {
                 }
                 childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
 
-                // Cross-axis: apply placement offset and stretch override
+                // Cross-axis: apply placement offset and stretch override.
+                // Check the original spec (shared), not measured, because measured
+                // can be corrupted by Phase B from an earlier intermediate pass.
                 flex.axis.setCrossPosition(childConstraints, p.crossOffset);
                 if (p.crossSizeOverride.has_value()) {
-                    if (!flex.axis.crossExplicit(*childAsPtr->measured).has_value()) {
+                    bool hasUserCrossSize = flex.axis.isRow
+                        ? childAsPtr->shared.height.has_value()
+                        : childAsPtr->shared.width.has_value();
+                    if (!hasUserCrossSize) {
                         flex.axis.setCrossExplicit(*childAsPtr->measured, *p.crossSizeOverride);
                     }
                 }
@@ -1300,7 +1304,8 @@ namespace NewArch {
                     childConstraints.shrinkToFit = savedShrink;
                 }
 
-                // Phase B: lay out indefinite children with corrected sizes
+                // Phase B: lay out indefinite children with corrected sizes.
+                // Save/restore measured so modifications don't leak to subsequent passes.
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
                     bool xIndef = isXIndefinite(childAsPtr);
