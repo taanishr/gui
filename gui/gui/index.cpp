@@ -110,6 +110,7 @@ auto index() -> void {
    
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
     .display(NewArch::Display::Flex)
+    .paddingTop(NewArch::Size::px(32.0))
     .flexDirection(NewArch::FlexDirection::Col)
 (
     // Header
