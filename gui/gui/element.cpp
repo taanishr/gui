@@ -654,6 +654,7 @@ namespace NewArch {
 
     struct FlexLine {
         std::vector<float> childSizes;
+        std::vector<float> minMainSizes;
         std::vector<float> shrinkScaled;
         std::vector<float> growthScaled;
 
@@ -662,8 +663,9 @@ namespace NewArch {
         float growthScaledTotal{};
         float maxCrossSize{};
 
-        void addChild(float mainSize, float crossSize, float grow, float shrink) {
+        void addChild(float mainSize, float crossSize, float grow, float shrink, float minMainSize = 0.0f) {
             childSizes.push_back(mainSize);
+            minMainSizes.push_back(minMainSize);
             totalSize += mainSize;
 
             if (shrink > 0.0f) {
@@ -699,7 +701,8 @@ namespace NewArch {
                 if (space > 0 && growthScaled[i] > 0) {
                     result.sizes.push_back(childSizes[i] + (growthScaled[i] / growthScaledTotal) * space);
                 } else if (space < 0 && shrinkScaled[i] > 0) {
-                    result.sizes.push_back(childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space);
+                    float shrunk = childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space;
+                    result.sizes.push_back(std::max(shrunk, minMainSizes[i]));
                 } else {
                     result.sizes.push_back(childSizes[i]);
                 }
@@ -799,12 +802,12 @@ namespace NewArch {
         {}
 
         void addChild(const LayoutResult& layout, float grow, float shrink,
-                      AlignSelf selfAlign, float avMain) {
+                      AlignSelf selfAlign, float avMain, float minMainSize = 0.0f) {
             float childMain = axis.mainSize(layout);
 
             float childCross = axis.crossSize(layout);
 
-            
+
             availableMain = avMain;
 
             if (flexWrap != FlexWrap::NoWrap && currentLine.count() > 0) {
@@ -815,7 +818,7 @@ namespace NewArch {
                 }
             }
 
-            currentLine.addChild(childMain, childCross, grow, shrink);
+            currentLine.addChild(childMain, childCross, grow, shrink, minMainSize);
             childAlignSelfs.push_back(selfAlign);
             childCrossSizes.push_back(childCross);
         }
@@ -1145,7 +1148,14 @@ namespace NewArch {
                 float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
                 float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
                 auto selfAlign = getAlignSelf(childAsPtr);
-                flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, avMain);
+
+                bool hasExplicitMain = flex.axis.isRow
+                    ? childAsPtr->shared.width.has_value()
+                    : childAsPtr->shared.height.has_value();
+                    
+                float minMain = hasExplicitMain ? 0.0f : flex.axis.mainSize(childLayout);
+
+                flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, avMain, minMain);
                 inFlowIndices.push_back(i);
             }
 

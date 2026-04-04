@@ -128,6 +128,7 @@ build_cpp() {
     LLVM_PREFIX="$(brew --prefix llvm)"
 
     local OBJS=()
+    local SRCS_TO_COMPILE=()
     local any_rebuilt=0
 
     for src in gui/*.cpp; do
@@ -136,20 +137,42 @@ build_cpp() {
         base="$(basename "$src" .cpp)"
         obj="$OBJ_DIR/${base}.o"
         dep="$OBJ_DIR/${base}.d"
+        OBJS+=("$obj")
 
         if needs_rebuild "$src" "$obj" "$dep"; then
+            SRCS_TO_COMPILE+=("$src")
+            any_rebuilt=1
+        fi
+    done
+
+    if [[ ${#SRCS_TO_COMPILE[@]} -gt 0 ]]; then
+        local NPROC
+        NPROC="$(sysctl -n hw.logicalcpu)"
+        echo "Compiling ${#SRCS_TO_COMPILE[@]} file(s) with $NPROC jobs..."
+
+        local fail_marker="$OBJ_DIR/.compile_failed"
+        rm -f "$fail_marker"
+
+        printf '%s\0' "${SRCS_TO_COMPILE[@]}" | xargs -0 -P "$NPROC" -I{} bash -c '
+            src="$1"
+            base="$(basename "$src" .cpp)"
+            obj="'"$OBJ_DIR"'/${base}.o"
+            dep="'"$OBJ_DIR"'/${base}.d"
             echo "  compile: $src"
-            if ! "$LLVM_PREFIX/bin/clang++" "${CXXFLAGS[@]}" \
-                -I"$LLVM_PREFIX/include/c++/v1" \
+            if ! "'"$LLVM_PREFIX"'/bin/clang++" '"$(printf " %q" "${CXXFLAGS[@]}")"' \
+                -I"'"$LLVM_PREFIX"'/include/c++/v1" \
                 -MMD -MF "$dep" \
                 -c "$src" -o "$obj"; then
                 echo "Error: compile failed for $src"
-                return 1
+                touch "'"$fail_marker"'"
             fi
-            any_rebuilt=1
+        ' _ {}
+
+        if [[ -f "$fail_marker" ]]; then
+            rm -f "$fail_marker"
+            return 1
         fi
-        OBJS+=("$obj")
-    done
+    fi
 
     local bin="$BIN_OUT/$BINARY_NAME"
     if [[ $any_rebuilt -eq 1 || ! -f "$bin" ]]; then

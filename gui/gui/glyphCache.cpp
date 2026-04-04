@@ -100,13 +100,10 @@ const Glyph& GlyphCache::retrieve(const FontName& font, uint32_t codepoint)
         auto fontFace = fontFaces[font];
 
         FT_UInt glyphIndex = FT_Get_Char_Index(fontFace, codepoint);
-
-        // FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
         
         if (glyphIndex != 0) {
             FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
         }else {
-            std::println("fallback");
             fontFace = fontFaces["fallback"];
             FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
         }
