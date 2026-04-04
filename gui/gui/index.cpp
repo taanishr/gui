@@ -45,7 +45,7 @@ auto index() -> void {
     //         .alignItems(NewArch::AlignItems::Center)
     //         .justifyContent(NewArch::JustifyContent::Center)
     //     (
-    //         text("Header").fontSize(S::pt(20)).color(simd_float4{1,1,1,1})
+    //         text(U"Header").fontSize(S::pt(20)).color(simd_float4{1,1,1,1})
     //     ),
 
     //     // Left sidebar
@@ -54,7 +54,7 @@ auto index() -> void {
     //         .cornerRadius(S::px(8))
     //         .padding(S::px(12))
     //     (
-    //         text("Sidebar").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+    //         text(U"Sidebar").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
     //     ),
 
     //     // Main content
@@ -63,7 +63,7 @@ auto index() -> void {
     //         .cornerRadius(S::px(8))
     //         .padding(S::px(12))
     //     (
-    //         text("Main Content").fontSize(S::pt(14)).color(simd_float4{0.1,0.1,0.1,1})
+    //         text(U"Main Content").fontSize(S::pt(14)).color(simd_float4{0.1,0.1,0.1,1})
     //     ),
 
     //     // Right sidebar
@@ -72,7 +72,7 @@ auto index() -> void {
     //         .cornerRadius(S::px(8))
     //         .padding(S::px(12))
     //     (
-    //         text("Panel").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+    //         text(U"Panel").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
     //     ),
 
     //     // Footer — spans all 3 columns
@@ -83,7 +83,7 @@ auto index() -> void {
     //         .alignItems(NewArch::AlignItems::Center)
     //         .justifyContent(NewArch::JustifyContent::Center)
     //     (
-    //         text("Footer").fontSize(S::pt(14)).color(simd_float4{1,1,1,1})
+    //         text(U"Footer").fontSize(S::pt(14)).color(simd_float4{1,1,1,1})
     //     )
     // );
 
@@ -101,8 +101,8 @@ auto index() -> void {
     //             .color(simd_float4{1.0,1.0,1.0,1.0})
     //             .display(NewArch::Display::Flex)
     //         (
-    //             text("Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-    //             text("UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+    //             text(U"Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+    //             text(U"UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
     //         )
     //     )
     // );
@@ -136,7 +136,7 @@ auto index() -> void {
                 .alignItems(NewArch::AlignItems::Center)
                 .justifyContent(NewArch::JustifyContent::Center)
             (
-                text("=").fontSize(NewArch::Size::pt(18)).color(simd_float4{0.5,0.5,0.5,1.0})
+                text(U"=").fontSize(NewArch::Size::pt(18)).color(simd_float4{0.5,0.5,0.5,1.0})
             ),
             div()
                 .color(simd_float4{0.96,0.96,0.96,1.0})
@@ -147,7 +147,7 @@ auto index() -> void {
                 .display(NewArch::Display::Flex)
                 .alignItems(NewArch::AlignItems::Center)
             (
-                text("You: San Francisco").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+                text(U"You: San Francisco").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
             )
         ),
         // Right
@@ -166,7 +166,7 @@ auto index() -> void {
                 .display(NewArch::Display::Flex)
                 .alignItems(NewArch::AlignItems::Center)
             (
-                text("Import").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+                text(U"Import").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
             ),
             div()
                 .color(simd_float4{0.1,0.1,0.1,1.0})
@@ -177,7 +177,7 @@ auto index() -> void {
                 .display(NewArch::Display::Flex)
                 .alignItems(NewArch::AlignItems::Center)
             (
-                text("Add trip").fontSize(NewArch::Size::pt(13)).color(simd_float4{1.0,1.0,1.0,1.0})
+                text(U"Add trip").fontSize(NewArch::Size::pt(13)).color(simd_float4{1.0,1.0,1.0,1.0})
             )
         )
     ),
@@ -198,7 +198,7 @@ auto index() -> void {
             .flexGap(NewArch::Size::px(4))
             .padding(NewArch::Size::px(12))
         (
-            text("TRIPS").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"TRIPS").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
             div()
                 .width(NewArch::Size::percent(1.0))
                 .color(simd_float4{0.96,0.96,0.96,1.0})
@@ -211,8 +211,8 @@ auto index() -> void {
                 .flexDirection(NewArch::FlexDirection::Col)
                 .flexGap(NewArch::Size::px(2))
             (
-                text("Tokyo & Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text("Mar 10 - Mar 24").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                text(U"Mar 10 - Mar 24").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
             ),
             div()
                 .width(NewArch::Size::percent(1.0))
@@ -226,8 +226,8 @@ auto index() -> void {
                 .flexDirection(NewArch::FlexDirection::Col)
                 .flexGap(NewArch::Size::px(2))
             (
-                text("NYC Weekend").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text("Apr 4 - Apr 7").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                text(U"NYC Weekend").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                text(U"Apr 4 - Apr 7").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
             ),
             div()
                 .width(NewArch::Size::percent(1.0))
@@ -241,8 +241,8 @@ auto index() -> void {
                 .flexDirection(NewArch::FlexDirection::Col)
                 .flexGap(NewArch::Size::px(2))
             (
-                text("London + Paris").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text("Jun 1 - Jun 12").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                text(U"London + Paris").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                text(U"Jun 1 - Jun 12").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
             )
         ),
         // Main content
@@ -267,8 +267,8 @@ auto index() -> void {
                     .flexDirection(NewArch::FlexDirection::Col)
                     .flexGap(NewArch::Size::px(2))
                 (
-                    text("Tokyo & Kyoto").fontSize(NewArch::Size::pt(20)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text("Mar 10 - Mar 24 · 14 days").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+                    text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(20)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                    text(U"Mar 10 - Mar 24 · 14 days").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
                 ),
                 div()
                     .color(simd_float4{0.96,0.96,0.96,1.0})
@@ -279,7 +279,7 @@ auto index() -> void {
                     .display(NewArch::Display::Flex)
                     .alignItems(NewArch::AlignItems::Center)
                 (
-                    text("Edit").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+                    text(U"Edit").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
                 )
             ),
             // Flight
@@ -297,8 +297,8 @@ auto index() -> void {
                     .flexDirection(NewArch::FlexDirection::Col)
                     .flexGap(NewArch::Size::px(4))
                 (
-                    text("SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                    ,text("Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                    text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    ,text(U"Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
                 ),
                 div()
                     .color(simd_float4{0.93,0.88,1.0,1.0})
@@ -309,7 +309,7 @@ auto index() -> void {
                     .display(NewArch::Display::Flex)
                     .alignItems(NewArch::AlignItems::Center)
                 (
-                    text("[Flight]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.4,0.3,1.0,1.0})
+                    text(U"[Flight]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.4,0.3,1.0,1.0})
                 )
             ),
             // Hotel
@@ -327,8 +327,8 @@ auto index() -> void {
                     .flexDirection(NewArch::FlexDirection::Col)
                     .flexGap(NewArch::Size::px(4))
                 (
-                    text("Park Hyatt Tokyo").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text("Mar 11 - Mar 17 · 6 nights").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                    text(U"Park Hyatt Tokyo").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                    text(U"Mar 11 - Mar 17 · 6 nights").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
                 ),
                 div()
                     .color(simd_float4{0.85,0.93,1.0,1.0})
@@ -339,7 +339,7 @@ auto index() -> void {
                     .display(NewArch::Display::Flex)
                     .alignItems(NewArch::AlignItems::Center)
                 (
-                    text("[Hotel]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.2,0.6,0.9,1.0})
+                    text(U"[Hotel]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.2,0.6,0.9,1.0})
                 )
             ),
             // Train
@@ -357,8 +357,8 @@ auto index() -> void {
                     .flexDirection(NewArch::FlexDirection::Col)
                     .flexGap(NewArch::Size::px(4))
                 (
-                    text("Tokyo -> Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text("Mar 17 · Shinkansen · 2h 15m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+                    text(U"Tokyo -> Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                    text(U"Mar 17 · Shinkansen · 2h 15m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
                 ),
                 div()
                     .color(simd_float4{0.85,1.0,0.9,1.0})
@@ -369,7 +369,7 @@ auto index() -> void {
                     .display(NewArch::Display::Flex)
                     .alignItems(NewArch::AlignItems::Center)
                 (
-                    text("[Train]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.1,0.7,0.4,1.0})
+                    text(U"[Train]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.1,0.7,0.4,1.0})
                 )
             )
         )
@@ -390,8 +390,8 @@ auto index() -> void {
                 .alignItems(NewArch::AlignItems::Center)
                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
             (
-                text("Flight Details").fontSize(NewArch::Size::pt(14)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text("x").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0})
+                text(U"Flight Details").fontSize(NewArch::Size::pt(14)).color(simd_float4{0.1,0.1,0.1,1.0}),
+                text(U"x").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0})
             ),
             div()
                 .color(simd_float4{0.0,0.0,0.0,0.0})
@@ -404,48 +404,48 @@ auto index() -> void {
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 ),
                 div()
                     .color(simd_float4{0.0,0.0,0.0,0.0})
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Departs").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("10:45 AM").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Departs").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"10:45 AM").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 ),
                 div()
                     .color(simd_float4{0.0,0.0,0.0,0.0})
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Arrives").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("3:15 PM +1").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Arrives").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"3:15 PM +1").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 ),
                 div()
                     .color(simd_float4{0.0,0.0,0.0,0.0})
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Duration").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("11h 30m").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Duration").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"11h 30m").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 ),
                 div()
                     .color(simd_float4{0.0,0.0,0.0,0.0})
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Seat").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("42A").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Seat").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"42A").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 ),
                 div()
                     .color(simd_float4{0.0,0.0,0.0,0.0})
                     .display(NewArch::Display::Flex)
                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
                 (
-                    text("Class").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text("Economy").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    text(U"Class").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                    text(U"Economy").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                 )
             ),
             div()
@@ -457,12 +457,80 @@ auto index() -> void {
                 .flexDirection(NewArch::FlexDirection::Col)
                 .flexGap(NewArch::Size::px(4))
             (
-                text("Local time at destination").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                text("3:15 PM JST (UTC+9)").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                text(U"Local time at destination").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+                text(U"3:15 PM JST (UTC+9)").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
             )
         )
     )
 );
+
+//    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
+//         .display(NewArch::Display::Flex)
+//         .alignItems(NewArch::AlignItems::Center)
+//         .justifyContent(NewArch::JustifyContent::Center)
+//     (
+//         div()
+//             .color(simd_float4{1.0,1.0,1.0,1.0})
+//             .cornerRadius(NewArch::Size::px(16))
+//             .padding(NewArch::Size::px(12))
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .alignItems(NewArch::AlignItems::Center) // expands maxWidth for... some reason?
+//             .flexGap(NewArch::Size::px(12))
+//         (
+//             image(U"/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
+//                 .cornerRadius(NewArch::Size::percent(0.5))
+//             ,text(U"Sarah Johnson")
+//                 .fontSize(NewArch::Size::pt(18))
+//                 .color(simd_float4{0.1,0.1,0.1,1.0})
+//             ,text(U"Product Designer @ Figma")
+//                 .fontSize(NewArch::Size::pt(13))
+//                 .color(simd_float4{0.5,0.5,0.5,1.0})
+//             ,//
+//             div()
+//                 .width(NewArch::Size::percent(1.0)) // this is broken now... percent sizing leads to this being full width of grandparent when html doesnt do that
+//                 .height(NewArch::Size::px(50))
+//                 .color(simd_float4{0.0,0.0,0.0,0.0})
+//                 .display(NewArch::Display::Flex)
+//                 .justifyContent(NewArch::JustifyContent::SpaceAround)
+//             (
+//                 div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"284").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                     ,text(U"Posts").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 )
+//                 ,div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"12.4k").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Followers").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 ),
+//                 div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"891").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Following").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 )
+//             )
+//             ,
+//             div(NewArch::Size::px(120), NewArch::Size::px(40), simd_float4{0.4,0.3,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(20))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::Center)
+//                 .addEventListener(EventType::MouseDown, onClick)
+//             (
+//                 text(U"Follow").fontSize(NewArch::Size::pt(14)).color(simd_float4{1.0,1.0,1.0,1.0})
+//             )
+//         )
+//     );
 
 }
 

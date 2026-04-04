@@ -29,7 +29,7 @@ namespace NewArch {
         return builder;
     }
 
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text,
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::u32string& text,
                  Size fontSize, simd_float4 color,
                  const std::string& font)
     {

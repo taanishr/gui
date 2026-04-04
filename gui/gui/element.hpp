@@ -249,14 +249,7 @@ namespace NewArch {
         void render(MTL::RenderCommandEncoder* encoder); 
         
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
-    private:
-        Constraints rootConstraints; // root constraints;
-        simd_float2 rootCursor; // root cursor
-        std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;
-        ChainID nextChainId = 0;
-
-        std::unique_ptr<TreeNode> elementTree;
-        LayoutEngine layoutEngine;
+        
 
         void measurePhase(TreeNode* node, Constraints& constraints);
         void atomizePhase(TreeNode* node, Constraints& constraints);
@@ -270,6 +263,14 @@ namespace NewArch {
 
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
+    private:
+        Constraints rootConstraints; // root constraints;
+        simd_float2 rootCursor; // root cursor
+        std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;
+        ChainID nextChainId = 0;
+
+        std::unique_ptr<TreeNode> elementTree;
+        LayoutEngine layoutEngine;
     };
 
 }

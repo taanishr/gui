@@ -11,6 +11,7 @@
 #include <print>
 #include <ranges>
 #include <simd/vector_types.h>
+#include <string>
 #include <unordered_map>
 #include <ranges>
 
@@ -44,11 +45,11 @@ namespace NewArch {
     GridPlacement getGridPlacement(TreeNode* node) { return node->shared.gridPlacement; }
 
     // Element-specific requests still use the request system
-    std::optional<std::string> getText(TreeNode* node) {
+    std::optional<std::u32string> getText(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "text"}}};
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
-            return std::any_cast<std::string>(resp);
+            return std::any_cast<std::u32string>(resp);
         }
         return std::nullopt;
     }
@@ -593,6 +594,8 @@ namespace NewArch {
         bool isRow;
         bool isReversed;
 
+        AxisHelper() {};
+
         AxisHelper(FlexDirection dir):
             isRow{dir == FlexDirection::Row || dir == FlexDirection::RowReverse},
             isReversed{dir == FlexDirection::RowReverse || dir == FlexDirection::ColReverse}
@@ -783,9 +786,11 @@ namespace NewArch {
             float mainOffset;
             float crossOffset;
             float mainSize;
-            std::optional<float> crossSizeOverride; // for stretch
+            std::optional<float> crossSizeOverride; 
             bool needsCrossShrinkToFit{false};
         };
+
+        FlexLayout() {}
 
         FlexLayout(FlexDirection dir, JustifyContent jc, AlignItems ai,
                    AlignContent ac, FlexWrap wrap):
@@ -850,7 +855,6 @@ namespace NewArch {
                 lineCrossSizes[0] = availableCross;
                 lineCrossOffsets[0] = 0.0f;
             } else {
-                // Multi-line: compute natural cross sizes, then distribute via align-content
                 float totalNaturalCross = 0;
                 for (size_t li = 0; li < lineCount; ++li) {
                     lineCrossSizes[li] = lines[li].maxCrossSize;
@@ -921,16 +925,7 @@ namespace NewArch {
                     switch (effectiveAlign) {
                         case AlignItems::Stretch:
                             p.crossOffset = lineCrossBase;
-
-                            if (abs(lineCross - 42.0) < 1.0) {
-                                // lineCross = 70;
-                            }
-
                             p.crossSizeOverride = lineCross;
-                            if (p.crossSizeOverride.has_value()) {
-                                // std::println("override: {}", *p.crossSizeOverride);
-                            }
-                            
                             break;
                         case AlignItems::FlexStart:
                             p.crossOffset = lineCrossBase;
@@ -971,9 +966,12 @@ namespace NewArch {
 
         constraints.resolvedMargins = prelayout.resolvedMargins;
 
-        if ((node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) ||
-           ( node->shared.height.has_value() && node->shared.height->unit == Unit::Percent)
-        
+        // Re-resolve percent sizes from current constraints, but only in final layout
+        // passes (shrinkToFit = false). During intermediate measurements (shrinkToFit = true),
+        // maxWidth comes from an indefinite ancestor and would give wrong values.
+        if (!constraints.shrinkToFit &&
+            ((node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) ||
+             (node->shared.height.has_value() && node->shared.height->unit == Unit::Percent))
         ) {
             SizeResolutionContext sizeCtx {
                 .position = node->shared.position,
@@ -1017,7 +1015,6 @@ namespace NewArch {
         auto display = getDisplay(node);
 
         if (display == Display::Flex) {
-
             auto flexDirection = getFlexDirection(node);
             auto justifyContent = getJustifyContent(node);
             auto alignItems = getAlignItems(node);
@@ -1033,13 +1030,9 @@ namespace NewArch {
             float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
             float childMaxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
 
-            // Per-axis indefinite check: parent has no explicit size in that dimension
-            // and child resolves to a percent of it (which would be meaningless).
-
-            // also check if neither parent nor child has value??
             auto isXIndefinite = [&](TreeNode* child) {
                 return !measured.explicitWidth.has_value() &&
-                    (!child->shared.width.has_value() || (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent));
+                    (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent);
             };
 
             auto isYIndefinite = [&](TreeNode* child) {
@@ -1055,15 +1048,11 @@ namespace NewArch {
                 }
             }
 
-            
-
             // Phase A+B: resolve intrinsic sizes for indefinite children
             if (hasIndefiniteChild) {
                 float maxIntrinsicX = minX;
                 float maxIntrinsicY = minY;
-
-                // std::println("childMaxWidth: {}", childMaxWidth);
-
+                
                 // Phase A: lay out all children to determine intrinsic content size.
                 for (uint64_t i = 0; i < node->children.size(); ++i) {
                     auto childAsPtr = node->children[i].get();
@@ -1110,7 +1099,7 @@ namespace NewArch {
 
                     if (!xIndef && !yIndef) continue;
 
-                    // Only set the cross-axis dimension; main axis is handled by the flex algorithm
+
                     bool setCrossWidth = xIndef && !flex.axis.isRow;
                     bool setCrossHeight = yIndef && flex.axis.isRow;
 
@@ -1119,6 +1108,7 @@ namespace NewArch {
                     if (setCrossWidth) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
                     if (setCrossHeight) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
 
+                    // relayout step really only covers edge cases with text wrapping
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
                     childConstraints.lineBoxes = boxes;
@@ -1138,7 +1128,6 @@ namespace NewArch {
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto childAsPtr = node->children[i].get();
 
-                // Children not yet laid out (no indefinite children existed) need layout now
                 if (!hasIndefiniteChild) {
                     auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
                     childConstraints.lineFragments = frags;
@@ -1184,8 +1173,6 @@ namespace NewArch {
                 ? (flex.axis.isRow ? layout.childConstraints.maxHeight : layout.childConstraints.maxWidth)
                 : naturalCross;
 
-            // std::println("maxw: {} natural cross: {} avail cross: {}\n\n", layout.childConstraints.maxWidth, naturalCross, availableCross);
-
             auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
             childConstraints.shrinkToFit = false;
 
@@ -1200,7 +1187,6 @@ namespace NewArch {
                 childConstraints.lineBoxes = boxes;
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
 
-                // Main axis
                 flex.axis.setMainPosition(childConstraints, p.mainOffset);
                 flex.axis.setMainMaxSize(childConstraints, p.mainSize);
                 flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
