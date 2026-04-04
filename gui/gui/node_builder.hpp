@@ -334,7 +334,7 @@ namespace NewArch {
 
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div();
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color);
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text, 
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::u32string& text, 
                  Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 
                  const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,

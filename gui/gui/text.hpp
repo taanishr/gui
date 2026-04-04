@@ -61,7 +61,7 @@ namespace NewArch {
             return std::any{};
         }
 
-        std::string text;
+        std::u32string text;
         std::string font;
         simd_float4 color;
         Size fontSize;
@@ -237,10 +237,10 @@ namespace NewArch {
 
             
             for (size_t i = 0; i < desc.text.size(); ++i) {
-                char ch = desc.text[i];
+                uint32_t codepoint = desc.text[i];
                 Atom atom;
 
-                if (ch == '\n') {
+                if (codepoint == '\n') {
                     metadata.push_back(0); 
                     metadata.push_back(0); 
                     
@@ -253,7 +253,7 @@ namespace NewArch {
                     
                     atoms.push_back(atom);
                     continue;
-                }else if (ch == ' '){
+                }else if (codepoint){
                     atom.canPlaceOnNewLine = true;
                 }
 
@@ -263,7 +263,7 @@ namespace NewArch {
                     fontSize = desc.fontSize.resolveOr(0.0);
                 }
 
-                GlyphQuery glyphQuery { ch, desc.font };
+                GlyphQuery glyphQuery { codepoint, desc.font };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;

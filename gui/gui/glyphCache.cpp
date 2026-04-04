@@ -6,6 +6,7 @@
 //
 
 #include "glyphCache.hpp"
+#include <print>
 
 std::size_t GlyphFaceHash::operator()(const FontName& fontName) const
 {
@@ -16,7 +17,7 @@ std::size_t GlyphFaceHash::operator()(const FontName& fontName) const
     return hv;
 }
 
-std::size_t GlyphCacheHash::operator()(const std::pair<FontName, char>& fontKey) const
+std::size_t GlyphCacheHash::operator()(const std::pair<FontName, uint32_t>& fontKey) const
 {
     std::size_t hv = 0;
     
@@ -27,7 +28,7 @@ std::size_t GlyphCacheHash::operator()(const std::pair<FontName, char>& fontKey)
 }
 
 bool GlyphQuery::operator==(const GlyphQuery& other) const {
-    return ch == other.ch
+    return codepoint == other.codepoint
         && fontName == other.fontName;
 }
 
@@ -35,7 +36,7 @@ std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
 {
     std::size_t hv = 0;
     
-    hash_combine(hv, queryKey.ch);
+    hash_combine(hv, queryKey.codepoint);
     hash_combine(hv, queryKey.fontName);
     
     return hv;
@@ -45,6 +46,13 @@ std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
 GlyphCache::GlyphCache()
 {
     FT_Init_FreeType(&(this->ft));
+
+    const std::string& fallbackFont = "/System/Library/Fonts/Supplemental/Arial Unicode.ttf";
+    FT_Face fallbackFace = nullptr;
+    FT_New_Face(this->ft, fallbackFont.c_str(), 0, &fallbackFace);
+    FT_Set_Pixel_Sizes(fallbackFace, 0, BASE_PIXEL_HEIGHT);
+
+    fontFaces["fallback"] = fallbackFace;
 }
 
 
@@ -56,12 +64,12 @@ GlyphCache::~GlyphCache() {
 }
 
 const Glyph& GlyphCache::retrieve(GlyphQuery glyphQuery) {
-    return GlyphCache::retrieve(glyphQuery.fontName, glyphQuery.ch);
+    return GlyphCache::retrieve(glyphQuery.fontName, glyphQuery.codepoint);
 }
                                   
-const Glyph& GlyphCache::retrieve(const FontName& font, char ch)
+const Glyph& GlyphCache::retrieve(const FontName& font, uint32_t codepoint)
 {
-    GlyphQuery query{ch, font};
+    GlyphQuery query{codepoint, font};
 
     {
         std::shared_lock<std::shared_mutex> readLock(cacheMutex);
@@ -86,14 +94,24 @@ const Glyph& GlyphCache::retrieve(const FontName& font, char ch)
             FT_New_Face(this->ft, font.c_str(), 0, &newFace);
             FT_Set_Pixel_Sizes(newFace, 0, BASE_PIXEL_HEIGHT);
             
-            fontFaces[{font}] = newFace;
+            fontFaces[font] = newFace;
         }
         
-        auto fontFace = fontFaces[{font}];
+        auto fontFace = fontFaces[font];
 
-        FT_Load_Char(fontFace, ch, FT_LOAD_DEFAULT);
+        FT_UInt glyphIndex = FT_Get_Char_Index(fontFace, codepoint);
+
+        // FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
         
-        if (ch != ' ') {
+        if (glyphIndex != 0) {
+            FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
+        }else {
+            std::println("fallback");
+            fontFace = fontFaces["fallback"];
+            FT_Load_Char(fontFace, codepoint, FT_LOAD_DEFAULT);
+        }
+        
+        if (codepoint != ' ') {
             auto glyph = processContours(fontFace);
             glyph.metrics = fontFace->glyph->metrics;
             cache[query] = glyph;
