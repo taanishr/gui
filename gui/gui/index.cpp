@@ -122,6 +122,7 @@ auto index() -> void {
         .paddingRight(NewArch::Size::px(16))
         .borderColor(simd_float4{0.88,0.88,0.88,1.0})
         .borderWidth(NewArch::Size::px(1.0))
+        .flexShrink(NewArch::Size::px(0.0))
     (
         // Left
         div()
@@ -189,7 +190,7 @@ auto index() -> void {
     (
         // Sidebar
         div()
-            .width(NewArch::Size::px(200.0))
+            .width(NewArch::Size::px(160.0))
             .color(simd_float4{1.0,1.0,1.0,1.0})
             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
             .borderWidth(NewArch::Size::px(1.0))
@@ -197,6 +198,7 @@ auto index() -> void {
             .flexDirection(NewArch::FlexDirection::Col)
             .flexGap(NewArch::Size::px(4))
             .padding(NewArch::Size::px(12))
+            .flexShrink(NewArch::Size::px(0.0))
         (
             text(U"TRIPS").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
             div()
@@ -375,7 +377,7 @@ auto index() -> void {
         )
         // Detail panel
         ,div()
-            .width(NewArch::Size::px(280.0))
+            .width(NewArch::Size::px(160.0))
             .color(simd_float4{1.0,1.0,1.0,1.0})
             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
             .borderWidth(NewArch::Size::px(1.0))
@@ -383,6 +385,7 @@ auto index() -> void {
             .flexDirection(NewArch::FlexDirection::Col)
             .flexGap(NewArch::Size::px(16))
             .padding(NewArch::Size::px(16))
+            .flexShrink(NewArch::Size::px(0.0))
         (
             div()
                 .color(simd_float4{0.0,0.0,0.0,0.0})
