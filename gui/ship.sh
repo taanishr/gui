@@ -47,6 +47,8 @@ SDK_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/D
 METAL_CPP="/Users/treja/metal-cpp"
 METAL_CPP_EXT="/Users/treja/metal-cpp-extensions"
 FREETYPE_INC="/opt/homebrew/opt/freetype/include/freetype2"
+RESVG_INC="/opt/homebrew/opt/resvg/include/resvg"
+LIB_RESVG="/opt/homebrew/opt/resvg/lib"
 
 LIB_FREETYPE="/opt/homebrew/Cellar/freetype/2.13.3/lib/libfreetype.a"
 LIB_MTK_EXT="/Users/treja/projects/gui/MTK-Extensions-Library/MTK-Extensions"
@@ -62,6 +64,7 @@ CXXFLAGS=(
     -I"$METAL_CPP"
     -I"$METAL_CPP_EXT"
     -I"$FREETYPE_INC"
+    -I"$RESVG_INC"
     -O0 -g  # debug build
 )
 
@@ -186,6 +189,9 @@ build_cpp() {
             "$LIB_MTK_EXT" "$LIB_APPKIT_EXT" "$LIB_FREETYPE" \
             -L"$LLVM_PREFIX/lib/c++" \
             -Wl,-rpath,"$LLVM_PREFIX/lib/c++" \
+            -Wl,-rpath,"$LLVM_PREFIX/lib/c++" \
+            -L"$LIB_RESVG" -lresvg \
+            -Wl,-rpath,"$LIB_RESVG" \
             -L/opt/homebrew/lib -lpng -lbz2 -lz \
             -framework Metal -framework MetalKit -framework Foundation \
             -framework QuartzCore -framework AppKit -framework Cocoa \

@@ -5,6 +5,7 @@
 #include "events.hpp"
 #include "renderer.hpp"
 #include "image.hpp"
+#include "svg.hpp"
 #include "text.hpp"
 #include "new_arch.hpp"
 #include <algorithm>
@@ -338,5 +339,7 @@ namespace NewArch {
                  Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 
                  const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
+                    Size width = Size::px(0), Size height = Size::px(0));
+    NodeBuilder<SVG<SVGStorage>, SVGProcessor<SVGStorage, SVGUniforms>> svg(const std::string& path,
                     Size width = Size::px(0), Size height = Size::px(0));
 }

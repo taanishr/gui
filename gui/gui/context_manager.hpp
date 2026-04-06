@@ -3,6 +3,7 @@
 #include "new_arch.hpp"
 #include "div.hpp"
 #include "image.hpp"
+#include "svg.hpp"
 #include "text.hpp"
 #include <mutex>
 
@@ -18,4 +19,5 @@ namespace NewArch {
     DivProcessor<DivStorage, DivUniforms>& getDivProcessor(UIContext& ctx);
     ImageProcessor<ImageStorage, ImageUniforms>& getImageProcessor(UIContext& ctx);
     TextProcessor<TextStorage, TextUniforms>& getTextProcessor(UIContext& ctx);
+    SVGProcessor<SVGStorage, SVGUniforms>& getSVGProcessor(UIContext& ctx);
 }
