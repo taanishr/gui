@@ -999,6 +999,11 @@ namespace NewArch {
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         auto childConstraints = layout.childConstraints;
+        float parentMaxWidth  = childConstraints.maxWidth;
+        float parentMaxHeight = childConstraints.maxHeight;
+        float originX         = childConstraints.origin.x;
+        float originY         = childConstraints.origin.y;
+
         auto position = getPosition(node);
         if (position != Position::Static) {
             childConstraints.absoluteContainingBlock = {
@@ -1010,10 +1015,10 @@ namespace NewArch {
             childConstraints.absoluteContainingBlock = constraints.absoluteContainingBlock;
         }
 
-        float minY = layout.childConstraints.origin.y;
-        float maxY = layout.childConstraints.origin.y;
-        float minX = layout.childConstraints.origin.x;
-        float maxX = layout.childConstraints.origin.x;
+        float minY = originY;
+        float maxY = originY;
+        float minX = originX;
+        float maxX = originX;
 
         auto display = getDisplay(node);
 
@@ -1090,7 +1095,7 @@ namespace NewArch {
                     if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
                     if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
                     childConstraints.shrinkToFit = savedShrink;
-                    childConstraints.cursor = childLayout.siblingCursor;
+                    // childConstraints.cursor = childLayout.siblingCursor;
                 }
 
 
@@ -1121,7 +1126,7 @@ namespace NewArch {
                     layoutPhase(childAsPtr, frameInfo, childConstraints);
 
                     auto& childLayout = *childAsPtr->layout;
-                    childConstraints.cursor = childLayout.siblingCursor;
+                    // childConstraints.cursor = childLayout.siblingCursor;
                 }
             }
 
@@ -1164,7 +1169,7 @@ namespace NewArch {
             totalSizeFallback += flex.currentLine.totalSize;
             auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
             float availableMain = explicitMain.has_value()
-                ? (flex.axis.isRow ? layout.childConstraints.maxWidth : layout.childConstraints.maxHeight)
+                ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
                 : totalSizeFallback;
             flex.availableMain = availableMain;
 
@@ -1180,7 +1185,7 @@ namespace NewArch {
             for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
             auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
             float availableCross = explicitCross.has_value()
-                ? (flex.axis.isRow ? layout.childConstraints.maxHeight : layout.childConstraints.maxWidth)
+                ? (flex.axis.isRow ? parentMaxHeight : parentMaxWidth)
                 : naturalCross;
 
             auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
@@ -1453,8 +1458,8 @@ namespace NewArch {
                 return tracks;
             };
 
-            float contentWidth = layout.childConstraints.maxWidth;
-            float contentHeight = layout.childConstraints.maxHeight;
+            float contentWidth = parentMaxWidth;
+            float contentHeight = parentMaxHeight;
             auto colTracks = resolveTracks(templateCols, contentWidth, colGap, true);
             auto rowTracks = resolveTracks(rowDefs, contentHeight, rowGap, false);
 

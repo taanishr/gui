@@ -194,7 +194,7 @@ auto index() -> void {
     (
         // Sidebar
         div()
-            .width(NewArch::Size::px(160.0))
+            // .width(NewArch::Size::px(160.0))
             .color(simd_float4{1.0,1.0,1.0,1.0})
             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
             .borderWidth(NewArch::Size::px(1.0))
@@ -391,7 +391,7 @@ auto index() -> void {
         )
         // Detail panel
         ,div()
-            .width(NewArch::Size::px(200.0))
+            // .width(NewArch::Size::px(200.0))
             .color(simd_float4{1.0,1.0,1.0,1.0})
             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
             .borderWidth(NewArch::Size::px(1.0))
