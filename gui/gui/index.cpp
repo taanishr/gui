@@ -299,7 +299,18 @@ auto index() -> void {
                     .flexDirection(NewArch::FlexDirection::Col)
                     .flexGap(NewArch::Size::px(4))
                 (
-                    text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    div()
+                        .color(simd_float4{0.0,0.0,0.0,0.0})
+                        .display(NewArch::Display::Flex)
+                        .flexGap(NewArch::Size::px(4))
+                        .alignItems(NewArch::AlignItems::Center)
+                    (
+                        svg("/Users/treja/projects/gui/gui/sources/plane.svg")
+                        .width(NewArch::Size::px(16))
+                        .height(NewArch::Size::px(16))
+                        ,
+                        text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+                    )
                     ,text(U"Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
                 ),
                 div()
@@ -377,7 +388,7 @@ auto index() -> void {
         )
         // Detail panel
         ,div()
-            .width(NewArch::Size::px(160.0))
+            .width(NewArch::Size::px(200.0))
             .color(simd_float4{1.0,1.0,1.0,1.0})
             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
             .borderWidth(NewArch::Size::px(1.0))

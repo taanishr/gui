@@ -505,6 +505,7 @@ namespace NewArch {
         MTK::View* view;
         DrawableBufferAllocator allocator;
         LayoutEngine layoutEngine;
+        FrameInfo frameInfo;
         DrawableBuffer frameInfoBuffer;
         std::atomic<uint64_t> frameIndex{0};
     };

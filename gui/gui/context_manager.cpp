@@ -51,4 +51,15 @@ namespace NewArch {
 
         return *txt_proc;
     }
+
+    SVGProcessor<SVGStorage, SVGUniforms>& getSVGProcessor(UIContext& ctx) {
+        std::once_flag initFlag;
+        static std::optional<SVGProcessor<SVGStorage, SVGUniforms>> svg_proc;
+
+        std::call_once(initFlag, [&](){
+            svg_proc.emplace(ctx);
+        });
+
+        return *svg_proc;
+    }
 }

@@ -64,4 +64,20 @@ namespace NewArch {
         builder.node->shared.height = height;
         return builder;
     }
+
+    NodeBuilder<SVG<SVGStorage>, SVGProcessor<SVGStorage, SVGUniforms>> svg(const std::string& path,
+                    Size width, Size height)
+    {
+        auto& ctx = ContextManager::getContext();
+        auto& proc = getSVGProcessor(ctx);
+        SVG elem{ctx};
+        elem.getDescriptor().path = path;
+
+        auto currTree = TreeStack::getCurrentTree();
+
+        auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
+        builder.node->shared.width = width;
+        builder.node->shared.height = height;
+        return builder;
+    }
 }

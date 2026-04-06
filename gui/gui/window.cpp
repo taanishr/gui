@@ -130,8 +130,12 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     view->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
     AppKit_Extensions::setMaximumDrawableCount(reinterpret_cast<void*>(view), MaxOutstandingFrameCount);
     
+    window->setContentView(view);
+
     NewArch::ContextManager::initContext(device, view);
+
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
+
     view->setDelegate(viewDelegate.get());
     
     // adding input!!!
@@ -193,8 +197,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     // UIContext ctx {this->device, this->view};
     // index(ctx);
     
-
-    window->setContentView(view);
     
     window->setTitle(NS::String::string("window", NS::StringEncoding::UTF8StringEncoding ));
 

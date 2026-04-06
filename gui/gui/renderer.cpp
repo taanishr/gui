@@ -8,6 +8,7 @@
 #include "renderer.hpp"
 #include "element.hpp"
 #include "div.hpp"
+#include "svg.hpp"
 #include "tree_manager.hpp"
 #include "new_arch.hpp"
 #include <simd/vector_types.h>
