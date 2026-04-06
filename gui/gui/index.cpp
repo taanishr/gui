@@ -108,6 +108,10 @@ auto index() -> void {
     // );
 
    
+
+
+
+    
     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
     .display(NewArch::Display::Flex)
     .paddingTop(NewArch::Size::px(32.0))
@@ -306,9 +310,8 @@ auto index() -> void {
                         .alignItems(NewArch::AlignItems::Center)
                     (
                         svg("/Users/treja/projects/gui/gui/sources/plane.svg")
-                        .width(NewArch::Size::px(16))
-                        .height(NewArch::Size::px(16))
-                        ,
+                            .width(NewArch::Size::px(22))
+                            .height(NewArch::Size::px(22)),
                         text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
                     )
                     ,text(U"Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
