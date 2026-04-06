@@ -256,7 +256,7 @@ namespace NewArch {
             storage.intrinsicSize = { size.width, size.height };
         }
 
-        void ensureTexture(Fragment<S>& fragment, float width, float height) {
+        void loadTexture(Fragment<S>& fragment, float width, float height) {
             auto& storage = fragment.fragmentStorage;
             if (!storage.tree) return;
 
@@ -328,8 +328,9 @@ namespace NewArch {
 
             float w = resolvedWidth.value_or(0.0f);
             float h = resolvedHeight.value_or(0.0f);
+
             if (w > 0.0f && h > 0.0f) {
-                ensureTexture(fragment, w, h);
+                loadTexture(fragment, w, h);
             }
 
             measured.explicitWidth = resolvedWidth;
@@ -375,7 +376,37 @@ namespace NewArch {
         }
 
         Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, SVGDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
-            return atomized;
+            std::vector<Atom> atoms {};
+            
+            float width = layout.computedBox.width;
+            float height = layout.computedBox.height;
+
+            size_t bufferLen = 6*sizeof(SVGPoint);
+            
+            std::array<SVGPoint, 6> atomPoints {{
+                {{0, 0},           {0, 0}, 0},
+                {{width, 0},       {1, 0}, 0},
+                {{0, height},      {0, 1}, 0},
+                {{0, height},      {0, 1}, 0},
+                {{width, 0},       {1, 0}, 0},
+                {{width, height},  {1, 1}, 0}
+            }};
+            
+            fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
+            
+            Atom atom;
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
+            atom.offset = 0;
+            atom.length = bufferLen;
+            atom.width = width;
+            atom.height = height;
+            
+            atoms.push_back(atom);
+            
+            return Atomized{
+                .id = fragment.id,
+                .atoms = atoms
+            };
         };
 
         Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, SVGDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {

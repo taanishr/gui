@@ -305,7 +305,37 @@ namespace NewArch {
         }
 
         Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, ImageDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
-            return atomized;
+                        std::vector<Atom> atoms {};
+            
+            float width = layout.computedBox.width;
+            float height = layout.computedBox.height;
+
+            size_t bufferLen = 6*sizeof(ImagePoint);
+            
+            std::array<ImagePoint, 6> atomPoints {{
+                {{0, 0},           {0, 0}, 0},
+                {{width, 0},       {1, 0}, 0},
+                {{0, height},      {0, 1}, 0},
+                {{0, height},      {0, 1}, 0},
+                {{width, 0},       {1, 0}, 0},
+                {{width, height},  {1, 1}, 0}
+            }};
+            
+            fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
+            
+            Atom atom;
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
+            atom.offset = 0;
+            atom.length = bufferLen;
+            atom.width = width;
+            atom.height = height;
+            
+            atoms.push_back(atom);
+            
+            return Atomized{
+                .id = fragment.id,
+                .atoms = atoms
+            };
         };
 
         Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc, Measured&, Atomized& atomized, LayoutResult& lr) {
