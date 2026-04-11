@@ -958,6 +958,239 @@ namespace NewArch {
         }
     };
 
+    struct FlexResolver {
+        RenderTree&       tree;
+        TreeNode*         node;
+        Constraints&      parentConstraints;
+        Constraints       childConstraints;
+        FlexLayout        flex;
+        const FrameInfo&  frameInfo;
+        float             childMaxWidth;
+        float             avMain;
+        float             parentMaxWidth;
+        float             parentMaxHeight;
+
+        float minX;
+        float minY;
+        float maxX;
+        float maxY;
+
+        float maxIntrinsicX = 0;
+        float maxIntrinsicY = 0;
+
+        bool hasIndefiniteChild = false;
+
+        struct Bounds {
+            float maxX;
+            float maxY;
+        };
+
+        std::vector<size_t> inFlowIndices;
+
+        FlexResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
+                     Constraints childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
+                     float childMaxWidth, float avMain,
+                     float parentMaxWidth, float parentMaxHeight,
+                     float minX, float minY, float maxX, float maxY)
+            : tree{tree}, node{node}, parentConstraints{parentConstraints},
+              childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
+              frameInfo{frameInfo}, childMaxWidth{childMaxWidth}, avMain{avMain},
+              parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
+              minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
+        {
+            for (auto& child : node->children) {
+                if (isXIndefinite(child.get()) || isYIndefinite(child.get())) {
+                    hasIndefiniteChild = true;
+                    break;
+                }
+            }
+        }
+
+        bool isXIndefinite(TreeNode* child) const {
+            return !node->measured->explicitWidth.has_value() &&
+                (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent);
+        }
+
+        bool isYIndefinite(TreeNode* child) const {
+            return !node->measured->explicitHeight.has_value() &&
+                (child->shared.height.has_value() && child->shared.height->unit == Unit::Percent);
+        }
+
+        void prepareChildConstraints(TreeNode* child) {
+            auto&& [frags, boxes] = buildInlineBoxesForChild(child, childMaxWidth);
+            childConstraints.lineFragments = frags;
+            childConstraints.lineBoxes = boxes;
+            childConstraints.maxWidth = childMaxWidth;
+            childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
+        }
+
+        void phaseA() {
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto childAsPtr = node->children[i].get();
+                bool xIndef = isXIndefinite(childAsPtr);
+                bool yIndef = isYIndefinite(childAsPtr);
+
+                std::optional<float> savedWidth, savedHeight;
+                if (xIndef) {
+                    savedWidth = childAsPtr->measured->explicitWidth;
+                    childAsPtr->measured->explicitWidth = std::nullopt;
+                }
+                if (yIndef) {
+                    savedHeight = childAsPtr->measured->explicitHeight;
+                    childAsPtr->measured->explicitHeight = std::nullopt;
+                }
+
+                prepareChildConstraints(childAsPtr);
+                bool isIndef = xIndef || yIndef;
+                bool savedShrink = childConstraints.shrinkToFit;
+                if (isIndef) childConstraints.shrinkToFit = true;
+
+                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+                auto& childLayout = *childAsPtr->layout;
+
+                maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
+                maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+
+                if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
+                if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
+                childConstraints.shrinkToFit = savedShrink;
+            }
+        }
+
+        void phaseB() {
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto childAsPtr = node->children[i].get();
+                bool xIndef = isXIndefinite(childAsPtr);
+                bool yIndef = isYIndefinite(childAsPtr);
+
+                if (!xIndef && !yIndef) continue;
+
+
+                bool setCrossWidth = xIndef && !flex.axis.isRow;
+                bool setCrossHeight = yIndef && flex.axis.isRow;
+
+                if (!setCrossWidth && !setCrossHeight) continue;
+
+                if (setCrossWidth) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
+                if (setCrossHeight) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
+
+                // relayout step really only covers edge cases with text wrapping
+                prepareChildConstraints(childAsPtr);
+
+                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            }
+        }
+
+        void phaseAB() {
+            if (hasIndefiniteChild) {
+                phaseA();
+                phaseB();
+            }
+        }
+
+        void phaseC() {
+            for (uint64_t i = 0; i < node->children.size(); ++i) {
+                auto childAsPtr = node->children[i].get();
+
+                if (!hasIndefiniteChild) {
+                    prepareChildConstraints(childAsPtr);
+
+                    tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+                }
+
+                auto& childLayout = *childAsPtr->layout;
+                if (childLayout.outOfFlow) continue;
+
+                float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
+                float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
+                auto selfAlign = getAlignSelf(childAsPtr);
+
+                bool hasExplicitMain = flex.axis.isRow
+                    ? childAsPtr->shared.width.has_value()
+                    : childAsPtr->shared.height.has_value();
+                    
+                float minMain = hasExplicitMain ? 0.0f : flex.axis.mainSize(childLayout);
+
+                flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, avMain, minMain);
+                inFlowIndices.push_back(i);
+            }
+        }
+
+        Bounds phaseD() {
+            auto& measured = *node->measured;
+
+            float totalSizeFallback = 0;
+            for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
+            totalSizeFallback += flex.currentLine.totalSize;
+            auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
+            float availableMain = explicitMain.has_value()
+                ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
+                : totalSizeFallback;
+            flex.availableMain = availableMain;
+
+            auto resolved = flex.resolveSizes(availableMain);
+
+            float gapBasis = flex.axis.isRow
+                ? measured.explicitWidth.value_or(parentConstraints.maxWidth)
+                : measured.explicitHeight.value_or(resolved.overallTotalAfter);
+            float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
+
+            float naturalCross = 0;
+
+            for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
+            auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
+            float availableCross = explicitCross.has_value()
+                ? (flex.axis.isRow ? parentMaxHeight : parentMaxWidth)
+                : naturalCross;
+
+            auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
+            childConstraints.shrinkToFit = false;
+
+            // std::println("inflowIndices.size: {}", inFlowIndices.size());
+            
+            for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
+                size_t i = inFlowIndices[pi];
+                auto childAsPtr = node->children[i].get();
+                auto& p = placements[pi];
+
+                prepareChildConstraints(childAsPtr);
+
+                flex.axis.setMainPosition(childConstraints, p.mainOffset);
+                flex.axis.setMainMaxSize(childConstraints, p.mainSize);
+                flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
+
+                // Cross axis: col needs maxWidth constraint; row doesn't need maxHeight
+                if (!flex.axis.isRow) {
+                    flex.axis.setCrossMaxSize(childConstraints, availableCross);
+                }
+                childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
+
+                // Cross-axis: apply placement offset and stretch override.
+                // Check the original spec (shared), not measured, because measured
+                // can be corrupted by Phase B from an earlier intermediate pass.
+                flex.axis.setCrossPosition(childConstraints, p.crossOffset);
+                if (p.crossSizeOverride.has_value()) {
+                    bool hasUserCrossSize = flex.axis.isRow
+                        ? childAsPtr->shared.height.has_value()
+                        : childAsPtr->shared.width.has_value();
+                    if (!hasUserCrossSize) {
+                        flex.axis.setCrossExplicit(*childAsPtr->measured, *p.crossSizeOverride);
+                    }
+                }
+
+                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+                auto& childLayout = *childAsPtr->layout;
+
+                maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
+                maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
+            }
+
+            return {maxX, maxY};
+        }
+
+
+    };
+
     void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         assert(node->measured.has_value());
         assert(node->atomized.has_value());
@@ -1038,199 +1271,16 @@ namespace NewArch {
             float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
             float childMaxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
 
-            auto isXIndefinite = [&](TreeNode* child) {
-                return !measured.explicitWidth.has_value() &&
-                    (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent);
+            FlexResolver fr {
+                *this, node, constraints, childConstraints, flex, frameInfo, childMaxWidth, avMain, parentMaxWidth, parentMaxHeight, minX, minY, maxX, maxY
             };
 
-            auto isYIndefinite = [&](TreeNode* child) {
-                return !measured.explicitHeight.has_value() &&
-                    (child->shared.height.has_value() && child->shared.height->unit == Unit::Percent);
-            };
+            fr.phaseAB();
+            fr.phaseC();
+            auto bounds = fr.phaseD();
 
-            bool hasIndefiniteChild = false;
-            for (auto& child : node->children) {
-                if (isXIndefinite(child.get()) || isYIndefinite(child.get())) {
-                    hasIndefiniteChild = true;
-                    break;
-                }
-            }
-
-            // Phase A+B: resolve intrinsic sizes for indefinite children
-            if (hasIndefiniteChild) {
-                float maxIntrinsicX = minX;
-                float maxIntrinsicY = minY;
-                
-                // Phase A: lay out all children to determine intrinsic content size.
-                for (uint64_t i = 0; i < node->children.size(); ++i) {
-                    auto childAsPtr = node->children[i].get();
-                    bool xIndef = isXIndefinite(childAsPtr);
-                    bool yIndef = isYIndefinite(childAsPtr);
-
-                    std::optional<float> savedWidth, savedHeight;
-                    if (xIndef) {
-                        savedWidth = childAsPtr->measured->explicitWidth;
-                        childAsPtr->measured->explicitWidth = std::nullopt;
-                    }
-                    if (yIndef) {
-                        savedHeight = childAsPtr->measured->explicitHeight;
-                        childAsPtr->measured->explicitHeight = std::nullopt;
-                    }
-
-                    auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
-                    childConstraints.lineFragments = frags;
-                    childConstraints.lineBoxes = boxes;
-                    childConstraints.maxWidth = childMaxWidth;
-                    childConstraints.inheritedProperties = constraints.inheritedProperties;
-                    bool isIndef = xIndef || yIndef;
-                    bool savedShrink = childConstraints.shrinkToFit;
-                    if (isIndef) childConstraints.shrinkToFit = true;
-
-                    layoutPhase(childAsPtr, frameInfo, childConstraints);
-                    auto& childLayout = *childAsPtr->layout;
-
-                    maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
-                    maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
-
-                    if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
-                    if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
-                    childConstraints.shrinkToFit = savedShrink;
-                    // childConstraints.cursor = childLayout.siblingCursor;
-                }
-
-
-                // Phase B: lay out indefinite children with corrected cross-axis sizes
-                for (uint64_t i = 0; i < node->children.size(); ++i) {
-                    auto childAsPtr = node->children[i].get();
-                    bool xIndef = isXIndefinite(childAsPtr);
-                    bool yIndef = isYIndefinite(childAsPtr);
-
-                    if (!xIndef && !yIndef) continue;
-
-
-                    bool setCrossWidth = xIndef && !flex.axis.isRow;
-                    bool setCrossHeight = yIndef && flex.axis.isRow;
-
-                    if (!setCrossWidth && !setCrossHeight) continue;
-
-                    if (setCrossWidth) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
-                    if (setCrossHeight) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
-
-                    // relayout step really only covers edge cases with text wrapping
-                    auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
-                    childConstraints.lineFragments = frags;
-                    childConstraints.lineBoxes = boxes;
-                    childConstraints.maxWidth = childMaxWidth;
-                    childConstraints.inheritedProperties = constraints.inheritedProperties;
-
-                    layoutPhase(childAsPtr, frameInfo, childConstraints);
-
-                    auto& childLayout = *childAsPtr->layout;
-                    // childConstraints.cursor = childLayout.siblingCursor;
-                }
-            }
-
-            // Phase C: collect flex info from all children (using cached layout results)
-            std::vector<size_t> inFlowIndices;
-
-            for (uint64_t i = 0; i < node->children.size(); ++i) {
-                auto childAsPtr = node->children[i].get();
-
-                if (!hasIndefiniteChild) {
-                    auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
-                    childConstraints.lineFragments = frags;
-                    childConstraints.lineBoxes = boxes;
-                    childConstraints.maxWidth = childMaxWidth;
-
-                    childConstraints.inheritedProperties = constraints.inheritedProperties;
-
-                    layoutPhase(childAsPtr, frameInfo, childConstraints);
-                }
-
-                auto& childLayout = *childAsPtr->layout;
-                if (childLayout.outOfFlow) continue;
-
-                float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
-                float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
-                auto selfAlign = getAlignSelf(childAsPtr);
-
-                bool hasExplicitMain = flex.axis.isRow
-                    ? childAsPtr->shared.width.has_value()
-                    : childAsPtr->shared.height.has_value();
-                    
-                float minMain = hasExplicitMain ? 0.0f : flex.axis.mainSize(childLayout);
-
-                flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, avMain, minMain);
-                inFlowIndices.push_back(i);
-            }
-
-            float totalSizeFallback = 0;
-            for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
-            totalSizeFallback += flex.currentLine.totalSize;
-            auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
-            float availableMain = explicitMain.has_value()
-                ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
-                : totalSizeFallback;
-            flex.availableMain = availableMain;
-
-            auto resolved = flex.resolveSizes(availableMain);
-
-            float gapBasis = flex.axis.isRow
-                ? measured.explicitWidth.value_or(constraints.maxWidth)
-                : measured.explicitHeight.value_or(resolved.overallTotalAfter);
-            float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
-
-            float naturalCross = 0;
-
-            for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
-            auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
-            float availableCross = explicitCross.has_value()
-                ? (flex.axis.isRow ? parentMaxHeight : parentMaxWidth)
-                : naturalCross;
-
-            auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
-            childConstraints.shrinkToFit = false;
-
-            // Phase D: apply placements and re-layout
-            for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
-                size_t i = inFlowIndices[pi];
-                auto childAsPtr = node->children[i].get();
-                auto& p = placements[pi];
-
-                auto&& [frags, boxes] = buildInlineBoxesForChild(childAsPtr, childMaxWidth);
-                childConstraints.lineFragments = frags;
-                childConstraints.lineBoxes = boxes;
-                childConstraints.inheritedProperties = constraints.inheritedProperties;
-
-                flex.axis.setMainPosition(childConstraints, p.mainOffset);
-                flex.axis.setMainMaxSize(childConstraints, p.mainSize);
-                flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
-
-                // Cross axis: col needs maxWidth constraint; row doesn't need maxHeight
-                if (!flex.axis.isRow) {
-                    flex.axis.setCrossMaxSize(childConstraints, availableCross);
-                }
-                childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
-
-                // Cross-axis: apply placement offset and stretch override.
-                // Check the original spec (shared), not measured, because measured
-                // can be corrupted by Phase B from an earlier intermediate pass.
-                flex.axis.setCrossPosition(childConstraints, p.crossOffset);
-                if (p.crossSizeOverride.has_value()) {
-                    bool hasUserCrossSize = flex.axis.isRow
-                        ? childAsPtr->shared.height.has_value()
-                        : childAsPtr->shared.width.has_value();
-                    if (!hasUserCrossSize) {
-                        flex.axis.setCrossExplicit(*childAsPtr->measured, *p.crossSizeOverride);
-                    }
-                }
-
-                layoutPhase(childAsPtr, frameInfo, childConstraints);
-                auto& childLayout = *childAsPtr->layout;
-
-                maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
-                maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
-            }
+            maxX = bounds.maxX;
+            maxY = bounds.maxY;
         } else if (display == Display::Grid) {
             auto& templateCols = getGridTemplateColumns(node);
             auto& templateRows = getGridTemplateRows(node);

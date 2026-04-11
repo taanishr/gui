@@ -234,7 +234,6 @@ namespace NewArch {
 
     void precomputeMargins(TreeNode* node, Constraints& constraints);
 
-    // pointers for raw views
     struct RenderTree {
         template<ElementType E, typename P>
             requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
@@ -264,8 +263,8 @@ namespace NewArch {
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     private:
-        Constraints rootConstraints; // root constraints;
-        simd_float2 rootCursor; // root cursor
+        Constraints rootConstraints; 
+        simd_float2 rootCursor;
         std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;
         ChainID nextChainId = 0;
 
