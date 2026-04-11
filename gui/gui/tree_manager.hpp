@@ -12,7 +12,6 @@ namespace NewArch {
         }
         
         static void popTree() {
-            // std::println("popping");
             assert(!treeStack.empty());
             treeStack.pop_back();
         }

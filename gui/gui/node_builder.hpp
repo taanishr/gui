@@ -69,13 +69,9 @@ namespace NewArch {
 
         template <typename... Children>
         NodeBuilder& operator()(Children&&... args) {
-            TreeStack::pushTree(&this->renderTree);
             (reparent(this->node, args.node), ...);
-            TreeStack::popTree();
             return *this;
         }
-
-        // --- Shared property setters (write to node->shared) ---
 
         NodeBuilder<E,P>& position(Position position) {
             node->shared.position = position;
