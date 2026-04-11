@@ -989,15 +989,22 @@ namespace NewArch {
 
         FlexResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                      Constraints childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
-                     float childMaxWidth, float avMain,
                      float parentMaxWidth, float parentMaxHeight,
                      float minX, float minY, float maxX, float maxY)
             : tree{tree}, node{node}, parentConstraints{parentConstraints},
               childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
-              frameInfo{frameInfo}, childMaxWidth{childMaxWidth}, avMain{avMain},
+              frameInfo{frameInfo},
+              childMaxWidth{node->measured->explicitWidth.value_or(parentConstraints.maxWidth)},
+              avMain{this->flex.axis.availableMain(*node->measured, parentConstraints.maxWidth)},
               parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
               minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
         {
+            bool needsCrossShrink = this->flex.axis.isRow
+                || this->flex.alignItems != AlignItems::Stretch
+                || !node->measured->explicitWidth.has_value();
+
+            this->childConstraints.shrinkToFit = needsCrossShrink;
+
             for (auto& child : node->children) {
                 if (isXIndefinite(child.get()) || isYIndefinite(child.get())) {
                     hasIndefiniteChild = true;
@@ -1262,17 +1269,11 @@ namespace NewArch {
             auto alignContentVal = getAlignContent(node);
             auto flexWrap = getFlexWrap(node);
 
-            FlexLayout flex{flexDirection, justifyContent, alignItems, alignContentVal, flexWrap};
-            flex.axis.applyDirection(constraints.inheritedProperties.direction);
-
-            bool needsCrossShrink = flex.axis.isRow || alignItems != AlignItems::Stretch || !measured.explicitWidth.has_value();
-            childConstraints.shrinkToFit = needsCrossShrink;
-
-            float avMain = flex.axis.availableMain(measured, constraints.maxWidth);
-            float childMaxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
+            FlexLayout flexContext {flexDirection, justifyContent, alignItems, alignContentVal, flexWrap};
+            flexContext.axis.applyDirection(constraints.inheritedProperties.direction);
 
             FlexResolver fr {
-                *this, node, constraints, childConstraints, flex, frameInfo, childMaxWidth, avMain, parentMaxWidth, parentMaxHeight, minX, minY, maxX, maxY
+                *this, node, constraints, childConstraints, flexContext, frameInfo, parentMaxWidth, parentMaxHeight, minX, minY, maxX, maxY
             };
 
             fr.phaseAB();
