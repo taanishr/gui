@@ -232,44 +232,36 @@ namespace NewArch {
 
     std::vector<TreeNode*> collectAllNodes(TreeNode* root);
 
-    void precomputeMargins(TreeNode* node, Constraints& constraints);
+    void precomputeMargins(TreeNode* node, Constraints& constraints, std::unordered_map<ChainID, CollapsedChain>& collapsedChainMap);
+    
+    // full blown inline context
+    std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints);
 
-    struct RenderTree {
-        template<ElementType E, typename P>
-            requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
-        TreeNode* createRoot(UIContext& ctx, E elem, P& processor) {
-            elementTree = std::make_unique<TreeNode>(ctx, std::move(elem), processor);
-            return elementTree.get();
-        }
-        
-        TreeNode* getRoot() { return elementTree.get(); }
-        
-        void update(const FrameInfo& frameInfo);
-        void render(MTL::RenderCommandEncoder* encoder); 
-        
-        TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
-        
+    // inline context calculated for a single child, independently of other siblings
+    std::pair<std::vector<LineFragment>, std::vector<LineBox>> buildIsolatedInlineBoxes(TreeNode* node, float maxWidth);
 
-        void measurePhase(TreeNode* node, Constraints& constraints);
-        void atomizePhase(TreeNode* node, Constraints& constraints);
-
-        void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
-
-        
-        void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
-        void postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
-                             simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin);
-
-        void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
-        void finalizePhase(TreeNode* node, Constraints& constraints);
-    private:
-        Constraints rootConstraints; 
-        simd_float2 rootCursor;
-        std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;
-        ChainID nextChainId = 0;
-
-        std::unique_ptr<TreeNode> elementTree;
-        LayoutEngine layoutEngine;
-    };
+    Position getPosition(TreeNode* node);
+    Display getDisplay(TreeNode* node);
+    Size getMarginTop(TreeNode* node);
+    Size getMarginBottom(TreeNode* node);
+    Size getMarginLeft(TreeNode* node);
+    Size getMarginRight(TreeNode* node);
+    Size getMargin(TreeNode* node);
+    std::optional<Size> getPaddingTop(TreeNode* node);
+    std::optional<Size> getPaddingBottom(TreeNode* node);
+    Size getFlexGrow(TreeNode* node);
+    Size getFlexShrink(TreeNode* node);
+    FlexDirection getFlexDirection(TreeNode* node);
+    JustifyContent getJustifyContent(TreeNode* node);
+    AlignItems getAlignItems(TreeNode* node);
+    Size getFlexGap(TreeNode* node);
+    FlexWrap getFlexWrap(TreeNode* node);
+    AlignContent getAlignContent(TreeNode* node);
+    AlignSelf getAlignSelf(TreeNode* node);
+    const std::vector<Size>& getGridTemplateColumns(TreeNode* node);
+    const std::vector<Size>& getGridTemplateRows(TreeNode* node);
+    Size getGridColumnGap(TreeNode* node);
+    Size getGridRowGap(TreeNode* node);
+    GridPlacement getGridPlacement(TreeNode* node);
 
 }
