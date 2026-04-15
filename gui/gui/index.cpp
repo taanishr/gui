@@ -495,7 +495,7 @@ auto index() -> void {
 //             .alignItems(NewArch::AlignItems::Center) // expands maxWidth for... some reason?
 //             .flexGap(NewArch::Size::px(12))
 //         (
-//             image(U"/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
+//             image("/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
 //                 .cornerRadius(NewArch::Size::percent(0.5))
 //             ,text(U"Sarah Johnson")
 //                 .fontSize(NewArch::Size::pt(18))
