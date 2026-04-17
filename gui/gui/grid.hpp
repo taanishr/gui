@@ -39,18 +39,30 @@ namespace NewArch {
         void growMajor(int needed);
         void advanceCursor(int spanMinor);
 
-        std::pair<int, int> findEmptyRegion(int spanRows, int spanCols);
+        std::pair<int, int> findSpace(int spanRows, int spanCols);
 
         int majorSize() const;
         int minorSize() const;
     };
 
+    struct Track {
+        float size;
+        float offset;
+    };
+    
     struct GridLayout {
         std::vector<ItemPlacement> items;
         Grid grid {0, 0};
+        std::vector<Track> rowTracks;
+        std::vector<Track> colTracks;
 
         void addChild(NewArch::TreeNode* node);
+        
+        // helpers
         void resolveStructure(size_t templateRows, size_t templateCols);
+        std::vector<Track> resolveTracks(std::vector<Size>& templateTracks, std::vector<float> itemSizes, float available, float gap, bool isMajorAxis);
+
+        void resolve(size_t numRows, size_t numCols, std::vector<Size>& templateRows, std::vector<Size>& templateCols);
     };
 
     struct GridResolver {

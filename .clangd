@@ -16,6 +16,7 @@ CompileFlags:
     # freetype
     - -I/opt/homebrew/opt/freetype/include/freetype2
 
+
     # resvg
     - -I/opt/homebrew/opt/resvg/include/resvg
 
