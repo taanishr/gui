@@ -1,20 +1,19 @@
 #include "grid.hpp"
-#include "gui/element.hpp"
-#include "gui/sizing.hpp"
-#include <numeric>
+#include "render_tree.hpp"
 #include <optional>
+#include <print>
 
 namespace NewArch {
     void GridLayout::addChild(TreeNode* node) {
         auto gridPlacement = getGridPlacement(node);
 
-        std::optional<int> cs, ce, rs, re = 0;
+        std::optional<int> cs, ce, rs, re;
 
         if (gridPlacement.colStart != 0) {
             cs = gridPlacement.colStart - 1;
 
             if (gridPlacement.colEnd != 0) {
-                ce = gridPlacement.colEnd;
+                ce = gridPlacement.colEnd - 1;
             }else {
                 ce = *cs + 1;
             }
@@ -24,7 +23,7 @@ namespace NewArch {
             rs = gridPlacement.rowStart - 1;
 
             if (gridPlacement.rowEnd != 0) {
-                re = gridPlacement.rowEnd;
+                re = gridPlacement.rowEnd - 1;
             }else {
                 re = *rs + 1;
             }
@@ -159,11 +158,11 @@ namespace NewArch {
 
 
     std::vector<Track> GridLayout::resolveTracks(std::vector<Size>& defs, std::vector<float> itemSizes, float available, float gap, bool isCol) {
-        float n = defs.size();
-        float totalGap = (n - 1) * gap;
+        size_t n = defs.size();
+        float totalGap = (n > 1) ? gap * (float)(n - 1) : 0;
         float usable = available - totalGap;
 
-        std::vector<float> sizes {};
+        std::vector<float> sizes(n, 0);
         std::vector<Track> tracks {};
 
         float fixedTotal {};
@@ -172,23 +171,20 @@ namespace NewArch {
         // resolve fixed tracks
         for (size_t i = 0; i < n; ++i) {
             auto& def = defs[i];
-            auto defSize = def.resolveOr(0.0);;
             if (def.isFr()) {
-                frTotal += defSize;
+                frTotal += def.value;
             }else if (!def.isAuto()) {
-                sizes[i] = defSize;
-                fixedTotal += defSize;
-                usable -= defSize;
+                sizes[i] = def.resolveOr(available, 0);
+                fixedTotal += sizes[i];
             }
         }
 
         // resolve auto
-        std::vector<float> autoSizes (n);
-        size_t currentTrack {};
+        std::vector<float> autoSizes (n, 0);
 
         for (auto [item, itemSize]: std::ranges::views::zip(items, itemSizes)) {
             size_t s = isCol ? *item.colStart : *item.rowStart;
-            size_t e = isCol ? *item.colStart : *item.colEnd;
+            size_t e = isCol ? *item.colEnd : *item.rowEnd;
 
             if (e - s > 1)
                 continue;
@@ -196,8 +192,7 @@ namespace NewArch {
             if (!defs[s].isAuto())
                 continue;
 
-            // auto& cl = *node->children[item.]->layout;
-            sizes[s] = std::max(sizes[s], itemSize); 
+            sizes[s] = std::max(sizes[s], itemSize);
             autoSizes[s] = sizes[s];
         }
 
@@ -213,6 +208,7 @@ namespace NewArch {
 
         float offset = 0;
         for (size_t t = 0; t < n; ++t) {
+            std::println("t: {}, sizes: {}", t, sizes.size());
             tracks.push_back({offset, sizes[t]});
             offset += sizes[t] + gap;
         }
@@ -220,20 +216,228 @@ namespace NewArch {
         return tracks;
     }
 
-    void GridLayout::resolve(size_t numRows, size_t numCols, std::vector<Size>& templateRows, std::vector<Size>& templateCols) {
+    void GridLayout::resolve(
+        size_t numRows, size_t numCols,
+        const std::vector<Size>& templateRows, const std::vector<Size>& templateCols,
+        float availableWidth, float availableHeight,
+        float colGap, float rowGap,
+        std::vector<float> itemWidths, std::vector<float> itemHeights) {
         GridLayout::resolveStructure(numRows, numCols);
 
         // init fixed tracks
-        std::vector<Size> rowDefs(grid.numRows);
-        std::vector<Size> colDefs(grid.numCols);
+        std::vector<Size> rowDefs(grid.numRows, Size::autoSize());
+        std::vector<Size> colDefs(grid.numCols, Size::autoSize());
 
         for (int i = 0; i < templateRows.size(); ++i)
             rowDefs[i] = templateRows[i];
 
-        for (int j = 0; j < templateCols.size(); ++j) 
+        for (int j = 0; j < templateCols.size(); ++j)
             colDefs[j] = templateCols[j];
 
-        // rowTracks = resolveTracks(rowDefs);
-        // colTracks = resolveTracks(colDefs);
+        colTracks = resolveTracks(colDefs, itemWidths, availableWidth, colGap, true);
+        rowTracks = resolveTracks(rowDefs, itemHeights, availableHeight, rowGap, false);
+    }
+
+    GridResolver::GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
+                               Constraints childConstraints, const FrameInfo& frameInfo,
+                               float parentMaxWidth, float parentMaxHeight,
+                               float minX, float minY, float maxX, float maxY)
+        : tree{tree}, node{node}, parentConstraints{parentConstraints},
+          childConstraints{std::move(childConstraints)},
+          alignItems{getAlignItems(node)},
+          frameInfo{frameInfo},
+          childMaxWidth{node->measured->explicitWidth.value_or(parentConstraints.maxWidth)},
+          parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
+          minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
+    {
+        for (auto& child : node->children) {
+            if (isXIndefinite(child.get()) || isYIndefinite(child.get())) {
+                hasIndefiniteChild = true;
+                break;
+            }
+        }
+    }
+
+    bool GridResolver::isXIndefinite(TreeNode* child) const {
+        return !node->measured->explicitWidth.has_value() &&
+            child->shared.width.has_value() && child->shared.width->unit == Unit::Percent;
+    }
+
+    bool GridResolver::isYIndefinite(TreeNode* child) const {
+        return !node->measured->explicitHeight.has_value() &&
+            child->shared.height.has_value() && child->shared.height->unit == Unit::Percent;
+    }
+
+    void GridResolver::prepareChildConstraints(TreeNode* child) {
+        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childMaxWidth);
+        childConstraints.lineFragments = frags;
+        childConstraints.lineBoxes = boxes;
+        childConstraints.maxWidth = childMaxWidth;
+        childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
+    }
+
+    void GridResolver::phaseA() {
+        if (!hasIndefiniteChild) return;
+
+        for (uint64_t i = 0; i < node->children.size(); ++i) {
+            auto childAsPtr = node->children[i].get();
+            bool xIndef = isXIndefinite(childAsPtr);
+            bool yIndef = isYIndefinite(childAsPtr);
+
+            std::optional<float> savedWidth, savedHeight;
+            if (xIndef) {
+                savedWidth = childAsPtr->measured->explicitWidth;
+                childAsPtr->measured->explicitWidth = std::nullopt;
+            }
+            if (yIndef) {
+                savedHeight = childAsPtr->measured->explicitHeight;
+                childAsPtr->measured->explicitHeight = std::nullopt;
+            }
+
+            prepareChildConstraints(childAsPtr);
+            bool isIndef = xIndef || yIndef;
+            bool savedShrink = childConstraints.shrinkToFit;
+            if (isIndef) childConstraints.shrinkToFit = true;
+
+            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            auto& childLayout = *childAsPtr->layout;
+
+            maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
+            maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
+
+            if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
+            if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
+            childConstraints.shrinkToFit = savedShrink;
+        }
+    }
+
+    void GridResolver::phaseB() {
+        if (!hasIndefiniteChild) return;
+
+        for (uint64_t i = 0; i < node->children.size(); ++i) {
+            auto childAsPtr = node->children[i].get();
+            bool xIndef = isXIndefinite(childAsPtr);
+            bool yIndef = isYIndefinite(childAsPtr);
+            if (!xIndef && !yIndef) continue;
+
+            if (xIndef) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
+            if (yIndef) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
+
+            prepareChildConstraints(childAsPtr);
+            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+        }
+    }
+
+    void GridResolver::phaseC() {
+        auto& measured = *node->measured;
+        auto& templateCols = getGridTemplateColumns(node);
+        auto& templateRows = getGridTemplateRows(node);
+        float availableWidth = measured.explicitWidth.value_or(parentConstraints.maxWidth);
+        float availableHeight = measured.explicitHeight.value_or(parentConstraints.maxHeight);
+        float colGap = getGridColumnGap(node).resolveOr(availableWidth, 0);
+        float rowGap = getGridRowGap(node).resolveOr(availableHeight, 0);
+
+        std::vector<float> itemWidths;
+        std::vector<float> itemHeights;
+
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            auto childAsPtr = node->children[i].get();
+            auto childPos = getPosition(childAsPtr);
+            if (childPos == Position::Absolute || childPos == Position::Fixed) continue;
+
+            if (!hasIndefiniteChild) {
+                prepareChildConstraints(childAsPtr);
+                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            }
+
+            auto& childLayout = *childAsPtr->layout;
+            if (childLayout.outOfFlow) continue;
+
+            gridLayout.addChild(childAsPtr);
+            inFlowIndices.push_back(i);
+
+            itemWidths.push_back(childLayout.computedBox.width);
+            itemHeights.push_back(childLayout.consumedHeight);
+        }
+
+        gridLayout.resolve(templateRows.size(), templateCols.size(),
+            templateRows, templateCols,
+            parentMaxWidth, parentMaxHeight,
+            colGap, rowGap,
+            itemWidths, itemHeights);
+    }
+
+    GridResolver::Bounds GridResolver::phaseD() {
+        auto& measured = *node->measured;
+        float availableWidth = measured.explicitWidth.value_or(parentConstraints.maxWidth);
+        float availableHeight = measured.explicitHeight.value_or(parentConstraints.maxHeight);
+
+        for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
+            size_t i = inFlowIndices[pi];
+            auto childAsPtr = node->children[i].get();
+            auto& item = gridLayout.items[pi];
+
+            auto& colTracks = gridLayout.colTracks;
+            auto& rowTracks = gridLayout.rowTracks;
+
+            float cellX = colTracks[*item.colStart].offset;
+            float cellY = rowTracks[*item.rowStart].offset;
+            float cellW = colTracks[*item.colEnd - 1].offset + colTracks[*item.colEnd - 1].size - cellX;
+            float cellH = rowTracks[*item.rowEnd - 1].offset + rowTracks[*item.rowEnd - 1].size - cellY;
+
+            auto&& [frags, boxes] = buildIsolatedInlineBoxes(childAsPtr, cellW);
+            childConstraints.lineFragments = frags;
+            childConstraints.lineBoxes = boxes;
+            childConstraints.maxWidth = cellW;
+            childConstraints.maxHeight = cellH;
+            childConstraints.origin.x = cellX;
+            childConstraints.cursor.y = cellY;
+            childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
+            childConstraints.shrinkToFit = false;
+
+            // resolve alignment
+            AlignItems effectiveAlign = alignItems;
+            auto selfAlign = getAlignSelf(childAsPtr);
+            if (selfAlign != AlignSelf::Auto) {
+                switch (selfAlign) {
+                    case AlignSelf::Stretch:   effectiveAlign = AlignItems::Stretch; break;
+                    case AlignSelf::FlexStart: effectiveAlign = AlignItems::FlexStart; break;
+                    case AlignSelf::FlexEnd:   effectiveAlign = AlignItems::FlexEnd; break;
+                    case AlignSelf::Center:    effectiveAlign = AlignItems::Center; break;
+                    default: break;
+                }
+            }
+
+            // stretch: override measured size if child has no explicit size
+            if (effectiveAlign == AlignItems::Stretch) {
+                if (!childAsPtr->measured->explicitWidth.has_value())
+                    childAsPtr->measured->explicitWidth = cellW;
+                if (!childAsPtr->measured->explicitHeight.has_value())
+                    childAsPtr->measured->explicitHeight = cellH;
+            } else {
+                childConstraints.shrinkToFit = true;
+            }
+
+            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            auto& childLayout = *childAsPtr->layout;
+
+            // non-stretch alignment: offset within cell
+            if (effectiveAlign == AlignItems::Center) {
+                float dx = (cellW - childLayout.computedBox.width) / 2.0f;
+                float dy = (cellH - childLayout.computedBox.height) / 2.0f;
+                childLayout.computedBox.x += dx;
+                childLayout.computedBox.y += dy;
+            } else if (effectiveAlign == AlignItems::FlexEnd) {
+                float dx = cellW - childLayout.computedBox.width;
+                float dy = cellH - childLayout.computedBox.height;
+                childLayout.computedBox.x += dx;
+                childLayout.computedBox.y += dy;
+            }
+
+            maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
+            maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
+        }
+
+        return {maxX, maxY};
     }
 }
