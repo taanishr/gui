@@ -208,7 +208,6 @@ namespace NewArch {
 
         float offset = 0;
         for (size_t t = 0; t < n; ++t) {
-            std::println("t: {}, sizes: {}", t, sizes.size());
             tracks.push_back({offset, sizes[t]});
             offset += sizes[t] + gap;
         }
