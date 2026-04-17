@@ -212,10 +212,10 @@ namespace NewArch {
         }
 
         float offset = 0;
-        // for (size_t t = 0; t < n; ++t) {
-        //     tracks.push_back({offset, sizes[t]});
-        //     offset += sizes[t] + gap;
-        // }
+        for (size_t t = 0; t < n; ++t) {
+            tracks.push_back({offset, sizes[t]});
+            offset += sizes[t] + gap;
+        }
 
         return tracks;
     }
