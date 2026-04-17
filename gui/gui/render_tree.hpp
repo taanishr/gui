@@ -2,6 +2,7 @@
 
 #include "element.hpp"
 #include "flex.hpp"
+#include "grid.hpp"
 
 namespace NewArch {
     struct RenderTree {

@@ -326,7 +326,19 @@ namespace NewArch {
             maxX = bounds.maxX;
             maxY = bounds.maxY;
         } else if (display == Display::Grid) {
-            // TOOO: call grid resolver
+            GridResolver gr {
+                *this, node, constraints, childConstraints, frameInfo, parentMaxWidth, parentMaxHeight, minX, minY, maxX, maxY
+            };
+
+            gr.phaseA();
+            gr.phaseB();
+            gr.phaseC();
+
+            auto bounds = gr.phaseD();
+
+
+            maxX = bounds.maxX;
+            maxY = bounds.maxY;
         } else {
             auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
             childConstraints.lineBoxes = childrenLineBoxes;
