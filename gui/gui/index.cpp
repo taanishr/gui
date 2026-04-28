@@ -819,13 +819,13 @@ div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.96,0
             .alignItems(NewArch::AlignItems::FlexEnd)
             .flexGap(NewArch::Size::px(6))
         (
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(110)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(140)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px( 90)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(160)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(130)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(180)).color(simd_float4{0.4,0.3,1.0,1.0}).cornerRadius(NewArch::Size::px(4))(),
-            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(150)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))()
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.61)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.78)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.50)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.89)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.72)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(1.00)).color(simd_float4{0.4,0.3,1.0,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::percent(0.83)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))()
         )
     ),
 
@@ -854,4 +854,3 @@ div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.96,0
 );
 
 }
-

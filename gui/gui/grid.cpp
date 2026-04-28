@@ -359,8 +359,6 @@ namespace NewArch {
             if (childLayout.outOfFlow) 
                 continue;
 
-            float minMain = childLayout.computedBox.width;
-
             gridLayout.addChild(childAsPtr);
             inFlowIndices.push_back(i);
 
