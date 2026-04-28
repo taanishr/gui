@@ -167,6 +167,7 @@ namespace NewArch {
         FlexLine currentLine;
         std::vector<AlignSelf> childAlignSelfs;
         std::vector<float> childCrossSizes;
+        std::vector<std::optional<Size>> childCrossSizeRequests;
         float availableMain{};
 
         struct ChildPlacement {
@@ -186,7 +187,8 @@ namespace NewArch {
         {}
 
         void addChild(const LayoutResult& layout, float grow, float shrink,
-                        AlignSelf selfAlign, float avMain, float minMainSize = 0.0f) {
+                        AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
+                        float avMain, float minMainSize = 0.0f) {
             float childMain = axis.mainSize(layout);
 
             float childCross = axis.crossSize(layout);
@@ -205,6 +207,7 @@ namespace NewArch {
             currentLine.addChild(childMain, childCross, grow, shrink, minMainSize);
             childAlignSelfs.push_back(selfAlign);
             childCrossSizes.push_back(childCross);
+            childCrossSizeRequests.push_back(crossSizeRequest);
         }
 
         struct ResolveResult {
@@ -310,7 +313,9 @@ namespace NewArch {
                         }
                     }
 
-                    float childCross = childCrossSizes[childIdx];
+                    float childCross = childCrossSizeRequests[childIdx]
+                        .and_then([lineCross](const Size& size) { return size.resolve(lineCross); })
+                        .value_or(childCrossSizes[childIdx]);
                     switch (effectiveAlign) {
                         case AlignItems::Stretch:
                             p.crossOffset = lineCrossBase;

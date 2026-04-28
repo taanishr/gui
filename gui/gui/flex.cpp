@@ -138,6 +138,9 @@ namespace NewArch {
             float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
             float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
             auto selfAlign = getAlignSelf(childAsPtr);
+            auto crossSizeRequest = flex.axis.isRow
+                ? childAsPtr->shared.height
+                : childAsPtr->shared.width;
 
             bool hasExplicitMain = flex.axis.isRow
                 ? childAsPtr->shared.width.has_value()
@@ -145,7 +148,7 @@ namespace NewArch {
 
             float minMain = hasExplicitMain ? 0.0f : flex.axis.mainSize(childLayout);
 
-            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, avMain, minMain);
+            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain);
             inFlowIndices.push_back(i);
         }
     }
@@ -189,10 +192,7 @@ namespace NewArch {
             flex.axis.setMainMaxSize(childConstraints, p.mainSize);
             flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
 
-            // Cross axis: col needs maxWidth constraint; row doesn't need maxHeight
-            if (!flex.axis.isRow) {
-                flex.axis.setCrossMaxSize(childConstraints, availableCross);
-            }
+            flex.axis.setCrossMaxSize(childConstraints, availableCross);
             childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
 
             // Cross-axis: apply placement offset and stretch override.
