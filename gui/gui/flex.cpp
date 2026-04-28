@@ -160,14 +160,8 @@ namespace NewArch {
         float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
         float totalSizeFallback = 0;
-        for (auto& line : flex.lines) {
-            float lineGap = line.count() > 1 ? resolvedGap * (line.count() - 1) : 0.0f;
-            totalSizeFallback += line.totalSize + lineGap;
-        }
-        if (flex.currentLine.count() > 0) {
-            float lineGap = flex.currentLine.count() > 1 ? resolvedGap * (flex.currentLine.count() - 1) : 0.0f;
-            totalSizeFallback += flex.currentLine.totalSize + lineGap;
-        }
+        for (auto& line : flex.lines) totalSizeFallback += line.totalWithGap(resolvedGap);
+        totalSizeFallback += flex.currentLine.totalWithGap(resolvedGap);
         auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
         float availableMain = explicitMain.has_value()
             ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)

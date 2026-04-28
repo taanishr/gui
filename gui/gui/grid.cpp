@@ -370,9 +370,16 @@ namespace NewArch {
             itemHeights.push_back(childLayout.consumedHeight);
         }
 
+        float trackAvailableWidth = parentConstraints.shrinkToFit && !measured.explicitWidth.has_value()
+            ? 0.0f
+            : parentMaxWidth;
+        float trackAvailableHeight = parentConstraints.shrinkToFit && !measured.explicitHeight.has_value()
+            ? 0.0f
+            : parentMaxHeight;
+
         gridLayout.resolve(templateRows.size(), templateCols.size(),
             templateRows, templateCols,
-            parentMaxWidth, parentMaxHeight,
+            trackAvailableWidth, trackAvailableHeight,
             colGap, rowGap,
             itemWidths, itemHeights);
 
@@ -423,9 +430,9 @@ namespace NewArch {
 
             // stretch: override measured size if child has no explicit size
             if (effectiveAlign == AlignItems::Stretch) {
-                if (!childAsPtr->measured->explicitWidth.has_value())
+                if (!childAsPtr->shared.width.has_value())
                     childAsPtr->measured->explicitWidth = cellW;
-                if (!childAsPtr->measured->explicitHeight.has_value())
+                if (!childAsPtr->shared.height.has_value())
                     childAsPtr->measured->explicitHeight = cellH;
             } else {
                 childConstraints.shrinkToFit = true;
