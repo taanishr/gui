@@ -26,67 +26,67 @@ auto index() -> void {
     // images cause like a 60mb increase in memory usage lol; need to investigate
     // turns out they just were not being downsampled
 
-    // seg faults fucking hell
-    using S = NewArch::Size;
+    // // seg faults fucking hell
+    // using S = NewArch::Size;
 
-    // Grid demo: holy grail layout
-    div(S::percent(1.0), S::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
-        .display(NewArch::Display::Grid)
-        .gridTemplateColumns({S::fr(1), S::fr(2), S::fr(1)})
-        .gridTemplateRows({S::px(60), S::fr(1), S::px(40)})
-        .gridColumnGap(S::px(8))
-        .gridRowGap(S::px(8))
-        .padding(S::px(8))
-    (
-        // Header — spans all 3 columns
-        div().gridColumn(1, 4).gridRow(1, 2)
-            .color(simd_float4{0.2,0.4,0.8,1.0})
-            .cornerRadius(S::px(8))
-            .display(NewArch::Display::Flex)
-            .alignItems(NewArch::AlignItems::Center)
-            .justifyContent(NewArch::JustifyContent::Center)
-        (
-            text(U"Header").fontSize(S::pt(20)).color(simd_float4{1,1,1,1})
-        ),
+    // // Grid demo: holy grail layout
+    // div(S::percent(1.0), S::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
+    //     .display(NewArch::Display::Grid)
+    //     .gridTemplateColumns({S::fr(1), S::fr(2), S::fr(1)})
+    //     .gridTemplateRows({S::px(60), S::fr(1), S::px(40)})
+    //     .gridColumnGap(S::px(8))
+    //     .gridRowGap(S::px(8))
+    //     .padding(S::px(8))
+    // (
+    //     // Header — spans all 3 columns
+    //     div().gridColumn(1, 4).gridRow(1, 2)
+    //         .color(simd_float4{0.2,0.4,0.8,1.0})
+    //         .cornerRadius(S::px(8))
+    //         .display(NewArch::Display::Flex)
+    //         .alignItems(NewArch::AlignItems::Center)
+    //         .justifyContent(NewArch::JustifyContent::Center)
+    //     (
+    //         text(U"Header").fontSize(S::pt(20)).color(simd_float4{1,1,1,1})
+    //     ),
 
-        // Left sidebar
-        div().gridColumn(1, 2).gridRow(2, 3)
-            .color(simd_float4{0.9,0.9,0.95,1.0})
-            .cornerRadius(S::px(8))
-            .padding(S::px(12))
-        (
-            text(U"Sidebar").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
-        ),
+    //     // Left sidebar
+    //     div().gridColumn(1, 2).gridRow(2, 3)
+    //         .color(simd_float4{0.9,0.9,0.95,1.0})
+    //         .cornerRadius(S::px(8))
+    //         .padding(S::px(12))
+    //     (
+    //         text(U"Sidebar").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+    //     ),
 
-        // Main content
-        div().gridColumn(2, 3).gridRow(2, 3)
-            .color(simd_float4{1.0,1.0,1.0,1.0})
-            .cornerRadius(S::px(8))
-            .padding(S::px(12))
-        (
-            text(U"Main Content").fontSize(S::pt(14)).color(simd_float4{0.1,0.1,0.1,1})
-        ),
+    //     // Main content
+    //     div().gridColumn(2, 3).gridRow(2, 3)
+    //         .color(simd_float4{1.0,1.0,1.0,1.0})
+    //         .cornerRadius(S::px(8))
+    //         .padding(S::px(12))
+    //     (
+    //         text(U"Main Content").fontSize(S::pt(14)).color(simd_float4{0.1,0.1,0.1,1})
+    //     ),
 
-        // Right sidebar
-        div().gridColumn(3, 4).gridRow(2, 3)
-            .color(simd_float4{0.9,0.9,0.95,1.0})
-            .cornerRadius(S::px(8))
-            .padding(S::px(12))
-        (
-            text(U"Panel").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
-        ),
+    //     // Right sidebar
+    //     div().gridColumn(3, 4).gridRow(2, 3)
+    //         .color(simd_float4{0.9,0.9,0.95,1.0})
+    //         .cornerRadius(S::px(8))
+    //         .padding(S::px(12))
+    //     (
+    //         text(U"Panel").fontSize(S::pt(14)).color(simd_float4{0.3,0.3,0.3,1})
+    //     ),
 
-        // Footer — spans all 3 columns
-        div().gridColumn(1, 4).gridRow(3, 4)
-            .color(simd_float4{0.3,0.3,0.35,1.0})
-            .cornerRadius(S::px(8))
-            .display(NewArch::Display::Flex)
-            .alignItems(NewArch::AlignItems::Center)
-            .justifyContent(NewArch::JustifyContent::Center)
-        (
-            text(U"Footer").fontSize(S::pt(14)).color(simd_float4{1,1,1,1})
-        )
-    );
+    //     // Footer — spans all 3 columns
+    //     div().gridColumn(1, 4).gridRow(3, 4)
+    //         .color(simd_float4{0.3,0.3,0.35,1.0})
+    //         .cornerRadius(S::px(8))
+    //         .display(NewArch::Display::Flex)
+    //         .alignItems(NewArch::AlignItems::Center)
+    //         .justifyContent(NewArch::JustifyContent::Center)
+    //     (
+    //         text(U"Footer").fontSize(S::pt(14)).color(simd_float4{1,1,1,1})
+    //     )
+    // );
 
    
 
@@ -529,6 +529,329 @@ auto index() -> void {
 //             )
 //         )
 //     );
+
+
+
+// Dashboard layout: analytics overview
+div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.96,0.96,0.97,1.0})
+    .display(NewArch::Display::Grid)
+    .gridTemplateColumns({NewArch::Size::px(220), NewArch::Size::fr(1), NewArch::Size::fr(1), NewArch::Size::fr(1)})
+    .gridTemplateRows({NewArch::Size::px(56), NewArch::Size::px(120), NewArch::Size::fr(1), NewArch::Size::px(44)})
+    .gridColumnGap(NewArch::Size::px(10))
+    .gridRowGap(NewArch::Size::px(10))
+    .padding(NewArch::Size::px(10))
+    .paddingTop(NewArch::Size::px(32))
+(
+    // ── Topbar: columns 1-5, row 1 ──
+    div().gridColumn(1, 5).gridRow(1, 2)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .display(NewArch::Display::Flex)
+        .alignItems(NewArch::AlignItems::Center)
+        .justifyContent(NewArch::JustifyContent::SpaceBetween)
+        .paddingLeft(NewArch::Size::px(20))
+        .paddingRight(NewArch::Size::px(20))
+    (
+        text(U"Analytics").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            div()
+                .color(simd_float4{0.96,0.96,0.96,1.0})
+                .height(NewArch::Size::px(32))
+                .paddingLeft(NewArch::Size::px(14))
+                .paddingRight(NewArch::Size::px(14))
+                .cornerRadius(NewArch::Size::px(6))
+                .display(NewArch::Display::Flex)
+                .alignItems(NewArch::AlignItems::Center)
+            (
+                text(U"Last 30 days").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+            ),
+            div()
+                .color(simd_float4{0.1,0.1,0.1,1.0})
+                .height(NewArch::Size::px(32))
+                .paddingLeft(NewArch::Size::px(14))
+                .paddingRight(NewArch::Size::px(14))
+                .cornerRadius(NewArch::Size::px(6))
+                .display(NewArch::Display::Flex)
+                .alignItems(NewArch::AlignItems::Center)
+            (
+                text(U"Export").fontSize(NewArch::Size::pt(12)).color(simd_float4{1.0,1.0,1.0,1.0})
+            )
+        )
+    ),
+
+    // ── Stat card: Revenue ──
+    div().gridColumn(2, 3).gridRow(2, 3)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .padding(NewArch::Size::px(16))
+        .display(NewArch::Display::Flex)
+        .flexDirection(NewArch::FlexDirection::Col)
+        .justifyContent(NewArch::JustifyContent::SpaceBetween)
+    (
+        text(U"Revenue").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"$48,230").fontSize(NewArch::Size::pt(22)).color(simd_float4{0.1,0.1,0.1,1.0}),
+            div()
+                .color(simd_float4{0.85,1.0,0.9,1.0})
+                .paddingLeft(NewArch::Size::px(8))
+                .paddingRight(NewArch::Size::px(8))
+                .height(NewArch::Size::px(20))
+                .cornerRadius(NewArch::Size::px(10))
+                .display(NewArch::Display::Flex)
+                .alignItems(NewArch::AlignItems::Center)
+            (
+                text(U"+12.4%").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.1,0.7,0.4,1.0})
+            )
+        ),
+        text(U"vs $42,900 last month").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.7,0.7,0.7,1.0})
+    ),
+
+    // ── Stat card: Users ──
+    div().gridColumn(3, 4).gridRow(2, 3)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .padding(NewArch::Size::px(16))
+        .display(NewArch::Display::Flex)
+        .flexDirection(NewArch::FlexDirection::Col)
+        .justifyContent(NewArch::JustifyContent::SpaceBetween)
+    (
+        text(U"Active Users").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"8,412").fontSize(NewArch::Size::pt(22)).color(simd_float4{0.1,0.1,0.1,1.0}),
+            div()
+                .color(simd_float4{0.93,0.88,1.0,1.0})
+                .paddingLeft(NewArch::Size::px(8))
+                .paddingRight(NewArch::Size::px(8))
+                .height(NewArch::Size::px(20))
+                .cornerRadius(NewArch::Size::px(10))
+                .display(NewArch::Display::Flex)
+                .alignItems(NewArch::AlignItems::Center)
+            (
+                text(U"+3.1%").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.4,0.3,1.0,1.0})
+            )
+        ),
+        text(U"vs 8,160 last month").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.7,0.7,0.7,1.0})
+    ),
+
+    // ── Stat card: Churn ──
+    div().gridColumn(4, 5).gridRow(2, 3)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .padding(NewArch::Size::px(16))
+        .display(NewArch::Display::Flex)
+        .flexDirection(NewArch::FlexDirection::Col)
+        .justifyContent(NewArch::JustifyContent::SpaceBetween)
+    (
+        text(U"Churn Rate").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"2.3%").fontSize(NewArch::Size::pt(22)).color(simd_float4{0.1,0.1,0.1,1.0}),
+            div()
+                .color(simd_float4{1.0,0.9,0.88,1.0})
+                .paddingLeft(NewArch::Size::px(8))
+                .paddingRight(NewArch::Size::px(8))
+                .height(NewArch::Size::px(20))
+                .cornerRadius(NewArch::Size::px(10))
+                .display(NewArch::Display::Flex)
+                .alignItems(NewArch::AlignItems::Center)
+            (
+                text(U"-0.4%").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.9,0.3,0.2,1.0})
+            )
+        ),
+        text(U"vs 2.7% last month").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.7,0.7,0.7,1.0})
+    ),
+
+    // ── Nav sidebar: column 1, rows 2-4 ──
+    div().gridColumn(1, 2).gridRow(2, 4)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .padding(NewArch::Size::px(12))
+        .display(NewArch::Display::Flex)
+        .flexDirection(NewArch::FlexDirection::Col)
+        .flexGap(NewArch::Size::px(4))
+    (
+        text(U"NAVIGATION").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+        div()
+            .width(NewArch::Size::percent(1.0))
+            .color(simd_float4{0.1,0.1,0.1,1.0})
+            .cornerRadius(NewArch::Size::px(8))
+            .paddingLeft(NewArch::Size::px(12))
+            .paddingRight(NewArch::Size::px(12))
+            .paddingTop(NewArch::Size::px(8))
+            .paddingBottom(NewArch::Size::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"▪").fontSize(NewArch::Size::pt(10)).color(simd_float4{1.0,1.0,1.0,1.0}),
+            text(U"Overview").fontSize(NewArch::Size::pt(13)).color(simd_float4{1.0,1.0,1.0,1.0})
+        ),
+        div()
+            .width(NewArch::Size::percent(1.0))
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(NewArch::Size::px(8))
+            .paddingLeft(NewArch::Size::px(12))
+            .paddingRight(NewArch::Size::px(12))
+            .paddingTop(NewArch::Size::px(8))
+            .paddingBottom(NewArch::Size::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"▪").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Revenue").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.3,0.3,0.3,1.0})
+        ),
+        div()
+            .width(NewArch::Size::percent(1.0))
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(NewArch::Size::px(8))
+            .paddingLeft(NewArch::Size::px(12))
+            .paddingRight(NewArch::Size::px(12))
+            .paddingTop(NewArch::Size::px(8))
+            .paddingBottom(NewArch::Size::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"▪").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Users").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.3,0.3,0.3,1.0})
+        ),
+        div()
+            .width(NewArch::Size::percent(1.0))
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(NewArch::Size::px(8))
+            .paddingLeft(NewArch::Size::px(12))
+            .paddingRight(NewArch::Size::px(12))
+            .paddingTop(NewArch::Size::px(8))
+            .paddingBottom(NewArch::Size::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"▪").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Reports").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.3,0.3,0.3,1.0})
+        ),
+        div()
+            .width(NewArch::Size::percent(1.0))
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(NewArch::Size::px(8))
+            .paddingLeft(NewArch::Size::px(12))
+            .paddingRight(NewArch::Size::px(12))
+            .paddingTop(NewArch::Size::px(8))
+            .paddingBottom(NewArch::Size::px(8))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(8))
+        (
+            text(U"▪").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Settings").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.3,0.3,0.3,1.0})
+        )
+    ),
+
+    // ── Chart area: columns 2-4, row 3 ──
+    div().gridColumn(2, 5).gridRow(3, 4)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .padding(NewArch::Size::px(16))
+        .display(NewArch::Display::Flex)
+        .flexDirection(NewArch::FlexDirection::Col)
+        .flexGap(NewArch::Size::px(12))
+    (
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .justifyContent(NewArch::JustifyContent::SpaceBetween)
+        (
+            text(U"Revenue over time").fontSize(NewArch::Size::pt(14)).color(simd_float4{0.1,0.1,0.1,1.0}),
+            div()
+                .color(simd_float4{0.0,0.0,0.0,0.0})
+                .display(NewArch::Display::Flex)
+                .flexGap(NewArch::Size::px(6))
+        (
+                div()
+                    .color(simd_float4{0.96,0.96,0.96,1.0})
+                    .height(NewArch::Size::px(26))
+                    .paddingLeft(NewArch::Size::px(12))
+                    .paddingRight(NewArch::Size::px(12))
+                    .cornerRadius(NewArch::Size::px(6))
+                    .display(NewArch::Display::Flex)
+                    .alignItems(NewArch::AlignItems::Center)
+                (
+                    text(U"Monthly").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.5,0.5,0.5,1.0})
+                ),
+                div()
+                    .color(simd_float4{0.1,0.1,0.1,1.0})
+                    .height(NewArch::Size::px(26))
+                    .paddingLeft(NewArch::Size::px(12))
+                    .paddingRight(NewArch::Size::px(12))
+                    .cornerRadius(NewArch::Size::px(6))
+                    .display(NewArch::Display::Flex)
+                    .alignItems(NewArch::AlignItems::Center)
+                (
+                    text(U"Weekly").fontSize(NewArch::Size::pt(11)).color(simd_float4{1.0,1.0,1.0,1.0})
+                )
+            )
+        ),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .flexGrow(NewArch::Size::px(1))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::FlexEnd)
+            .flexGap(NewArch::Size::px(6))
+        (
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(110)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(140)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px( 90)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(160)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(130)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(180)).color(simd_float4{0.4,0.3,1.0,1.0}).cornerRadius(NewArch::Size::px(4))(),
+            div().flexGrow(NewArch::Size::px(1)).height(NewArch::Size::px(150)).color(simd_float4{0.88,0.88,0.98,1.0}).cornerRadius(NewArch::Size::px(4))()
+        )
+    ),
+
+    // ── Footer: all columns, row 4 ──
+    div().gridColumn(1, 5).gridRow(4, 5)
+        .color(simd_float4{1.0,1.0,1.0,1.0})
+        .cornerRadius(NewArch::Size::px(10))
+        .display(NewArch::Display::Flex)
+        .alignItems(NewArch::AlignItems::Center)
+        .justifyContent(NewArch::JustifyContent::SpaceBetween)
+        .paddingLeft(NewArch::Size::px(20))
+        .paddingRight(NewArch::Size::px(20))
+    (
+        text(U"Last synced: Apr 17, 2026 at 9:41 AM").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+        div()
+            .color(simd_float4{0.0,0.0,0.0,0.0})
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .flexGap(NewArch::Size::px(16))
+        (
+            text(U"Privacy").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Terms").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+            text(U"Help").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+        )
+    )
+);
 
 }
 
