@@ -462,73 +462,73 @@ auto index() -> void {
     )
 );
 
-   div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
-        .display(NewArch::Display::Flex)
-        .alignItems(NewArch::AlignItems::Center)
-        .justifyContent(NewArch::JustifyContent::Center)
-    (
-        div()
-            .color(simd_float4{1.0,1.0,1.0,1.0})
-            .cornerRadius(NewArch::Size::px(16))
-            .padding(NewArch::Size::px(12))
-            .display(NewArch::Display::Flex)
-            .flexDirection(NewArch::FlexDirection::Col)
-            .alignItems(NewArch::AlignItems::Center) // expands maxWidth for... some reason?
-            .flexGap(NewArch::Size::px(12))
-        (
-            image("/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
-                .cornerRadius(NewArch::Size::percent(0.5))
-            ,text(U"Sarah Johnson")
-                .fontSize(NewArch::Size::pt(18))
-                .color(simd_float4{0.1,0.1,0.1,1.0})
-            ,text(U"Product Designer @ Figma")
-                .fontSize(NewArch::Size::pt(13))
-                .color(simd_float4{0.5,0.5,0.5,1.0})
-            ,//
-            div()
-                .width(NewArch::Size::percent(1.0)) // this is broken now... percent sizing leads to this being full width of grandparent when html doesnt do that
-                .height(NewArch::Size::px(50))
-                .color(simd_float4{0.0,0.0,0.0,0.0})
-                .display(NewArch::Display::Flex)
-                .justifyContent(NewArch::JustifyContent::SpaceAround)
-            (
-                div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"284").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0})
-                    ,text(U"Posts").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                )
-                ,div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"12.4k").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text(U"Followers").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                ),
-                div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"891").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text(U"Following").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                )
-            )
-            ,
-            div(NewArch::Size::px(120), NewArch::Size::px(40), simd_float4{0.4,0.3,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(20))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::Center)
-                .addEventListener(EventType::MouseDown, onClick)
-            (
-                text(U"Follow").fontSize(NewArch::Size::pt(14)).color(simd_float4{1.0,1.0,1.0,1.0})
-            )
-        )
-    );
+//    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
+//         .display(NewArch::Display::Flex)
+//         .alignItems(NewArch::AlignItems::Center)
+//         .justifyContent(NewArch::JustifyContent::Center)
+//     (
+//         div()
+//             .color(simd_float4{1.0,1.0,1.0,1.0})
+//             .cornerRadius(NewArch::Size::px(16))
+//             .padding(NewArch::Size::px(12))
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .alignItems(NewArch::AlignItems::Center) // expands maxWidth for... some reason?
+//             .flexGap(NewArch::Size::px(12))
+//         (
+//             image("/Users/treja/Downloads/sf90.jpg", NewArch::Size::px(80), NewArch::Size::px(80))
+//                 .cornerRadius(NewArch::Size::percent(0.5))
+//             ,text(U"Sarah Johnson")
+//                 .fontSize(NewArch::Size::pt(18))
+//                 .color(simd_float4{0.1,0.1,0.1,1.0})
+//             ,text(U"Product Designer @ Figma")
+//                 .fontSize(NewArch::Size::pt(13))
+//                 .color(simd_float4{0.5,0.5,0.5,1.0})
+//             ,//
+//             div()
+//                 .width(NewArch::Size::percent(1.0)) // this is broken now... percent sizing leads to this being full width of grandparent when html doesnt do that
+//                 .height(NewArch::Size::px(50))
+//                 .color(simd_float4{0.0,0.0,0.0,0.0})
+//                 .display(NewArch::Display::Flex)
+//                 .justifyContent(NewArch::JustifyContent::SpaceAround)
+//             (
+//                 div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"284").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                     ,text(U"Posts").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 )
+//                 ,div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"12.4k").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Followers").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 ),
+//                 div(NewArch::Size::px(70), NewArch::Size::px(50), simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"891").fontSize(NewArch::Size::pt(16)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Following").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 )
+//             )
+//             ,
+//             div(NewArch::Size::px(120), NewArch::Size::px(40), simd_float4{0.4,0.3,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(20))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::Center)
+//                 .addEventListener(EventType::MouseDown, onClick)
+//             (
+//                 text(U"Follow").fontSize(NewArch::Size::pt(14)).color(simd_float4{1.0,1.0,1.0,1.0})
+//             )
+//         )
+//     );
 
 
 
@@ -852,5 +852,419 @@ auto index() -> void {
 //         )
 //     )
 // );
+
+// using S = NewArch::Size;
+
+// div(S::percent(1.0), S::percent(1.0), simd_float4{0.95,0.96,0.98,1.0})
+//         .display(NewArch::Display::Grid)
+//         .gridTemplateColumns({S::px(250), S::fr(1), S::px(300)})
+//         .gridTemplateRows({S::px(68), S::fr(1)})
+//         .gridColumnGap(S::px(14))
+//         .gridRowGap(S::px(14))
+//         .paddingLeft(S::px(16))
+//         .paddingRight(S::px(16))
+//         .paddingBottom(S::px(16))
+//         .paddingTop(S::px(28))
+//     (
+//         div().gridColumn(1, 4).gridRow(1, 2)
+//             .color(simd_float4{1.0,1.0,1.0,1.0})
+//             .cornerRadius(S::px(10))
+//             .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//             .borderWidth(S::px(1))
+//             .display(NewArch::Display::Flex)
+//             .alignItems(NewArch::AlignItems::Center)
+//             .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             .paddingLeft(S::px(18))
+//             .paddingRight(S::px(18))
+//         (
+//             div()
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .flexGap(S::px(12))
+//             (
+//                 div(S::px(34), S::px(34), simd_float4{0.04,0.4,0.67,1.0})
+//                     .cornerRadius(S::px(6))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .justifyContent(NewArch::JustifyContent::Center)
+//                 (
+//                     text(U"in").fontSize(S::pt(18)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.94,0.97,1.0,1.0})
+//                     .height(S::px(38))
+//                     .paddingLeft(S::px(14))
+//                     .paddingRight(S::px(64))
+//                     .cornerRadius(S::px(19))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Search").fontSize(S::pt(13)).color(simd_float4{0.41,0.49,0.56,1.0})
+//                 )
+//             ),
+//             div()
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .flexGap(S::px(10))
+//             (
+//                 div().paddingLeft(S::px(12)).paddingRight(S::px(12)).height(S::px(34)).cornerRadius(S::px(17)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Home").fontSize(S::pt(13)).color(simd_float4{0.12,0.16,0.2,1.0})
+//                 ),
+//                 div().paddingLeft(S::px(12)).paddingRight(S::px(12)).height(S::px(34)).cornerRadius(S::px(17)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"My Network").fontSize(S::pt(13)).color(simd_float4{0.42,0.48,0.54,1.0})
+//                 ),
+//                 div().paddingLeft(S::px(12)).paddingRight(S::px(12)).height(S::px(34)).cornerRadius(S::px(17)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Jobs").fontSize(S::pt(13)).color(simd_float4{0.42,0.48,0.54,1.0})
+//                 ),
+//                 div().paddingLeft(S::px(12)).paddingRight(S::px(12)).height(S::px(34)).cornerRadius(S::px(17)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Messages").fontSize(S::pt(13)).color(simd_float4{0.42,0.48,0.54,1.0})
+//                 ),
+//                 div().paddingLeft(S::px(14)).paddingRight(S::px(14)).height(S::px(36)).color(simd_float4{0.1,0.45,0.77,1.0}).cornerRadius(S::px(18)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Try Premium").fontSize(S::pt(12)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                 )
+//             )
+//         ),
+
+//         div().gridColumn(1, 2).gridRow(2, 3)
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .flexGap(S::px(14))
+//         (
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//             (
+//                 div()
+//                     .height(S::px(74))
+//                     .color(simd_float4{0.72,0.84,0.95,1.0})
+//                     .cornerRadius(S::px(10))(),
+//                 div()
+//                     .paddingLeft(S::px(18))
+//                     .paddingRight(S::px(18))
+//                     .paddingBottom(S::px(18))
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .flexGap(S::px(8))
+//                 (
+//                     div(S::px(84), S::px(84), simd_float4{0.1,0.45,0.77,1.0})
+//                         .cornerRadius(S::px(42))
+//                         .marginTop(S::px(-42))
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .justifyContent(NewArch::JustifyContent::Center)
+//                     (
+//                         text(U"TR").fontSize(S::pt(24)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                     ),
+//                     text(U"Taanish Reja").fontSize(S::pt(18)).font(ArialBold).color(simd_float4{0.09,0.12,0.16,1.0}),
+//                     text(U"Building a GPU-native UI kit").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                     div().height(S::px(1)).color(simd_float4{0.91,0.93,0.95,1.0})(),
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                     (
+//                         text(U"Profile viewers").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                         text(U"128").fontSize(S::pt(12)).font(ArialBold).color(simd_float4{0.1,0.45,0.77,1.0})
+//                     ),
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                     (
+//                         text(U"Post impressions").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                         text(U"2,481").fontSize(S::pt(12)).font(ArialBold).color(simd_float4{0.1,0.45,0.77,1.0})
+//                     )
+//                 )
+//             ),
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .padding(S::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(S::px(10))
+//             (
+//                 text(U"Recent").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.12,0.16,0.2,1.0}),
+//                 text(U"#metal").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                 text(U"#layoutengines").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                 text(U"#cpp").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                 text(U"#rendering").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0})
+//             )
+//         ),
+
+//         div().gridColumn(2, 3).gridRow(2, 3)
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .flexGap(S::px(14))
+//         (
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .padding(S::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(S::px(14))
+//             (
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .flexGap(S::px(12))
+//                 (
+//                     div(S::px(52), S::px(52), simd_float4{0.13,0.52,0.81,1.0})
+//                         .cornerRadius(S::px(26))
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .justifyContent(NewArch::JustifyContent::Center)
+//                     (
+//                         text(U"TR").fontSize(S::pt(15)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                     ),
+//                     div()
+//                         .color(simd_float4{0.96,0.97,0.98,1.0})
+//                         .borderColor(simd_float4{0.84,0.87,0.9,1.0})
+//                         .borderWidth(S::px(1))
+//                         .cornerRadius(S::px(22))
+//                         .height(S::px(44))
+//                         .paddingLeft(S::px(18))
+//                         .paddingRight(S::px(18))
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .flexGrow(S::px(1))
+//                     (
+//                         text(U"Start a post about the grid stress test").fontSize(S::pt(13)).color(simd_float4{0.42,0.48,0.54,1.0})
+//                     )
+//                 ),
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     div().paddingLeft(S::px(10)).paddingRight(S::px(10)).height(S::px(32)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                     (
+//                         text(U"Photo").fontSize(S::pt(12)).color(simd_float4{0.1,0.45,0.77,1.0})
+//                     ),
+//                     div().paddingLeft(S::px(10)).paddingRight(S::px(10)).height(S::px(32)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                     (
+//                         text(U"Video").fontSize(S::pt(12)).color(simd_float4{0.09,0.58,0.37,1.0})
+//                     ),
+//                     div().paddingLeft(S::px(10)).paddingRight(S::px(10)).height(S::px(32)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center)
+//                     (
+//                         text(U"Write article").fontSize(S::pt(12)).color(simd_float4{0.79,0.47,0.08,1.0})
+//                     )
+//                 )
+//             ),
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .padding(S::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(S::px(14))
+//             (
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .flexGap(S::px(12))
+//                     (
+//                         div(S::px(52), S::px(52), simd_float4{0.18,0.18,0.2,1.0})
+//                             .cornerRadius(S::px(26))
+//                             .display(NewArch::Display::Flex)
+//                             .alignItems(NewArch::AlignItems::Center)
+//                             .justifyContent(NewArch::JustifyContent::Center)
+//                         (
+//                             text(U"MS").fontSize(S::pt(15)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                         ),
+//                         div()
+//                             .display(NewArch::Display::Flex)
+//                             .flexDirection(NewArch::FlexDirection::Col)
+//                             .flexGap(S::px(3))
+//                         (
+//                             text(U"Maya Stone").fontSize(S::pt(14)).font(ArialBold).color(simd_float4{0.12,0.16,0.2,1.0}),
+//                             text(U"Design systems at Northstar").fontSize(S::pt(12)).color(simd_float4{0.39,0.45,0.51,1.0}),
+//                             text(U"2h").fontSize(S::pt(11)).color(simd_float4{0.58,0.62,0.67,1.0})
+//                         )
+//                     ),
+//                     text(U"...").fontSize(S::pt(16)).color(simd_float4{0.53,0.57,0.62,1.0})
+//                 ),
+//                 text(U"Spent the morning rebuilding our composer with a new grid shell and nested flex rows. The ergonomics are getting close.")
+//                     .fontSize(S::pt(14))
+//                     .color(simd_float4{0.14,0.17,0.21,1.0}),
+//                 div()
+//                     .height(S::px(210))
+//                     .color(simd_float4{0.9,0.94,0.98,1.0})
+//                     .cornerRadius(S::px(12))
+//                     .padding(S::px(18))
+//                     .display(NewArch::Display::Grid)
+//                     .gridTemplateColumns({S::fr(1), S::fr(1), S::fr(1), S::fr(1)})
+//                     .gridTemplateRows({S::px(64), S::fr(1), S::px(46)})
+//                     .gridColumnGap(S::px(10))
+//                     .gridRowGap(S::px(10))
+//                 (
+//                     div().gridColumn(1, 5).gridRow(1, 2).color(simd_float4{0.1,0.45,0.77,1.0}).cornerRadius(S::px(10))
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .paddingLeft(S::px(16))
+//                     (
+//                         text(U"Feed card inside a feed card").fontSize(S::pt(14)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                     ),
+//                     div().gridColumn(1, 2).gridRow(2, 3).color(simd_float4{1.0,1.0,1.0,1.0}).cornerRadius(S::px(10))(),
+//                     div().gridColumn(2, 4).gridRow(2, 3).color(simd_float4{1.0,1.0,1.0,1.0}).cornerRadius(S::px(10))(),
+//                     div().gridColumn(4, 5).gridRow(2, 3).color(simd_float4{0.84,0.91,0.98,1.0}).cornerRadius(S::px(10))(),
+//                     div().gridColumn(1, 5).gridRow(3, 4).color(simd_float4{0.16,0.2,0.24,1.0}).cornerRadius(S::px(10))
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .paddingLeft(S::px(16))
+//                     (
+//                         text(U"Nested grid preview").fontSize(S::pt(12)).color(simd_float4{0.92,0.94,0.97,1.0})
+//                     )
+//                 ),
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"842 reactions   54 comments").fontSize(S::pt(12)).color(simd_float4{0.47,0.52,0.57,1.0}),
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .flexGap(S::px(8))
+//                     (
+//                         div(S::px(104), S::px(36), simd_float4{0.1,0.45,0.77,1.0})
+//                             .cornerRadius(S::px(18))
+//                             .display(NewArch::Display::Flex)
+//                             .alignItems(NewArch::AlignItems::Center)
+//                             .justifyContent(NewArch::JustifyContent::Center)
+//                             .addEventListener(EventType::MouseDown, onClick)
+//                         (
+//                             text(U"Follow").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                         ),
+//                         div(S::px(104), S::px(36), simd_float4{0.95,0.96,0.98,1.0})
+//                             .cornerRadius(S::px(18))
+//                             .borderColor(simd_float4{0.84,0.87,0.9,1.0})
+//                             .borderWidth(S::px(1))
+//                             .display(NewArch::Display::Flex)
+//                             .alignItems(NewArch::AlignItems::Center)
+//                             .justifyContent(NewArch::JustifyContent::Center)
+//                         (
+//                             text(U"Comment").fontSize(S::pt(13)).color(simd_float4{0.27,0.33,0.38,1.0})
+//                         )
+//                     )
+//                 )
+//             )
+//         ),
+
+//         div().gridColumn(3, 4).gridRow(2, 3)
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .flexGap(S::px(14))
+//         (
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .padding(S::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(S::px(12))
+//             (
+//                 text(U"LinkedIn News").fontSize(S::pt(15)).font(ArialBold).color(simd_float4{0.12,0.16,0.2,1.0}),
+//                 div().display(NewArch::Display::Flex).flexDirection(NewArch::FlexDirection::Col).flexGap(S::px(4))
+//                 (
+//                     text(U"Renderer benchmarks are up").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.14,0.17,0.21,1.0}),
+//                     text(U"Top story   1,204 readers").fontSize(S::pt(11)).color(simd_float4{0.5,0.55,0.6,1.0})
+//                 ),
+//                 div().display(NewArch::Display::Flex).flexDirection(NewArch::FlexDirection::Col).flexGap(S::px(4))
+//                 (
+//                     text(U"More teams are testing native grids").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.14,0.17,0.21,1.0}),
+//                     text(U"Trending   884 readers").fontSize(S::pt(11)).color(simd_float4{0.5,0.55,0.6,1.0})
+//                 ),
+//                 div().display(NewArch::Display::Flex).flexDirection(NewArch::FlexDirection::Col).flexGap(S::px(4))
+//                 (
+//                     text(U"UI infra hiring cools, specialists still win").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.14,0.17,0.21,1.0}),
+//                     text(U"3h ago   642 readers").fontSize(S::pt(11)).color(simd_float4{0.5,0.55,0.6,1.0})
+//                 )
+//             ),
+//             div()
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(S::px(10))
+//                 .borderColor(simd_float4{0.86,0.88,0.91,1.0})
+//                 .borderWidth(S::px(1))
+//                 .padding(S::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(S::px(14))
+//             (
+//                 text(U"Add to your feed").fontSize(S::pt(15)).font(ArialBold).color(simd_float4{0.12,0.16,0.2,1.0}),
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .flexGap(S::px(10))
+//                     (
+//                         div(S::px(42), S::px(42), simd_float4{0.82,0.51,0.19,1.0}).cornerRadius(S::px(21)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center).justifyContent(NewArch::JustifyContent::Center)
+//                         (
+//                             text(U"AK").fontSize(S::pt(12)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                         ),
+//                         div().display(NewArch::Display::Flex).flexDirection(NewArch::FlexDirection::Col).flexGap(S::px(3))
+//                         (
+//                             text(U"Ada Kim").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.14,0.17,0.21,1.0}),
+//                             text(U"Graphics engineer").fontSize(S::pt(11)).color(simd_float4{0.5,0.55,0.6,1.0})
+//                         )
+//                     ),
+//                     div(S::px(74), S::px(32), simd_float4{1.0,1.0,1.0,1.0}).cornerRadius(S::px(16)).borderColor(simd_float4{0.47,0.52,0.57,1.0}).borderWidth(S::px(1)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center).justifyContent(NewArch::JustifyContent::Center)
+//                     (
+//                         text(U"+ Follow").fontSize(S::pt(11)).font(ArialBold).color(simd_float4{0.26,0.31,0.36,1.0})
+//                     )
+//                 ),
+//                 div()
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     div()
+//                         .display(NewArch::Display::Flex)
+//                         .alignItems(NewArch::AlignItems::Center)
+//                         .flexGap(S::px(10))
+//                     (
+//                         div(S::px(42), S::px(42), simd_float4{0.26,0.56,0.39,1.0}).cornerRadius(S::px(21)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center).justifyContent(NewArch::JustifyContent::Center)
+//                         (
+//                             text(U"LM").fontSize(S::pt(12)).font(ArialBold).color(simd_float4{1.0,1.0,1.0,1.0})
+//                         ),
+//                         div().display(NewArch::Display::Flex).flexDirection(NewArch::FlexDirection::Col).flexGap(S::px(3))
+//                         (
+//                             text(U"Layout Monthly").fontSize(S::pt(13)).font(ArialBold).color(simd_float4{0.14,0.17,0.21,1.0}),
+//                             text(U"Newsletter").fontSize(S::pt(11)).color(simd_float4{0.5,0.55,0.6,1.0})
+//                         )
+//                     ),
+//                     div(S::px(74), S::px(32), simd_float4{1.0,1.0,1.0,1.0}).cornerRadius(S::px(16)).borderColor(simd_float4{0.47,0.52,0.57,1.0}).borderWidth(S::px(1)).display(NewArch::Display::Flex).alignItems(NewArch::AlignItems::Center).justifyContent(NewArch::JustifyContent::Center)
+//                     (
+//                         text(U"+ Follow").fontSize(S::pt(11)).font(ArialBold).color(simd_float4{0.26,0.31,0.36,1.0})
+//                     )
+//                 )
+//             )
+//         )
+//     );
 
 }
