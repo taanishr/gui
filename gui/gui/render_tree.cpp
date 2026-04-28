@@ -1,4 +1,5 @@
 #include "render_tree.hpp"
+#include <print>
 
 namespace NewArch {
     // I have a render cache, develop some sort of caching policy that makes these useful

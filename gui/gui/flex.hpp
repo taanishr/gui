@@ -43,12 +43,22 @@ namespace NewArch {
         }
 
         void setMainPosition(Constraints& c, float v) const {
-            if (isRow) c.origin.x = v;
-            else       c.cursor.y = v;
+            if (isRow) {
+                c.origin.x = v;
+                c.cursor.x = v;
+            } else {
+                c.origin.y = v;
+                c.cursor.y = v;
+            }
         }
         void setCrossPosition(Constraints& c, float v) const {
-            if (isRow) c.cursor.y = v;
-            else       c.origin.x = v;
+            if (isRow) {
+                c.origin.y = v;
+                c.cursor.y = v;
+            } else {
+                c.origin.x = v;
+                c.cursor.x = v;
+            }
         }
 
         void setMainMaxSize(Constraints& c, float v) const {
@@ -203,7 +213,7 @@ namespace NewArch {
             float overallTotalAfter{};
         };
 
-        ResolveResult resolveSizes(float avMain) {
+        ResolveResult resolveSizes(float avMain, float gap = 0.0f) {
             if (currentLine.count() > 0) {
                 lines.push_back(std::move(currentLine));
                 currentLine = FlexLine{};
@@ -211,7 +221,8 @@ namespace NewArch {
 
             ResolveResult result;
             for (auto& line : lines) {
-                auto lr = line.resolve(avMain);
+                float lineGap = line.count() > 1 ? gap * (line.count() - 1) : 0.0f;
+                auto lr = line.resolve(avMain - lineGap);
                 result.overallTotalAfter += lr.totalAfter;
                 result.lineTotalsAfter.push_back(lr.totalAfter);
                 result.lineSizes.push_back(std::move(lr.sizes));
@@ -274,7 +285,8 @@ namespace NewArch {
 
             for (size_t li = 0; li < lineCount; ++li) {
                 auto& line = lines[li];
-                float lineRemainingMain = availableMain - resolved.lineTotalsAfter[li];
+                float lineGap = line.count() > 1 ? gap * (line.count() - 1) : 0.0f;
+                float lineRemainingMain = availableMain - resolved.lineTotalsAfter[li] - lineGap;
                 auto mainAlign = distributeSpace(lineRemainingMain, line.count(), toDistributeMode(justifyContent));
 
                 float accumulated = mainAlign.initialOffset;
@@ -368,8 +380,8 @@ namespace NewArch {
             : tree{tree}, node{node}, parentConstraints{parentConstraints},
                 childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
                 frameInfo{frameInfo},
-                childMaxWidth{node->measured->explicitWidth.value_or(parentConstraints.maxWidth)},
-                avMain{this->flex.axis.availableMain(*node->measured, parentConstraints.maxWidth)},
+                childMaxWidth{parentMaxWidth},
+                avMain{this->flex.axis.isRow ? parentMaxWidth : parentMaxHeight},
                 parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
                 minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
         {

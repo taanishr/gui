@@ -174,7 +174,7 @@ namespace NewArch {
             if (def.isFr()) {
                 frTotal += def.value;
             }else if (!def.isAuto()) {
-                sizes[i] = def.resolveOr(available, 0);
+                sizes[i] = std::max(def.resolveOr(available, 0), itemSizes[i]);
                 fixedTotal += sizes[i];
             }
         }
@@ -193,6 +193,7 @@ namespace NewArch {
                 continue;
 
             sizes[s] = std::max(sizes[s], itemSize);
+
             autoSizes[s] = sizes[s];
         }
 
@@ -202,8 +203,8 @@ namespace NewArch {
         float remaining = std::max(0.0f, usable - fixedTotal - autoTotal);
 
         if (frTotal > 0) {
-            for (size_t t = 0; t < n; ++t)
-                if (defs[t].isFr()) sizes[t] = (defs[t].value / frTotal) * remaining;
+            for (size_t i = 0; i < n; ++i)
+                if (defs[i].isFr()) sizes[i] = std::max((defs[i].value / frTotal) * remaining, itemSizes[i]);
         }
 
         float offset = 0;
@@ -259,12 +260,12 @@ namespace NewArch {
 
     bool GridResolver::isXIndefinite(TreeNode* child) const {
         return !node->measured->explicitWidth.has_value() &&
-            child->shared.width.has_value() && child->shared.width->unit == Unit::Percent;
+            child->shared.width.has_value() && (child->shared.width->unit == Unit::Percent || child->shared.width->unit == Unit::Fr);
     }
 
     bool GridResolver::isYIndefinite(TreeNode* child) const {
         return !node->measured->explicitHeight.has_value() &&
-            child->shared.height.has_value() && child->shared.height->unit == Unit::Percent;
+            child->shared.height.has_value() && (child->shared.height->unit == Unit::Percent || child->shared.width->unit == Unit::Fr);
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
@@ -277,6 +278,8 @@ namespace NewArch {
 
     void GridResolver::phaseA() {
         if (!hasIndefiniteChild) return;
+
+        std::println("here in a!");
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto childAsPtr = node->children[i].get();
@@ -313,6 +316,8 @@ namespace NewArch {
     void GridResolver::phaseB() {
         if (!hasIndefiniteChild) return;
 
+        std::println("here in b!");
+
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto childAsPtr = node->children[i].get();
             bool xIndef = isXIndefinite(childAsPtr);
@@ -346,11 +351,15 @@ namespace NewArch {
 
             if (!hasIndefiniteChild) {
                 prepareChildConstraints(childAsPtr);
+                childConstraints.shrinkToFit = true;
                 tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
             }
 
             auto& childLayout = *childAsPtr->layout;
-            if (childLayout.outOfFlow) continue;
+            if (childLayout.outOfFlow) 
+                continue;
+
+            float minMain = childLayout.computedBox.width;
 
             gridLayout.addChild(childAsPtr);
             inFlowIndices.push_back(i);
@@ -364,6 +373,7 @@ namespace NewArch {
             parentMaxWidth, parentMaxHeight,
             colGap, rowGap,
             itemWidths, itemHeights);
+
     }
 
     GridResolver::Bounds GridResolver::phaseD() {
@@ -381,8 +391,10 @@ namespace NewArch {
 
             float cellX = colTracks[*item.colStart].offset;
             float cellY = rowTracks[*item.rowStart].offset;
+
             float cellW = colTracks[*item.colEnd - 1].offset + colTracks[*item.colEnd - 1].size - cellX;
             float cellH = rowTracks[*item.rowEnd - 1].offset + rowTracks[*item.rowEnd - 1].size - cellY;
+
 
             auto&& [frags, boxes] = buildIsolatedInlineBoxes(childAsPtr, cellW);
             childConstraints.lineFragments = frags;

@@ -162,12 +162,10 @@ namespace NewArch {
             : totalSizeFallback;
         flex.availableMain = availableMain;
 
-        auto resolved = flex.resolveSizes(availableMain);
-
-        float gapBasis = flex.axis.isRow
-            ? measured.explicitWidth.value_or(parentConstraints.maxWidth)
-            : measured.explicitHeight.value_or(resolved.overallTotalAfter);
+        float gapBasis = flex.axis.isRow ? parentMaxWidth : parentMaxHeight;
         float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
+
+        auto resolved = flex.resolveSizes(availableMain, resolvedGap);
 
         float naturalCross = 0;
 
