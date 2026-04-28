@@ -37,6 +37,7 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     auto* rootNode = rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
     rootNode->shared.width = NewArch::Size::percent(1.0);
     rootNode->shared.height = NewArch::Size::percent(1.0);
+    rootTree.markDirty();
     makeResources();
 }
 
@@ -73,9 +74,10 @@ void Renderer::draw() {
     MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
     // renderCommandEncoder->setDepthStencilState(getDefaultDepthStencilState());
+    uint64_t frameIndex = ctx.frameIndex;
 
     auto ts1 = clock.now();
-    rootTree.update(getFrameInfo());
+    rootTree.update(getFrameInfo(), frameIndex);
     rootTree.render(renderCommandEncoder);
     
     auto ts2 = clock.now();
@@ -91,14 +93,14 @@ void Renderer::draw() {
     if (totalSamples % 100 == 0) {
         int count = std::min(totalSamples, WINDOW_SIZE);
         double avgMs = (windowSum / static_cast<double>(count)) / 1000.0;
-        // std::println("Rolling avg (last {} frames): {:.3f} ms", count, avgMs);
+        std::println("Rolling avg (last {} frames): {:.3f} ms", count, avgMs);
     }
 
     renderCommandEncoder->endEncoding();
+    ctx.frameIndex = frameIndex + 1;
     
     std::function<void(MTL::CommandBuffer*)> completedHandler = [this](MTL::CommandBuffer* commandBuffer){
         this->frameSemaphore.release();
-        ctx.frameIndex += 1;
     };
 
   
@@ -140,9 +142,6 @@ Renderer::~Renderer() {
     commandQueue->release();
     FT_Done_FreeType(ft);
 }
-
-
-
 
 
 

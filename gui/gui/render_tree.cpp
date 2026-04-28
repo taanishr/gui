@@ -1,9 +1,34 @@
 #include "render_tree.hpp"
+#include "renderer_constants.hpp"
 #include <print>
 
 namespace NewArch {
+    bool RenderTree::isFrameInfoChanged(const FrameInfo& frameInfo) const {
+        return !lastFrameInfo.has_value()
+            || lastFrameInfo->width != frameInfo.width
+            || lastFrameInfo->height != frameInfo.height
+            || lastFrameInfo->scale != frameInfo.scale;
+    }
+
+    void RenderTree::markDirty() {
+        needsUpdate = true;
+        pendingWarmupFrames = MaxOutstandingFrameCount;
+    }
+
     // I have a render cache, develop some sort of caching policy that makes these useful
-    void RenderTree::update(const FrameInfo& frameInfo) {
+    void RenderTree::update(const FrameInfo& frameInfo, uint64_t frameIndex) {
+        bool frameInfoChanged = isFrameInfoChanged(frameInfo);
+        if (frameInfoChanged) {
+            pendingWarmupFrames = MaxOutstandingFrameCount;
+        }
+
+        if (!needsUpdate && !frameInfoChanged && pendingWarmupFrames == 0) {
+            return;
+        }
+
+        needsUpdate = false;
+        lastFrameInfo = frameInfo;
+
         auto root = getRoot();
         auto allNodes = collectAllNodes(root);
 
@@ -59,6 +84,8 @@ namespace NewArch {
                                                         *node->atomized, *node->layout, *node->placed);
             }
         );
+
+        pendingWarmupFrames--;
     }
 
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
