@@ -114,6 +114,10 @@ namespace NewArch {
 
         size_t count() const { return childSizes.size(); }
 
+        float totalWithGap(float gap) const {
+            return totalSize + (count() > 1 ? gap * (count() - 1) : 0.0f);
+        }
+
         struct ResolveResult {
             std::vector<float> sizes;
             float totalAfter{};
