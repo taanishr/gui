@@ -3,6 +3,7 @@
 #include "element.hpp"
 #include "flex.hpp"
 #include "grid.hpp"
+#include "renderer_constants.hpp"
 
 namespace NewArch {
     struct RenderTree {
@@ -15,8 +16,9 @@ namespace NewArch {
         
         TreeNode* getRoot() { return elementTree.get(); }
         
-        void update(const FrameInfo& frameInfo);
+        void update(const FrameInfo& frameInfo, uint64_t frameIndex);
         void render(MTL::RenderCommandEncoder* encoder); 
+        void markDirty();
         
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
         
@@ -34,6 +36,12 @@ namespace NewArch {
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     private:
+        bool isFrameInfoChanged(const FrameInfo& frameInfo) const;
+
+        bool needsUpdate{true};
+        uint64_t pendingWarmupFrames{MaxOutstandingFrameCount};
+        std::optional<FrameInfo> lastFrameInfo;
+
         Constraints rootConstraints; 
         simd_float2 rootCursor;
         std::unordered_map<ChainID, CollapsedChain> collapsedChainMap;

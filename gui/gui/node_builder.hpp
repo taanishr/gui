@@ -49,8 +49,12 @@ namespace NewArch {
             this->node = n.get();
 
             root->attach_child(std::move(n));
+            renderTree.markDirty();
         }
 
+        void markDirty() {
+            renderTree.markDirty();
+        }
         
         
         static void reparent(TreeNode* newParent, TreeNode* child) {
@@ -70,138 +74,165 @@ namespace NewArch {
         template <typename... Children>
         NodeBuilder& operator()(Children&&... args) {
             (reparent(this->node, args.node), ...);
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& position(Position position) {
             node->shared.position = position;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& display(Display display) {
             node->shared.display = display;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& width(Size width) {
             node->shared.width = width;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& height(Size height) {
             node->shared.height = height;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& top(Size top) {
             node->shared.top = top;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& right(Size right) {
             node->shared.right = right;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& bottom(Size bottom) {
             node->shared.bottom = bottom;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& left(Size left) {
             node->shared.left = left;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& flexDirection(FlexDirection direction) {
             node->shared.flexDirection = direction;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& justifyContent(JustifyContent justifyContent) { 
             node->shared.justifyContent = justifyContent; 
+            markDirty();
             return *this; 
         }
 
         NodeBuilder& alignItems(AlignItems alignItems) {
             node->shared.alignItems = alignItems;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& flexWrap(FlexWrap wrap) {
             node->shared.flexWrap = wrap;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& alignContent(AlignContent ac) {
             node->shared.alignContent = ac;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& alignSelf(AlignSelf as) {
             node->shared.alignSelf = as;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& flexGrow(Size grow) {
             node->shared.flexGrow = grow;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& flexGap(Size gap) {
             node->shared.flexGap = gap;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& flexShrink(Size shrink) {
             node->shared.flexShrink = shrink;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridTemplateColumns(std::vector<Size> tracks) {
             node->shared.gridTemplateColumns = std::move(tracks);
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridTemplateRows(std::vector<Size> tracks) {
             node->shared.gridTemplateRows = std::move(tracks);
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridColumnGap(Size gap) {
             node->shared.gridColumnGap = gap;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridRowGap(Size gap) {
             node->shared.gridRowGap = gap;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridColumn(int start, int end = 0) {
             node->shared.gridPlacement.colStart = start;
             node->shared.gridPlacement.colEnd = end;
+            markDirty();
             return *this;
         }
 
         NodeBuilder& gridRow(int start, int end = 0) {
             node->shared.gridPlacement.rowStart = start;
             node->shared.gridPlacement.rowEnd = end;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& cornerRadius(Size radius) {
             node->shared.cornerRadius = radius;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& borderWidth(Size width) {
             node->shared.borderWidth = width;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& borderColor(simd_float4 color) {
             node->shared.borderColor = color;
+            markDirty();
             return *this;
         }
 
@@ -211,26 +242,31 @@ namespace NewArch {
             node->shared.paddingRight = padding;
             node->shared.paddingBottom = padding;
             node->shared.paddingLeft = padding;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& paddingTop(Size padding) {
             node->shared.paddingTop = padding;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& paddingRight(Size padding) {
             node->shared.paddingRight = padding;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& paddingBottom(Size padding) {
             node->shared.paddingBottom = padding;
+            markDirty();
             return *this;
         }
 
         NodeBuilder<E,P>& paddingLeft(Size padding) {
             node->shared.paddingLeft = padding;
+            markDirty();
             return *this;
         }
 
@@ -240,6 +276,7 @@ namespace NewArch {
 
         NodeBuilder<E,P>& margin(Size margin) {
             node->shared.margin = margin;
+            markDirty();
             return *this;
         }
 
@@ -249,6 +286,7 @@ namespace NewArch {
 
         NodeBuilder<E,P>& marginTop(Size margin) {
             node->shared.marginTop = margin;
+            markDirty();
             return *this;
         }
 
@@ -258,6 +296,7 @@ namespace NewArch {
 
         NodeBuilder<E,P>& marginRight(Size margin) {
             node->shared.marginRight = margin;
+            markDirty();
             return *this;
         }
 
@@ -267,6 +306,7 @@ namespace NewArch {
 
         NodeBuilder<E,P>& marginBottom(Size margin) {
             node->shared.marginBottom = margin;
+            markDirty();
             return *this;
         }
 
@@ -276,6 +316,7 @@ namespace NewArch {
 
         NodeBuilder<E,P>& marginLeft(Size margin) {
             node->shared.marginLeft = margin;
+            markDirty();
             return *this;
         }
 
@@ -285,6 +326,7 @@ namespace NewArch {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.color = color;
+            markDirty();
             return *this;
         }
 
@@ -292,6 +334,7 @@ namespace NewArch {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.text = text;
+            markDirty();
             return *this;
         }
 
@@ -299,6 +342,7 @@ namespace NewArch {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.font = fontPath;
+            markDirty();
             return *this;
         }
 
@@ -306,6 +350,7 @@ namespace NewArch {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.fontSize = size;
+            markDirty();
             return *this;
         }
 
