@@ -156,17 +156,23 @@ namespace NewArch {
     FlexResolver::Bounds FlexResolver::phaseD() {
         auto& measured = *node->measured;
 
+        float gapBasis = flex.axis.isRow ? parentMaxWidth : parentMaxHeight;
+        float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
+
         float totalSizeFallback = 0;
-        for (auto& line : flex.lines) totalSizeFallback += line.totalSize;
-        totalSizeFallback += flex.currentLine.totalSize;
+        for (auto& line : flex.lines) {
+            float lineGap = line.count() > 1 ? resolvedGap * (line.count() - 1) : 0.0f;
+            totalSizeFallback += line.totalSize + lineGap;
+        }
+        if (flex.currentLine.count() > 0) {
+            float lineGap = flex.currentLine.count() > 1 ? resolvedGap * (flex.currentLine.count() - 1) : 0.0f;
+            totalSizeFallback += flex.currentLine.totalSize + lineGap;
+        }
         auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
         float availableMain = explicitMain.has_value()
             ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
             : totalSizeFallback;
         flex.availableMain = availableMain;
-
-        float gapBasis = flex.axis.isRow ? parentMaxWidth : parentMaxHeight;
-        float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
 
         auto resolved = flex.resolveSizes(availableMain, resolvedGap);
 

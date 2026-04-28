@@ -163,24 +163,11 @@ namespace NewArch {
         float usable = available - totalGap;
 
         std::vector<float> sizes(n, 0);
+        std::vector<float> trackMinSizes(n, 0);
         std::vector<Track> tracks {};
 
         float fixedTotal {};
         float frTotal {};
-
-        // resolve fixed tracks
-        for (size_t i = 0; i < n; ++i) {
-            auto& def = defs[i];
-            if (def.isFr()) {
-                frTotal += def.value;
-            }else if (!def.isAuto()) {
-                sizes[i] = std::max(def.resolveOr(available, 0), itemSizes[i]);
-                fixedTotal += sizes[i];
-            }
-        }
-
-        // resolve auto
-        std::vector<float> autoSizes (n, 0);
 
         for (auto [item, itemSize]: std::ranges::views::zip(items, itemSizes)) {
             size_t s = isCol ? *item.colStart : *item.rowStart;
@@ -189,12 +176,29 @@ namespace NewArch {
             if (e - s > 1)
                 continue;
 
-            if (!defs[s].isAuto())
+            trackMinSizes[s] = std::max(trackMinSizes[s], itemSize);
+        }
+
+        // resolve fixed tracks
+        for (size_t i = 0; i < n; ++i) {
+            auto& def = defs[i];
+            if (def.isFr()) {
+                frTotal += def.value;
+            }else if (!def.isAuto()) {
+                sizes[i] = std::max(def.resolveOr(available, 0), trackMinSizes[i]);
+                fixedTotal += sizes[i];
+            }
+        }
+
+        // resolve auto
+        std::vector<float> autoSizes (n, 0);
+
+        for (size_t i = 0; i < n; ++i) {
+            if (!defs[i].isAuto())
                 continue;
 
-            sizes[s] = std::max(sizes[s], itemSize);
-
-            autoSizes[s] = sizes[s];
+            sizes[i] = trackMinSizes[i];
+            autoSizes[i] = sizes[i];
         }
 
         float autoTotal = std::ranges::fold_left(autoSizes, 0.0f, std::plus<>());
@@ -204,7 +208,7 @@ namespace NewArch {
 
         if (frTotal > 0) {
             for (size_t i = 0; i < n; ++i)
-                if (defs[i].isFr()) sizes[i] = std::max((defs[i].value / frTotal) * remaining, itemSizes[i]);
+                if (defs[i].isFr()) sizes[i] = std::max((defs[i].value / frTotal) * remaining, trackMinSizes[i]);
         }
 
         float offset = 0;
@@ -265,7 +269,7 @@ namespace NewArch {
 
     bool GridResolver::isYIndefinite(TreeNode* child) const {
         return !node->measured->explicitHeight.has_value() &&
-            child->shared.height.has_value() && (child->shared.height->unit == Unit::Percent || child->shared.width->unit == Unit::Fr);
+            child->shared.height.has_value() && (child->shared.height->unit == Unit::Percent || child->shared.height->unit == Unit::Fr);
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
