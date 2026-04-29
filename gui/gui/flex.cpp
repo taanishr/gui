@@ -11,14 +11,17 @@ namespace NewArch {
             case DistributeMode::Center:
                 a.initialOffset = remainingSpace / 2.0f; break;
             case DistributeMode::SpaceBetween:
+                if (remainingSpace <= 0.0f) break;
                 if (itemCount > 1) a.spaceBetween = remainingSpace / (itemCount - 1); break;
             case DistributeMode::SpaceAround: {
+                if (remainingSpace <= 0.0f) break;
                 float gap = remainingSpace / itemCount;
                 a.initialOffset = gap / 2.0f;
                 a.spaceBetween = gap;
                 break;
             }
             case DistributeMode::SpaceEvenly: {
+                if (remainingSpace <= 0.0f) break;
                 float gap = remainingSpace / (itemCount + 1);
                 a.initialOffset = gap;
                 a.spaceBetween = gap;
