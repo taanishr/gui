@@ -15,32 +15,6 @@ namespace NewArch {
         pendingWarmupFrames = MaxOutstandingFrameCount;
     }
 
-    void RenderTree::rebuildLayoutSnapshot(const FrameInfo& frameInfo, const std::vector<TreeNode*>& allNodes) {
-        LayoutSnapshot snapshot;
-        snapshot.generation = ++layoutSnapshotGeneration;
-        snapshot.frameInfo = frameInfo;
-        snapshot.nodes.reserve(allNodes.size());
-
-        for (auto* node : allNodes) {
-            if (!node->layout.has_value()) continue;
-
-            auto& box = node->layout->computedBox;
-            snapshot.nodes.push_back({
-                .nodeId = node->id,
-                .parentId = node->parent ? node->parent->id : 0,
-                .zIndex = node->globalZIndex,
-                .x = box.x,
-                .y = box.y,
-                .width = box.width,
-                .height = box.height,
-                .consumedHeight = node->layout->consumedHeight,
-                .globalOffset = node->globalOffset
-            });
-        }
-
-        currentLayoutSnapshot = std::move(snapshot);
-    }
-
     // I have a render cache, develop some sort of caching policy that makes these useful
     void RenderTree::update(const FrameInfo& frameInfo, uint64_t frameIndex) {
         bool frameInfoChanged = isFrameInfoChanged(frameInfo);
@@ -96,7 +70,6 @@ namespace NewArch {
         root->calculateGlobalZIndex(0);
         // postLayout: resolve global positions (serial, top-down) + reconcile atoms
         postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
-        rebuildLayoutSnapshot(frameInfo, allNodes);
 
         Parallel::for_each(allNodes.begin(), allNodes.end(),
             [&](TreeNode* node) {

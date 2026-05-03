@@ -6,24 +6,6 @@
 #include "renderer_constants.hpp"
 
 namespace NewArch {
-    struct LayoutSnapshotNode {
-        uint64_t nodeId{};
-        uint64_t parentId{};
-        uint64_t zIndex{};
-        float x{};
-        float y{};
-        float width{};
-        float height{};
-        float consumedHeight{};
-        simd_float2 globalOffset{0.0f, 0.0f};
-    };
-
-    struct LayoutSnapshot {
-        uint64_t generation{};
-        FrameInfo frameInfo{};
-        std::vector<LayoutSnapshotNode> nodes;
-    };
-
     struct RenderTree {
         template<ElementType E, typename P>
             requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
@@ -37,8 +19,7 @@ namespace NewArch {
         void update(const FrameInfo& frameInfo, uint64_t frameIndex);
         void render(MTL::RenderCommandEncoder* encoder); 
         void markDirty();
-        const LayoutSnapshot& getLayoutSnapshot() const { return currentLayoutSnapshot; }
-        
+  
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
         
 
@@ -56,13 +37,12 @@ namespace NewArch {
         void finalizePhase(TreeNode* node, Constraints& constraints);
     private:
         bool isFrameInfoChanged(const FrameInfo& frameInfo) const;
-        void rebuildLayoutSnapshot(const FrameInfo& frameInfo, const std::vector<TreeNode*>& allNodes);
 
         bool needsUpdate{true};
         uint64_t pendingWarmupFrames{MaxOutstandingFrameCount};
         std::optional<FrameInfo> lastFrameInfo;
-        uint64_t layoutSnapshotGeneration{0};
-        LayoutSnapshot currentLayoutSnapshot;
+        uint64_t layoutGeneration{0};
+
 
         Constraints rootConstraints; 
         simd_float2 rootCursor;
