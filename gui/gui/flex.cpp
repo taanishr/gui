@@ -169,6 +169,9 @@ namespace NewArch {
         float availableMain = explicitMain.has_value()
             ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
             : totalSizeFallback;
+        if (node->shared.overflow == Overflow::Scroll) {
+            availableMain = std::max(availableMain, totalSizeFallback);
+        }
         flex.availableMain = availableMain;
 
         auto resolved = flex.resolveSizes(availableMain, resolvedGap);

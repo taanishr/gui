@@ -175,7 +175,23 @@ namespace NewArch {
                     handler(event);
                 }
             }
-            
+
+            if (event.type == EventType::ScrollWheel && shared.overflow == Overflow::Scroll) {
+                auto& scroll = event.get<EventType::ScrollWheel>();
+                float maxScrollX = 0.0f;
+                float maxScrollY = 0.0f;
+                if (layout.has_value()) {
+                    auto& box = layout->computedBox;
+                    float viewportWidth = box.width - layout->resolvedPadding.left - layout->resolvedPadding.right;
+                    float viewportHeight = box.height - layout->resolvedPadding.top - layout->resolvedPadding.bottom;
+                    maxScrollX = std::max(0.0f, scrollContentSize.x - viewportWidth);
+                    maxScrollY = std::max(0.0f, scrollContentSize.y - viewportHeight);
+                }
+                scrollOffset.x = std::clamp(scrollOffset.x + scroll.dx, 0.0f, maxScrollX);
+                scrollOffset.y = std::clamp(scrollOffset.y - scroll.dy, 0.0f, maxScrollY);
+                event.stopPropagation();
+            }
+
             if (!event.propagationStopped && parent) {
                 parent->dispatch(event);
             }
@@ -230,6 +246,8 @@ namespace NewArch {
         std::any finalized;
         simd_float2 globalOffset {0.0f, 0.0f};
         ClipRect clipRect {};
+        simd_float2 scrollOffset {0.0f, 0.0f};
+        simd_float2 scrollContentSize {0.0f, 0.0f};
         SharedDescriptor shared;
 
     private:

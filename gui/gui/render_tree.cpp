@@ -468,6 +468,11 @@ namespace NewArch {
             layout.computedBox.y + layout.resolvedPadding.top
         };
 
+        if (node->shared.overflow == Overflow::Scroll) {
+            currContentOrigin.x -= node->scrollOffset.x;
+            currContentOrigin.y -= node->scrollOffset.y;
+        }
+
         simd_float2 childAbsBlockOrigin = absBlockGlobalOrigin;
         if (position != Position::Static) {
             childAbsBlockOrigin = currContentOrigin;
@@ -498,6 +503,17 @@ namespace NewArch {
         for (auto& child : node->children) {
             postLayoutPhase(child.get(), frameInfo, childConstraints,
                            currContentOrigin, childAbsBlockOrigin);
+        }
+
+        if (node->shared.overflow == Overflow::Scroll) {
+            simd_float2 contentSize {0.0f, 0.0f};
+            for (auto& child : node->children) {
+                if (!child->layout.has_value() || child->layout->outOfFlow) continue;
+                auto& childBox = child->layout->computedBox;
+                contentSize.x = std::max(contentSize.x, childBox.x + childBox.width - currContentOrigin.x);
+                contentSize.y = std::max(contentSize.y, childBox.y + childBox.height - currContentOrigin.y);
+            }
+            node->scrollContentSize = contentSize;
         }
     }
 
