@@ -1,4 +1,5 @@
 #include "index.hpp"
+#include "events.hpp"
 #include "new_arch.hpp"
 #include "sizing.hpp"
 #include <print>
@@ -20,6 +21,11 @@ auto index() -> void {
         }else {
             desc.color = simd_float4{0.0,0.0,1.0,1.0};
         }
+
+    };
+
+    auto handleScroll = [](auto& desc, const Event& event){
+        std::println("hello world!");
 
     };
 
@@ -1276,6 +1282,7 @@ auto index() -> void {
         .cornerRadius(NewArch::Size::px(8))
         .padding(NewArch::Size::px(10))
         .overflow(NewArch::Overflow::Scroll)
+        .addEventListener(EventType::ScrollWheel, handleScroll)
     (
         div(NewArch::Size::px(260), NewArch::Size::px(136), simd_float4{0.18,0.42,1.0,0.34})
             .position(NewArch::Position::Absolute)
