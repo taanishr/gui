@@ -30,6 +30,7 @@ struct DivStyleUniforms {
 struct DivGeometryUniforms {
     simd_float2 rectCenter;
     simd_float2 halfExtent;
+    ClipUniform clip;
 };
 
 struct DivUniforms {
@@ -59,6 +60,10 @@ fragment float4 fragment_div(
     constant DivUniforms* uniforms [[buffer(0)]]
 )
 {
+    if (outside_clip(in.worldPosition.xy, uniforms->geometry.clip)) {
+        discard_fragment();
+    }
+
     float2 localPosition = in.worldPosition.xy - uniforms->geometry.rectCenter;
     float d = rounded_rect_sdf(localPosition, uniforms->geometry.halfExtent, uniforms->style.cornerRadius);
 

@@ -48,6 +48,7 @@ namespace NewArch {
     struct ImageUniforms {
         ImageStyleUniforms style;
         ImageGeometryUniforms geometry;
+        ClipUniform clip;
     };
 
     struct ImageStorage {
@@ -390,7 +391,11 @@ namespace NewArch {
 
             ImageUniforms uniforms {
                 .style = styleUniforms,
-                .geometry = geometryUniforms
+                .geometry = geometryUniforms,
+                .clip = {
+                    .min = layout.clipRect.min,
+                    .max = layout.clipRect.max
+                }
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(ImageUniforms));

@@ -93,374 +93,374 @@ auto index() -> void {
 
 
     
-    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
-    .display(NewArch::Display::Flex)
-    .paddingTop(NewArch::Size::px(32.0))
-    .flexDirection(NewArch::FlexDirection::Col)
-(
-    // Header
-    div(NewArch::Size::percent(1.0), NewArch::Size::px(56), simd_float4{1.0,1.0,1.0,1.0})
-        .display(NewArch::Display::Flex)
-        .alignItems(NewArch::AlignItems::Center)
-        .justifyContent(NewArch::JustifyContent::SpaceBetween)
-        .paddingLeft(NewArch::Size::px(16))
-        .paddingRight(NewArch::Size::px(16))
-        .borderColor(simd_float4{0.88,0.88,0.88,1.0})
-        .borderWidth(NewArch::Size::px(1.0))
-        .flexShrink(NewArch::Size::px(0.0))
-    (
-        // Left
-        div()
-            .color(simd_float4{0.0,0.0,0.0,0.0})
-            .display(NewArch::Display::Flex)
-            .alignItems(NewArch::AlignItems::Center)
-            .flexGap(NewArch::Size::px(8))
-        (
-            div(NewArch::Size::px(40), NewArch::Size::px(40), simd_float4{0.96,0.96,0.96,1.0})
-                .cornerRadius(NewArch::Size::px(20))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::Center)
-            (
-                text(U"=").fontSize(NewArch::Size::pt(18)).color(simd_float4{0.5,0.5,0.5,1.0})
-            ),
-            div()
-                .color(simd_float4{0.96,0.96,0.96,1.0})
-                .paddingLeft(NewArch::Size::px(12))
-                .paddingRight(NewArch::Size::px(12))
-                .height(NewArch::Size::px(32))
-                .cornerRadius(NewArch::Size::px(6))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-            (
-                text(U"You: San Francisco").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
-            )
-        ),
-        // Right
-        div()
-            .color(simd_float4{0.0,0.0,0.0,0.0})
-            .display(NewArch::Display::Flex)
-            .alignItems(NewArch::AlignItems::Center)
-            .flexGap(NewArch::Size::px(8))
-        (
-            div()
-                .color(simd_float4{0.96,0.96,0.96,1.0})
-                .height(NewArch::Size::px(36))
-                .paddingLeft(NewArch::Size::px(16))
-                .paddingRight(NewArch::Size::px(16))
-                .cornerRadius(NewArch::Size::px(6))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-            (
-                text(U"Import").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
-            ),
-            div()
-                .color(simd_float4{0.1,0.1,0.1,1.0})
-                .height(NewArch::Size::px(36))
-                .paddingLeft(NewArch::Size::px(16))
-                .paddingRight(NewArch::Size::px(16))
-                .cornerRadius(NewArch::Size::px(6))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-            (
-                text(U"Add trip").fontSize(NewArch::Size::pt(13)).color(simd_float4{1.0,1.0,1.0,1.0})
-            )
-        )
-    ),
-    // Body
-    div()
-        .color(simd_float4{0.0,0.0,0.0,0.0})
-        .display(NewArch::Display::Flex)
-        .flexGrow(NewArch::Size::px(1))
-    (
-        // Sidebar
-        div()
-            // .width(NewArch::Size::px(160.0))
-            .color(simd_float4{1.0,1.0,1.0,1.0})
-            .borderColor(simd_float4{0.88,0.88,0.88,1.0})
-            .borderWidth(NewArch::Size::px(1.0))
-            .display(NewArch::Display::Flex)
-            .flexDirection(NewArch::FlexDirection::Col)
-            .flexGap(NewArch::Size::px(4))
-            .padding(NewArch::Size::px(12))
-            .flexShrink(NewArch::Size::px(0.0))
-        (
-            text(U"TRIPS").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
-            div()
-                .width(NewArch::Size::percent(1.0))
-                .color(simd_float4{0.96,0.96,0.96,1.0})
-                .cornerRadius(NewArch::Size::px(8))
-                .paddingLeft(NewArch::Size::px(12))
-                .paddingRight(NewArch::Size::px(12))
-                .paddingTop(NewArch::Size::px(8))
-                .paddingBottom(NewArch::Size::px(8))
-                .display(NewArch::Display::Flex)
-                .flexDirection(NewArch::FlexDirection::Col)
-                .flexGap(NewArch::Size::px(2))
-            (
-                text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text(U"Mar 10 - Mar 24").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-            ),
-            div()
-                .width(NewArch::Size::percent(1.0))
-                .color(simd_float4{1.0,1.0,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(8))
-                .paddingLeft(NewArch::Size::px(12))
-                .paddingRight(NewArch::Size::px(12))
-                .paddingTop(NewArch::Size::px(8))
-                .paddingBottom(NewArch::Size::px(8))
-                .display(NewArch::Display::Flex)
-                .flexDirection(NewArch::FlexDirection::Col)
-                .flexGap(NewArch::Size::px(2))
-            (
-                text(U"NYC Weekend").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text(U"Apr 4 - Apr 7").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-            ),
-            div()
-                .width(NewArch::Size::percent(1.0))
-                .color(simd_float4{1.0,1.0,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(8))
-                .paddingLeft(NewArch::Size::px(12))
-                .paddingRight(NewArch::Size::px(12))
-                .paddingTop(NewArch::Size::px(8))
-                .paddingBottom(NewArch::Size::px(8))
-                .display(NewArch::Display::Flex)
-                .flexDirection(NewArch::FlexDirection::Col)
-                .flexGap(NewArch::Size::px(2))
-            (
-                text(U"London + Paris").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text(U"Jun 1 - Jun 12").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-            )
-        ),
-        // Main content
-        div()
-            .color(simd_float4{0.97,0.97,0.97,1.0})
-            .flexGrow(NewArch::Size::px(1))
-            .display(NewArch::Display::Flex)
-            .flexDirection(NewArch::FlexDirection::Col)
-            .padding(NewArch::Size::px(24))
-            .flexGap(NewArch::Size::px(12))
-        (
-            // Title row
-            div()
-                .color(simd_float4{0.0,0.0,0.0,0.0})
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::SpaceBetween)
-            (
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .flexGap(NewArch::Size::px(2))
-                (
-                    text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(20)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text(U"Mar 10 - Mar 24 · 14 days").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.96,0.96,0.96,1.0})
-                    .paddingLeft(NewArch::Size::px(16))
-                    .paddingRight(NewArch::Size::px(16))
-                    .height(NewArch::Size::px(32))
-                    .cornerRadius(NewArch::Size::px(6))
-                    .display(NewArch::Display::Flex)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"Edit").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
-                )
-            ),
-            // Flight
-            div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(12))
-                .paddingLeft(NewArch::Size::px(16))
-                .paddingRight(NewArch::Size::px(16))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::SpaceBetween)
-            (
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .flexGap(NewArch::Size::px(4))
-                (
-                    div()
-                        .color(simd_float4{0.0,0.0,0.0,0.0})
-                        .display(NewArch::Display::Flex)
-                        .flexGap(NewArch::Size::px(4))
-                        .alignItems(NewArch::AlignItems::Center)
-                    (
-                        svg("/Users/treja/projects/gui/gui/sources/plane.svg")
-                            .width(NewArch::Size::px(22))
-                            .height(NewArch::Size::px(22)),
-                        text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                    )
-                    ,text(U"Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.93,0.88,1.0,1.0})
-                    .paddingLeft(NewArch::Size::px(12))
-                    .paddingRight(NewArch::Size::px(12))
-                    .height(NewArch::Size::px(24))
-                    .cornerRadius(NewArch::Size::px(12))
-                    .display(NewArch::Display::Flex)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"[Flight]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.4,0.3,1.0,1.0})
-                )
-            ),
-            // Hotel
-            div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(12))
-                .paddingLeft(NewArch::Size::px(16))
-                .paddingRight(NewArch::Size::px(16))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::SpaceBetween)
-            (
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .flexGap(NewArch::Size::px(4))
-                (
-                    text(U"Park Hyatt Tokyo").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text(U"Mar 11 - Mar 17 · 6 nights").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.85,0.93,1.0,1.0})
-                    .paddingLeft(NewArch::Size::px(12))
-                    .paddingRight(NewArch::Size::px(12))
-                    .height(NewArch::Size::px(24))
-                    .cornerRadius(NewArch::Size::px(12))
-                    .display(NewArch::Display::Flex)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"[Hotel]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.2,0.6,0.9,1.0})
-                )
-            ),
-            // Train
-            div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
-                .cornerRadius(NewArch::Size::px(12))
-                .paddingLeft(NewArch::Size::px(16))
-                .paddingRight(NewArch::Size::px(16))
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::SpaceBetween)
-            (
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .flexDirection(NewArch::FlexDirection::Col)
-                    .flexGap(NewArch::Size::px(4))
-                (
-                    text(U"Tokyo -> Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                    text(U"Mar 17 · Shinkansen · 2h 15m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.85,1.0,0.9,1.0})
-                    .paddingLeft(NewArch::Size::px(12))
-                    .paddingRight(NewArch::Size::px(12))
-                    .height(NewArch::Size::px(24))
-                    .cornerRadius(NewArch::Size::px(12))
-                    .display(NewArch::Display::Flex)
-                    .alignItems(NewArch::AlignItems::Center)
-                (
-                    text(U"[Train]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.1,0.7,0.4,1.0})
-                )
-            )
-        )
-        // Detail panel
-        ,div()
-            // .width(NewArch::Size::px(200.0))
-            .color(simd_float4{1.0,1.0,1.0,1.0})
-            .borderColor(simd_float4{0.88,0.88,0.88,1.0})
-            .borderWidth(NewArch::Size::px(1.0))
-            .display(NewArch::Display::Flex)
-            .flexDirection(NewArch::FlexDirection::Col)
-            .flexGap(NewArch::Size::px(16))
-            .padding(NewArch::Size::px(16))
-            .flexShrink(NewArch::Size::px(0.0))
-        (
-            div()
-                .color(simd_float4{0.0,0.0,0.0,0.0})
-                .display(NewArch::Display::Flex)
-                .alignItems(NewArch::AlignItems::Center)
-                .justifyContent(NewArch::JustifyContent::SpaceBetween)
-            (
-                text(U"Flight Details").fontSize(NewArch::Size::pt(14)).color(simd_float4{0.1,0.1,0.1,1.0}),
-                text(U"x").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0})
-            ),
-            div()
-                .color(simd_float4{0.0,0.0,0.0,0.0})
-                .display(NewArch::Display::Flex)
-                .flexDirection(NewArch::FlexDirection::Col)
-                .flexGap(NewArch::Size::px(12))
-            (
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Departs").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"10:45 AM").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Arrives").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"3:15 PM +1").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Duration").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"11h 30m").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Seat").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"42A").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                ),
-                div()
-                    .color(simd_float4{0.0,0.0,0.0,0.0})
-                    .display(NewArch::Display::Flex)
-                    .justifyContent(NewArch::JustifyContent::SpaceBetween)
-                (
-                    text(U"Class").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                    text(U"Economy").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-                )
-            ),
-            div()
-                .width(NewArch::Size::percent(1.0))
-                .color(simd_float4{0.97,0.97,0.97,1.0})
-                .cornerRadius(NewArch::Size::px(8))
-                .padding(NewArch::Size::px(12))
-                .display(NewArch::Display::Flex)
-                .flexDirection(NewArch::FlexDirection::Col)
-                .flexGap(NewArch::Size::px(4))
-            (
-                text(U"Local time at destination").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
-                text(U"3:15 PM JST (UTC+9)").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
-            )
-        )
-    )
-);
+//     div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{1.0,1.0,1.0,1.0})
+//     .display(NewArch::Display::Flex)
+//     .paddingTop(NewArch::Size::px(32.0))
+//     .flexDirection(NewArch::FlexDirection::Col)
+// (
+//     // Header
+//     div(NewArch::Size::percent(1.0), NewArch::Size::px(56), simd_float4{1.0,1.0,1.0,1.0})
+//         .display(NewArch::Display::Flex)
+//         .alignItems(NewArch::AlignItems::Center)
+//         .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//         .paddingLeft(NewArch::Size::px(16))
+//         .paddingRight(NewArch::Size::px(16))
+//         .borderColor(simd_float4{0.88,0.88,0.88,1.0})
+//         .borderWidth(NewArch::Size::px(1.0))
+//         .flexShrink(NewArch::Size::px(0.0))
+//     (
+//         // Left
+//         div()
+//             .color(simd_float4{0.0,0.0,0.0,0.0})
+//             .display(NewArch::Display::Flex)
+//             .alignItems(NewArch::AlignItems::Center)
+//             .flexGap(NewArch::Size::px(8))
+//         (
+//             div(NewArch::Size::px(40), NewArch::Size::px(40), simd_float4{0.96,0.96,0.96,1.0})
+//                 .cornerRadius(NewArch::Size::px(20))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::Center)
+//             (
+//                 text(U"=").fontSize(NewArch::Size::pt(18)).color(simd_float4{0.5,0.5,0.5,1.0})
+//             ),
+//             div()
+//                 .color(simd_float4{0.96,0.96,0.96,1.0})
+//                 .paddingLeft(NewArch::Size::px(12))
+//                 .paddingRight(NewArch::Size::px(12))
+//                 .height(NewArch::Size::px(32))
+//                 .cornerRadius(NewArch::Size::px(6))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//             (
+//                 text(U"You: San Francisco").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+//             )
+//         ),
+//         // Right
+//         div()
+//             .color(simd_float4{0.0,0.0,0.0,0.0})
+//             .display(NewArch::Display::Flex)
+//             .alignItems(NewArch::AlignItems::Center)
+//             .flexGap(NewArch::Size::px(8))
+//         (
+//             div()
+//                 .color(simd_float4{0.96,0.96,0.96,1.0})
+//                 .height(NewArch::Size::px(36))
+//                 .paddingLeft(NewArch::Size::px(16))
+//                 .paddingRight(NewArch::Size::px(16))
+//                 .cornerRadius(NewArch::Size::px(6))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//             (
+//                 text(U"Import").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+//             ),
+//             div()
+//                 .color(simd_float4{0.1,0.1,0.1,1.0})
+//                 .height(NewArch::Size::px(36))
+//                 .paddingLeft(NewArch::Size::px(16))
+//                 .paddingRight(NewArch::Size::px(16))
+//                 .cornerRadius(NewArch::Size::px(6))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//             (
+//                 text(U"Add trip").fontSize(NewArch::Size::pt(13)).color(simd_float4{1.0,1.0,1.0,1.0})
+//             )
+//         )
+//     ),
+//     // Body
+//     div()
+//         .color(simd_float4{0.0,0.0,0.0,0.0})
+//         .display(NewArch::Display::Flex)
+//         .flexGrow(NewArch::Size::px(1))
+//     (
+//         // Sidebar
+//         div()
+//             // .width(NewArch::Size::px(160.0))
+//             .color(simd_float4{1.0,1.0,1.0,1.0})
+//             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
+//             .borderWidth(NewArch::Size::px(1.0))
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .flexGap(NewArch::Size::px(4))
+//             .padding(NewArch::Size::px(12))
+//             .flexShrink(NewArch::Size::px(0.0))
+//         (
+//             text(U"TRIPS").fontSize(NewArch::Size::pt(10)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//             div()
+//                 .width(NewArch::Size::percent(1.0))
+//                 .color(simd_float4{0.96,0.96,0.96,1.0})
+//                 .cornerRadius(NewArch::Size::px(8))
+//                 .paddingLeft(NewArch::Size::px(12))
+//                 .paddingRight(NewArch::Size::px(12))
+//                 .paddingTop(NewArch::Size::px(8))
+//                 .paddingBottom(NewArch::Size::px(8))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(NewArch::Size::px(2))
+//             (
+//                 text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                 text(U"Mar 10 - Mar 24").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//             ),
+//             div()
+//                 .width(NewArch::Size::percent(1.0))
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(8))
+//                 .paddingLeft(NewArch::Size::px(12))
+//                 .paddingRight(NewArch::Size::px(12))
+//                 .paddingTop(NewArch::Size::px(8))
+//                 .paddingBottom(NewArch::Size::px(8))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(NewArch::Size::px(2))
+//             (
+//                 text(U"NYC Weekend").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                 text(U"Apr 4 - Apr 7").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//             ),
+//             div()
+//                 .width(NewArch::Size::percent(1.0))
+//                 .color(simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(8))
+//                 .paddingLeft(NewArch::Size::px(12))
+//                 .paddingRight(NewArch::Size::px(12))
+//                 .paddingTop(NewArch::Size::px(8))
+//                 .paddingBottom(NewArch::Size::px(8))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(NewArch::Size::px(2))
+//             (
+//                 text(U"London + Paris").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                 text(U"Jun 1 - Jun 12").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//             )
+//         ),
+//         // Main content
+//         div()
+//             .color(simd_float4{0.97,0.97,0.97,1.0})
+//             .flexGrow(NewArch::Size::px(1))
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .padding(NewArch::Size::px(24))
+//             .flexGap(NewArch::Size::px(12))
+//         (
+//             // Title row
+//             div()
+//                 .color(simd_float4{0.0,0.0,0.0,0.0})
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             (
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .flexGap(NewArch::Size::px(2))
+//                 (
+//                     text(U"Tokyo & Kyoto").fontSize(NewArch::Size::pt(20)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Mar 10 - Mar 24 · 14 days").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.96,0.96,0.96,1.0})
+//                     .paddingLeft(NewArch::Size::px(16))
+//                     .paddingRight(NewArch::Size::px(16))
+//                     .height(NewArch::Size::px(32))
+//                     .cornerRadius(NewArch::Size::px(6))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"Edit").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.5,0.5,0.5,1.0})
+//                 )
+//             ),
+//             // Flight
+//             div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(12))
+//                 .paddingLeft(NewArch::Size::px(16))
+//                 .paddingRight(NewArch::Size::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             (
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .flexGap(NewArch::Size::px(4))
+//                 (
+//                     div()
+//                         .color(simd_float4{0.0,0.0,0.0,0.0})
+//                         .display(NewArch::Display::Flex)
+//                         .flexGap(NewArch::Size::px(4))
+//                         .alignItems(NewArch::AlignItems::Center)
+//                     (
+//                         svg("/Users/treja/projects/gui/gui/sources/plane.svg")
+//                             .width(NewArch::Size::px(22))
+//                             .height(NewArch::Size::px(22)),
+//                         text(U"SFO -> NRT").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                     )
+//                     ,text(U"Mar 10 · United 837 · 11h 30m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.93,0.88,1.0,1.0})
+//                     .paddingLeft(NewArch::Size::px(12))
+//                     .paddingRight(NewArch::Size::px(12))
+//                     .height(NewArch::Size::px(24))
+//                     .cornerRadius(NewArch::Size::px(12))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"[Flight]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.4,0.3,1.0,1.0})
+//                 )
+//             ),
+//             // Hotel
+//             div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(12))
+//                 .paddingLeft(NewArch::Size::px(16))
+//                 .paddingRight(NewArch::Size::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             (
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .flexGap(NewArch::Size::px(4))
+//                 (
+//                     text(U"Park Hyatt Tokyo").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Mar 11 - Mar 17 · 6 nights").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.85,0.93,1.0,1.0})
+//                     .paddingLeft(NewArch::Size::px(12))
+//                     .paddingRight(NewArch::Size::px(12))
+//                     .height(NewArch::Size::px(24))
+//                     .cornerRadius(NewArch::Size::px(12))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"[Hotel]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.2,0.6,0.9,1.0})
+//                 )
+//             ),
+//             // Train
+//             div(NewArch::Size::percent(1.0), NewArch::Size::px(80), simd_float4{1.0,1.0,1.0,1.0})
+//                 .cornerRadius(NewArch::Size::px(12))
+//                 .paddingLeft(NewArch::Size::px(16))
+//                 .paddingRight(NewArch::Size::px(16))
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             (
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .flexDirection(NewArch::FlexDirection::Col)
+//                     .flexGap(NewArch::Size::px(4))
+//                 (
+//                     text(U"Tokyo -> Kyoto").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                     text(U"Mar 17 · Shinkansen · 2h 15m").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.85,1.0,0.9,1.0})
+//                     .paddingLeft(NewArch::Size::px(12))
+//                     .paddingRight(NewArch::Size::px(12))
+//                     .height(NewArch::Size::px(24))
+//                     .cornerRadius(NewArch::Size::px(12))
+//                     .display(NewArch::Display::Flex)
+//                     .alignItems(NewArch::AlignItems::Center)
+//                 (
+//                     text(U"[Train]").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.1,0.7,0.4,1.0})
+//                 )
+//             )
+//         )
+//         // Detail panel
+//         ,div()
+//             // .width(NewArch::Size::px(200.0))
+//             .color(simd_float4{1.0,1.0,1.0,1.0})
+//             .borderColor(simd_float4{0.88,0.88,0.88,1.0})
+//             .borderWidth(NewArch::Size::px(1.0))
+//             .display(NewArch::Display::Flex)
+//             .flexDirection(NewArch::FlexDirection::Col)
+//             .flexGap(NewArch::Size::px(16))
+//             .padding(NewArch::Size::px(16))
+//             .flexShrink(NewArch::Size::px(0.0))
+//         (
+//             div()
+//                 .color(simd_float4{0.0,0.0,0.0,0.0})
+//                 .display(NewArch::Display::Flex)
+//                 .alignItems(NewArch::AlignItems::Center)
+//                 .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//             (
+//                 text(U"Flight Details").fontSize(NewArch::Size::pt(14)).color(simd_float4{0.1,0.1,0.1,1.0}),
+//                 text(U"x").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0})
+//             ),
+//             div()
+//                 .color(simd_float4{0.0,0.0,0.0,0.0})
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(NewArch::Size::px(12))
+//             (
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Flight").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"UA 837").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Departs").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"10:45 AM").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Arrives").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"3:15 PM +1").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Duration").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"11h 30m").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Seat").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"42A").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 ),
+//                 div()
+//                     .color(simd_float4{0.0,0.0,0.0,0.0})
+//                     .display(NewArch::Display::Flex)
+//                     .justifyContent(NewArch::JustifyContent::SpaceBetween)
+//                 (
+//                     text(U"Class").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                     text(U"Economy").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//                 )
+//             ),
+//             div()
+//                 .width(NewArch::Size::percent(1.0))
+//                 .color(simd_float4{0.97,0.97,0.97,1.0})
+//                 .cornerRadius(NewArch::Size::px(8))
+//                 .padding(NewArch::Size::px(12))
+//                 .display(NewArch::Display::Flex)
+//                 .flexDirection(NewArch::FlexDirection::Col)
+//                 .flexGap(NewArch::Size::px(4))
+//             (
+//                 text(U"Local time at destination").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.6,0.6,0.6,1.0}),
+//                 text(U"3:15 PM JST (UTC+9)").fontSize(NewArch::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
+//             )
+//         )
+//     )
+// );
 
 //    div(NewArch::Size::percent(1.0), NewArch::Size::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
 //         .display(NewArch::Display::Flex)
@@ -1265,5 +1265,32 @@ auto index() -> void {
 //             )
 //         )
 //     );
+
+    // Overflow/clipping demo: the child is intentionally larger than its parent.
+    div(NewArch::Size::px(170), NewArch::Size::px(96), simd_float4{1.0,1.0,1.0,1.0})
+        .position(NewArch::Position::Absolute)
+        .left(NewArch::Size::px(72))
+        .top(NewArch::Size::px(392))
+        .borderColor(simd_float4{1.0,0.18,0.18,1.0})
+        .borderWidth(NewArch::Size::px(2))
+        .cornerRadius(NewArch::Size::px(8))
+        .padding(NewArch::Size::px(10))
+        .overflow(NewArch::Overflow::Scroll)
+    (
+        div(NewArch::Size::px(260), NewArch::Size::px(136), simd_float4{0.18,0.42,1.0,0.34})
+            .position(NewArch::Position::Absolute)
+            .left(NewArch::Size::px(36))
+            .top(NewArch::Size::px(30))
+            .borderColor(simd_float4{0.08,0.18,0.92,1.0})
+            .borderWidth(NewArch::Size::px(2))
+            .cornerRadius(NewArch::Size::px(10))
+            .display(NewArch::Display::Flex)
+            .alignItems(NewArch::AlignItems::Center)
+            .justifyContent(NewArch::JustifyContent::Center)
+        (
+            text(U"Oversized child").fontSize(NewArch::Size::pt(12)).color(simd_float4{0.05,0.08,0.3,1.0})
+        ),
+        text(U"Parent bounds").fontSize(NewArch::Size::pt(11)).color(simd_float4{0.9,0.05,0.05,1.0})
+    );
 
 }

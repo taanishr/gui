@@ -71,6 +71,7 @@ namespace NewArch {
     struct DivGeometryUniforms {
         simd_float2 rectCenter;
         simd_float2 halfExtent;
+        ClipUniform clip;
     };
 
     struct DivUniforms {
@@ -372,6 +373,11 @@ namespace NewArch {
                 geometryUniforms.halfExtent = halfExtent;
                 geometryUniforms.rectCenter = rectCenter;
             }
+
+            geometryUniforms.clip = {
+                .min = layout.clipRect.min,
+                .max = layout.clipRect.max
+            };
             
             DivUniforms uniforms {
                 .style = styleUniforms,

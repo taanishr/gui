@@ -1,5 +1,6 @@
 #include "render_tree.hpp"
 #include "renderer_constants.hpp"
+#include <algorithm>
 #include <print>
 
 namespace NewArch {
@@ -44,6 +45,10 @@ namespace NewArch {
                 .origin = {0, 0},
                 .width = frameInfo.width,
                 .height = frameInfo.height
+            },
+            .clipRect = {
+                .min = {0.0f, 0.0f},
+                .max = {frameInfo.width, frameInfo.height}
             },
         };
 
@@ -452,6 +457,8 @@ namespace NewArch {
             offset.y += baseOrigin.y;
         }
         node->globalOffset = baseOrigin;
+        node->clipRect = constraints.clipRect;
+        layout.clipRect = constraints.clipRect;
 
         node->atomized = node->element->postLayout(constraints, node->shared, *node->measured,
                                                     *node->atomized, layout);
@@ -466,8 +473,30 @@ namespace NewArch {
             childAbsBlockOrigin = currContentOrigin;
         }
 
+        auto childConstraints = constraints;
+        if (node->shared.overflow != Overflow::Visible) {
+            ClipRect nodeBounds {
+                .min = { layout.computedBox.x, layout.computedBox.y },
+                .max = {
+                    layout.computedBox.x + layout.computedBox.width,
+                    layout.computedBox.y + layout.computedBox.height
+                }
+            };
+
+            childConstraints.clipRect = {
+                .min = {
+                    std::max(constraints.clipRect.min.x, nodeBounds.min.x),
+                    std::max(constraints.clipRect.min.y, nodeBounds.min.y)
+                },
+                .max = {
+                    std::min(constraints.clipRect.max.x, nodeBounds.max.x),
+                    std::min(constraints.clipRect.max.y, nodeBounds.max.y)
+                }
+            };
+        }
+
         for (auto& child : node->children) {
-            postLayoutPhase(child.get(), frameInfo, constraints,
+            postLayoutPhase(child.get(), frameInfo, childConstraints,
                            currContentOrigin, childAbsBlockOrigin);
         }
     }

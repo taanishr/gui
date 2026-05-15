@@ -162,6 +162,12 @@ namespace NewArch {
             return *this;
         }
 
+        NodeBuilder& overflow(Overflow overflow) {
+            node->shared.overflow = overflow;
+            markDirty();
+            return *this;
+        }
+
         NodeBuilder<E,P>& flexGrow(Size grow) {
             node->shared.flexGrow = grow;
             markDirty();

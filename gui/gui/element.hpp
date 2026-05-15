@@ -205,6 +205,11 @@ namespace NewArch {
                 return false;
             }
 
+            if (point.x < clipRect.min.x || point.x > clipRect.max.x ||
+                point.y < clipRect.min.y || point.y > clipRect.max.y) {
+                return false;
+            }
+
             return element->preciseHitTest(point, layout.value(), finalized);
         }
 
@@ -224,6 +229,7 @@ namespace NewArch {
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
         simd_float2 globalOffset {0.0f, 0.0f};
+        ClipRect clipRect {};
         SharedDescriptor shared;
 
     private:

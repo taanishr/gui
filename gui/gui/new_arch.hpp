@@ -259,6 +259,22 @@ namespace NewArch {
         Center
     };
 
+    enum class Overflow {
+        Visible,
+        Hidden,
+        Scroll
+    };
+
+    struct ClipRect {
+        simd_float2 min{};
+        simd_float2 max{};
+    };
+
+    struct ClipUniform {
+        simd_float2 min{};
+        simd_float2 max{};
+    };
+
     struct GridPlacement {
         int colStart{0};  // 1-based line number, 0 = auto
         int colEnd{0};    // 0 = colStart+1 (span 1)
@@ -301,6 +317,8 @@ namespace NewArch {
         Size cornerRadius{};
         Size borderWidth{};
         simd_float4 borderColor{0,0,0,1};
+
+        Overflow overflow {Overflow::Visible};
     };
 
     struct EdgeIntent {
@@ -347,6 +365,7 @@ namespace NewArch {
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
+        ClipRect clipRect {};
 
         bool shrinkToFit{false};
     };
@@ -468,6 +487,7 @@ namespace NewArch {
         } resolvedPadding;
 
         DeferredPositionInfo deferredPosition;
+        ClipRect clipRect {};
     };
 
     
