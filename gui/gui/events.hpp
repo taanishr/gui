@@ -38,7 +38,8 @@
 
 enum class EventType {
     MouseDown,
-    KeyDown
+    KeyDown,
+    ScrollWheel
 };
 
 // struct Event {
@@ -78,7 +79,12 @@ struct KeyboardPayload {
     bool altPressed;
 };
 
-using EventPayload = std::variant<MousePayload, KeyboardPayload>;
+struct ScrollPayload {
+    float dx;
+    float dy;
+};
+
+using EventPayload = std::variant<MousePayload, KeyboardPayload, ScrollPayload>;
 
 template<EventType E> struct event_payload;
 template<> struct event_payload<EventType::MouseDown> { using type = MousePayload; };

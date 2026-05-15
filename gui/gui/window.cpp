@@ -16,6 +16,8 @@
 #include "index.hpp"
 #include <CoreFoundation/CFCGTypes.h>
 #include <memory>
+#include <objc/message.h>
+#include <objc/objc.h>
 #include <print>
 #include "metal_imports.hpp"
 
@@ -24,6 +26,7 @@ HandlerState hs {};
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 using MouseDownFunc = CGPoint(*)(id, SEL);
+using ScrollWheelFunc = CGFloat(*)(id, SEL);
 
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
@@ -43,6 +46,14 @@ extern "C" void mouseDown(id self, SEL _cmd, id event) {
     auto point = f(event, sel_registerName("locationInWindow"));
     
     hs.mouseDownHandler(point.x, point.y);
+}
+
+extern "C" void scrollWheel(id self, SEL _cmd, id event) {
+    ScrollWheelFunc f = (ScrollWheelFunc)objc_msgSend;
+    auto deltaX = f(event, sel_registerName("scrollingDeltaX"));
+    auto deltaY = f(event, sel_registerName("scrollingDeltaY"));
+
+    hs.scrollWheelHandler(deltaX, deltaY);
 }
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
@@ -185,10 +196,34 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         htnode->dispatch(e);
     };
 
+    hs.scrollWheelHandler = [this](float dx, float dy) {
+        Event e;
+        e.type = EventType::ScrollWheel;
+        e.payload = ScrollPayload{
+            dx = dx,
+            dy = dy
+        };
+
+        
+
+        auto& currTree = this->viewDelegate->renderer->rootTree;
+        auto root = currTree.getRoot();
+
+        if (!root) 
+            return;
+
+        auto scrollNode = this->focused != nullptr ? this->focused : root;
+
+        std::println("scrollNode: {}", reinterpret_cast<void*>(scrollNode));
+
+        scrollNode->dispatch(e);
+    };
+
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
+    class_addMethod( cls , sel_registerName("scrollWheel:"), reinterpret_cast<IMP>(scrollWheel), "v@:@");
 
 
     
@@ -205,7 +240,6 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     AppKit_Extensions::setTitleBarTransparent(reinterpret_cast<void*>(window));
     // AppKit_Extensions::setWindowTransparent(reinterpret_cast<void*>(window));
     
-
     NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
     
     app->activateIgnoringOtherApps(true);
