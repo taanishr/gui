@@ -70,6 +70,7 @@ namespace NewArch {
     struct TextUniforms {
         simd_float4 color;
         float fontSize;
+        ClipUniform clip;
     };
 
 
@@ -371,7 +372,11 @@ namespace NewArch {
 
             TextUniforms uniforms {
                 .color = desc.color,
-                .fontSize = fontSize
+                .fontSize = fontSize,
+                .clip = {
+                    .min = layout.clipRect.min,
+                    .max = layout.clipRect.max
+                }
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(TextUniforms));
@@ -430,5 +435,4 @@ namespace NewArch {
         UIContext& ctx;
     };
 }
-
 

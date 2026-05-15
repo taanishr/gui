@@ -12,6 +12,7 @@ using namespace metal;
 struct TextUniforms {
     float4 color;
     float fontSize;
+    ClipUniform clip;
 };
 
 struct TextVertexIn {
@@ -24,6 +25,7 @@ struct TextVertexIn {
 struct TextVertexOut {
     float4 position [[position]];
     float4 worldPosition;
+    float4 clipPosition;
     int metadataIndex [[flat]];
 };
 
@@ -42,6 +44,7 @@ vertex TextVertexOut vertex_text(
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);
+    out.clipPosition = float4(adjustedPos, 0.0, 1.0);
     out.metadataIndex = in.metadataIndex;
     
     return out;
@@ -135,6 +138,10 @@ fragment float4 fragment_text(
     constant TextUniforms* uniforms [[buffer(2)]]
 )
 {
+    if (outside_clip(in.clipPosition.xy, uniforms->clip)) {
+        discard_fragment();
+    }
+
     float4 fragPt = in.worldPosition;
 
     int metadataIndex = in.metadataIndex;
@@ -173,5 +180,4 @@ fragment float4 fragment_text(
     float3 rgb = uniforms->color.rgb;
     return float4(rgb * alpha, alpha);
 }
-
 

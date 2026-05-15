@@ -18,6 +18,15 @@ struct FrameInfo {
     float scale;
 };
 
+struct ClipUniform {
+    float2 min;
+    float2 max;
+};
+
+inline bool outside_clip(float2 p, ClipUniform clip) {
+    return p.x < clip.min.x || p.x > clip.max.x || p.y < clip.min.y || p.y > clip.max.y;
+}
+
 inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f) {
     float ndcX = (pt.x / width) * 2.0f - 1.0f;
     float ndcY = 1.0f - (pt.y / height) * 2.0f;

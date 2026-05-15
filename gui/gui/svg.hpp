@@ -51,6 +51,7 @@ namespace NewArch {
     struct SVGUniforms {
         SVGStyleUniforms style;
         SVGGeometryUniforms geometry;
+        ClipUniform clip;
     };
 
     struct SVGStorage {
@@ -461,7 +462,11 @@ namespace NewArch {
 
             SVGUniforms uniforms {
                 .style = styleUniforms,
-                .geometry = geometryUniforms
+                .geometry = geometryUniforms,
+                .clip = {
+                    .min = layout.clipRect.min,
+                    .max = layout.clipRect.max
+                }
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(SVGUniforms));

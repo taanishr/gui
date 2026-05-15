@@ -24,6 +24,7 @@ struct ImageGeometryUniforms {
 struct ImageUniforms {
     ImageStyleUniforms style;
     ImageGeometryUniforms geometry;
+    ClipUniform clip;
 };
 
 struct ImageVertexIn {
@@ -61,6 +62,10 @@ fragment float4 fragment_image(
     texture2d<float, access::sample> textureMap [[texture(0)]],
     sampler textureSampler [[sampler(0)]]
 ) {
+    if (outside_clip(in.worldPosition.xy, uniforms->clip)) {
+        discard_fragment();
+    }
+
     float4 color = textureMap.sample(textureSampler, in.texCords);
     
     float2 localPosition = in.worldPosition.xy - uniforms->geometry.rectCenter;
