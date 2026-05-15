@@ -50,10 +50,12 @@ extern "C" void mouseDown(id self, SEL _cmd, id event) {
 
 extern "C" void scrollWheel(id self, SEL _cmd, id event) {
     ScrollWheelFunc f = (ScrollWheelFunc)objc_msgSend;
+    MouseDownFunc pointFunc = (MouseDownFunc)objc_msgSend;
     auto deltaX = f(event, sel_registerName("scrollingDeltaX"));
     auto deltaY = f(event, sel_registerName("scrollingDeltaY"));
+    auto point = pointFunc(event, sel_registerName("locationInWindow"));
 
-    hs.scrollWheelHandler(deltaX, deltaY);
+    hs.scrollWheelHandler(deltaX, deltaY, point.x, point.y);
 }
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
@@ -196,7 +198,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         htnode->dispatch(e);
     };
 
-    hs.scrollWheelHandler = [this](float dx, float dy) {
+    hs.scrollWheelHandler = [this](float dx, float dy, float x, float y) {
+        auto frameInfo = this->viewDelegate->renderer->getFrameInfo();
+        auto testPoint = simd_float2{x, frameInfo.height - y};
+
         Event e;
         e.type = EventType::ScrollWheel;
         e.payload = ScrollPayload{
@@ -212,11 +217,13 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         if (!root) 
             return;
 
-        auto scrollNode = this->focused != nullptr ? this->focused : root;
-
-        std::println("scrollNode: {}", reinterpret_cast<void*>(scrollNode));
+        auto scrollNode = currTree.hitTestRecursive(root, testPoint);
+        if (!scrollNode) {
+            scrollNode = root;
+        }
 
         scrollNode->dispatch(e);
+        currTree.markDirty();
     };
 
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),

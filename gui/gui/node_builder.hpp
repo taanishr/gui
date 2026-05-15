@@ -366,11 +366,11 @@ namespace NewArch {
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
             auto stableNode = node;
 
-            auto func = [stableNode, handler](const Event& event){ 
+            auto func = [stableNode, handler](const Event& event){
                 auto elem = static_cast<ElemT*>(stableNode->element.get());
                 auto& desc = elem->element.getDescriptor();
 
-                handler(desc, event);                
+                handler(desc, event);
             };
 
             node->addEventListener(type, func);

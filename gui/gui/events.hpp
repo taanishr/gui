@@ -89,6 +89,7 @@ using EventPayload = std::variant<MousePayload, KeyboardPayload, ScrollPayload>;
 template<EventType E> struct event_payload;
 template<> struct event_payload<EventType::MouseDown> { using type = MousePayload; };
 template<> struct event_payload<EventType::KeyDown> { using type = KeyboardPayload; };
+template<> struct event_payload<EventType::ScrollWheel> { using type = ScrollPayload; };
 template<EventType E> using event_payload_t = typename event_payload<E>::type;
 
 struct Event {
