@@ -1,6 +1,6 @@
 #include "image.hpp"
 #include "sizing.hpp"
 
-NewArch::ImageDescriptor::ImageDescriptor():
+elements::ImageDescriptor::ImageDescriptor():
     path{}
 {}

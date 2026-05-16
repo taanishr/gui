@@ -4,8 +4,22 @@
 #include "new_arch.hpp"
 #include "element.hpp"
 
-namespace NewArch {
+namespace tree {
     struct RenderTree;
+}
+
+namespace layout {
+    using style::AlignContent;
+    using style::AlignItems;
+    using style::AlignSelf;
+    using style::FlexDirection;
+    using style::FlexWrap;
+    using style::JustifyContent;
+    using style::Overflow;
+    using style::Size;
+    using style::Unit;
+    using tree::RenderTree;
+    using tree::TreeNode;
 
     struct AxisHelper {
         bool isRow;

@@ -17,7 +17,24 @@
 #include "new_arch.hpp"
 #include <any>
 
-namespace NewArch {
+namespace elements {
+    using layout::Atomized;
+    using layout::Constraints;
+    using layout::Finalized;
+    using layout::LayoutResult;
+    using layout::Measured;
+    using layout::Placed;
+    using layout::ResolvedSize;
+    using layout::SizeResolutionContext;
+    using layout::resolveSize;
+    using layout::toLayoutInput;
+    using runtime::HitTestContext;
+    using runtime::UIContext;
+    using style::ClipUniform;
+    using style::SharedDescriptor;
+    using style::Size;
+    using style::Unit;
+
     struct ImagePoint {
         simd_float2 position;
         simd_float2 uv;
@@ -52,16 +69,6 @@ namespace NewArch {
     };
 
     struct ImageStorage {
-        // ImageStorage(UIContext& ctx):
-        //     atomsBuffer{ctx.allocator.allocate(6 * sizeof(ImagePoint))},
-        //     placementsBuffer{ctx.allocator.allocate(sizeof(simd_float2))},
-        //     uniformsBuffer{ctx.allocator.allocate(sizeof(ImageUniforms))}
-        // {}
-
-        // DrawableBuffer atomsBuffer;
-        // DrawableBuffer placementsBuffer;
-        // DrawableBuffer uniformsBuffer;
-
         ImageStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(ImagePoint), MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},

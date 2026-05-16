@@ -3,7 +3,15 @@
 #include <algorithm>
 #include <print>
 
-namespace NewArch {
+namespace tree {
+    using layout::FlexLayout;
+    using layout::FlexResolver;
+    using layout::GridResolver;
+    using layout::MarginMetadata;
+    using layout::SizeResolutionContext;
+    using style::ClipUniform;
+    using style::Unit;
+
     bool RenderTree::isFrameInfoChanged(const FrameInfo& frameInfo) const {
         return !lastFrameInfo.has_value()
             || lastFrameInfo->width != frameInfo.width

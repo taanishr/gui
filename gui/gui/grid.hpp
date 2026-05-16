@@ -4,8 +4,15 @@
 #include <optional>
 #include <vector>
 
-namespace NewArch {
+namespace tree {
     struct RenderTree;
+}
+
+namespace layout {
+    using style::AlignItems;
+    using style::Size;
+    using tree::RenderTree;
+    using tree::TreeNode;
 
     struct ItemPlacement {
         std::optional<int> colStart;
@@ -60,7 +67,7 @@ namespace NewArch {
         std::vector<Track> rowTracks;
         std::vector<Track> colTracks;
 
-        void addChild(NewArch::TreeNode* node);
+        void addChild(TreeNode* node);
 
         // helpers
         void resolveStructure(size_t templateRows, size_t templateCols);

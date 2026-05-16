@@ -16,18 +16,19 @@
 #include "events.hpp"
 #include "printers.hpp"
 
-namespace NewArch {
+namespace elements {
+    using layout::Atomized;
+    using layout::Constraints;
+    using layout::Finalized;
+    using layout::LayoutResult;
+    using layout::Measured;
+    using layout::Placed;
+    using runtime::HitTestContext;
+    using runtime::UIContext;
+    using style::SharedDescriptor;
+
     enum class RequestTarget {
         Descriptor,
-    };
-
-    struct TreeNode;
-
-    struct CollapsedChain {
-        ChainID id;
-        TreeNode* root;
-        Size intent;
-        int depth;
     };
 
     template<typename E>
@@ -147,8 +148,46 @@ namespace NewArch {
         E element;
         P& processor;
     };
+}
+
+namespace tree {
+    using elements::Element;
+    using elements::ElementBase;
+    using elements::ElementType;
+    using elements::ProcessorType;
+    using layout::Atomized;
+    using layout::ChainID;
+    using layout::Constraints;
+    using layout::LayoutResult;
+    using layout::LineBox;
+    using layout::LineFragment;
+    using layout::Measured;
+    using layout::Placed;
+    using layout::PreLayoutResult;
+    using runtime::Event;
+    using runtime::EventType;
+    using runtime::UIContext;
+    using style::AlignContent;
+    using style::AlignItems;
+    using style::AlignSelf;
+    using style::Display;
+    using style::FlexDirection;
+    using style::FlexWrap;
+    using style::GridPlacement;
+    using style::JustifyContent;
+    using style::Overflow;
+    using style::Position;
+    using style::SharedDescriptor;
+    using style::Size;
 
     struct TreeNode;
+
+    struct CollapsedChain {
+        ChainID id;
+        TreeNode* root;
+        Size intent;
+        int depth;
+    };
     
     using EventHandler = std::function<void(const Event&)>;
 

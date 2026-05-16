@@ -36,6 +36,8 @@
 // template<> struct event_payload<EventType::Click> { using type = MousePayload; };
 // template<EventType E> using event_payload_t = typename event_payload<E>::type;
 
+namespace runtime {
+
 enum class EventType {
     MouseDown,
     KeyDown,
@@ -112,6 +114,8 @@ struct Event {
 
 template <typename U>
 struct HitTestContext {
-    const NewArch::Finalized<U>& finalized;
-    const NewArch::LayoutResult& layout;
+    const layout::Finalized<U>& finalized;
+    const layout::LayoutResult& layout;
 };
+
+}

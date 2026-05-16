@@ -21,11 +21,9 @@
 #include <unordered_map>
 #include <vector>
 
-using namespace std::ranges::views;
-
 class Renderer;
 
-namespace NewArch {
+namespace layout {
 
 
     struct ResolvedMargins {
@@ -186,19 +184,9 @@ namespace NewArch {
 
 
 
-    template<typename D>
-    concept DescriptorType = requires(
-        D d,
-        std::any payload
-    )
-    {
-        { d.request(payload) } -> std::same_as<std::any>;
-    };
+}
 
-    struct GetFull {};
-    struct GetField { std::string name; };
-    using DescriptorPayload = std::variant<GetFull, GetField>;
-
+namespace style {
     enum class Position {
         Absolute,
         Fixed,
@@ -317,6 +305,20 @@ namespace NewArch {
 
         Overflow overflow {Overflow::Visible};
     };
+}
+
+namespace layout {
+    using style::AlignContent;
+    using style::AlignItems;
+    using style::AlignSelf;
+    using style::ClipUniform;
+    using style::Display;
+    using style::FlexDirection;
+    using style::FlexWrap;
+    using style::JustifyContent;
+    using style::Position;
+    using style::SharedDescriptor;
+    using style::Size;
 
     struct EdgeIntent {
         Display edgeDisplayMode{Display::Block};
@@ -512,7 +514,9 @@ namespace NewArch {
 
         static LayoutResult resolve(Constraints& constraints, LayoutInput& layoutInput, Atomized atomized);
     };
+}
 
+namespace runtime {
     struct UIContext {
         UIContext(MTL::Device* device, MTK::View* view);
 
@@ -521,11 +525,29 @@ namespace NewArch {
         MTL::Device* device;
         MTK::View* view;
         DrawableBufferAllocator allocator;
-        LayoutEngine layoutEngine;
+        layout::LayoutEngine layoutEngine;
         FrameInfo frameInfo;
         DrawableBuffer frameInfoBuffer;
         std::atomic<uint64_t> frameIndex{0};
     };
+}
+
+namespace elements {
+    template<typename D>
+    concept DescriptorType = requires(
+        D d,
+        std::any payload
+    )
+    {
+        { d.request(payload) } -> std::same_as<std::any>;
+    };
+
+    struct GetFull {};
+    struct GetField { std::string name; };
+    using DescriptorPayload = std::variant<GetFull, GetField>;
+
+    using layout::FragmentID;
+    using runtime::UIContext;
 
     template <typename S>
     struct Fragment {

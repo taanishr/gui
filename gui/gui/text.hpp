@@ -19,7 +19,21 @@
 #include "overloaded.hpp"
 #include <any>
 
-namespace NewArch {
+namespace elements {
+    using layout::Atomized;
+    using layout::Constraints;
+    using layout::Finalized;
+    using layout::LayoutResult;
+    using layout::Measured;
+    using layout::Placed;
+    using layout::toLayoutInput;
+    using runtime::HitTestContext;
+    using runtime::UIContext;
+    using style::ClipUniform;
+    using style::SharedDescriptor;
+    using style::Size;
+    using style::Unit;
+
     struct TextPoint {
         simd_float2 point;
         int metadataIndex;
@@ -32,15 +46,15 @@ namespace NewArch {
 }
 
 template <>
-struct std::formatter<NewArch::TextPoint> : std::formatter<float>
+struct std::formatter<elements::TextPoint> : std::formatter<float>
 {
-    auto format(const NewArch::TextPoint& v, format_context& ctx) const
+    auto format(const elements::TextPoint& v, format_context& ctx) const
     {
         return std::format_to(ctx.out(), "(x: {}, y: {}, mi: {} id: {})", v.point.x, v.point.y, v.metadataIndex, v.id);
     }
 };
 
-namespace NewArch {
+namespace elements {
     struct TextDescriptor {
         TextDescriptor();
 

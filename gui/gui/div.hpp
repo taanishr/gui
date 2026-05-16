@@ -23,7 +23,25 @@
 #include "overloaded.hpp"
 #include "sdf_helpers.hpp"
 
-namespace NewArch {
+namespace elements {
+    using layout::Atomized;
+    using layout::Constraints;
+    using layout::Finalized;
+    using layout::LayoutEngine;
+    using layout::LayoutInput;
+    using layout::LayoutResult;
+    using layout::Measured;
+    using layout::Placed;
+    using layout::SizeResolutionContext;
+    using layout::resolveSize;
+    using layout::toLayoutInput;
+    using runtime::HitTestContext;
+    using runtime::UIContext;
+    using style::ClipUniform;
+    using style::SharedDescriptor;
+    using style::Size;
+    using style::Unit;
+
     struct DivPoint {
         simd_float2 point;
         unsigned int id;
@@ -32,15 +50,15 @@ namespace NewArch {
 
 
 template <>
-struct std::formatter<NewArch::DivPoint> : std::formatter<float>
+struct std::formatter<elements::DivPoint> : std::formatter<float>
 {
-    auto format(const NewArch::DivPoint& v, format_context& ctx) const
+    auto format(const elements::DivPoint& v, format_context& ctx) const
     {
         return std::format_to(ctx.out(), "({}, {})", v.point.x, v.point.y);
     }
 };
 
-namespace NewArch {
+namespace elements {
     struct DivDescriptor {
         DivDescriptor();
 

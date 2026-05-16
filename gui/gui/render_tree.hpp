@@ -5,7 +5,14 @@
 #include "grid.hpp"
 #include "renderer_constants.hpp"
 
-namespace NewArch {
+namespace tree {
+    using elements::ElementType;
+    using elements::ProcessorType;
+    using layout::ChainID;
+    using layout::Constraints;
+    using layout::LayoutEngine;
+    using runtime::UIContext;
+
     struct RenderTree {
         template<ElementType E, typename P>
             requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>

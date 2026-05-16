@@ -5,7 +5,7 @@
 #include <print>
 #include <vector>
 
-namespace NewArch {
+namespace tree {
     struct TreeStack {
         static void pushTree(RenderTree* tree) {
             treeStack.push_back(tree);

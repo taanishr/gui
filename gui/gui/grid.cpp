@@ -3,7 +3,7 @@
 #include <optional>
 #include <print>
 
-namespace NewArch {
+namespace layout {
     void GridLayout::addChild(TreeNode* node) {
         auto gridPlacement = node->getGridPlacement();
 

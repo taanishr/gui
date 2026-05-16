@@ -12,8 +12,23 @@
 #include <unordered_map>
 
 
-namespace NewArch {
+namespace elements {
     ElementBase::~ElementBase() {};
+}
+
+namespace tree {
+    using elements::DescriptorPayload;
+    using elements::GetField;
+    using elements::RequestTarget;
+    using layout::Constraints;
+    using layout::LayoutEngine;
+    using layout::LayoutInput;
+    using layout::LineBox;
+    using layout::LineFragment;
+    using layout::ResolvedMargins;
+    using style::Display;
+    using style::Position;
+    using style::Size;
 
     // Element-specific requests still use the request system
     std::optional<std::u32string> getText(TreeNode* node) {
