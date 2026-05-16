@@ -19,6 +19,7 @@
 #include "AppKit_Extensions.hpp"
 #include <any>
 #include <unordered_map>
+#include <vector>
 
 using namespace std::ranges::views;
 
@@ -271,8 +272,9 @@ namespace NewArch {
     };
 
     struct ClipUniform {
-        simd_float2 min{};
-        simd_float2 max{};
+        simd_float2 rectCenter{};
+        simd_float2 halfExtent{};
+        simd_float2 cornerRadius{};
     };
 
     struct GridPlacement {
@@ -366,6 +368,7 @@ namespace NewArch {
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
         ClipRect clipRect {};
+        std::vector<ClipUniform> clipUniforms {};
 
         bool shrinkToFit{false};
     };
@@ -488,6 +491,7 @@ namespace NewArch {
 
         DeferredPositionInfo deferredPosition;
         ClipRect clipRect {};
+        std::vector<ClipUniform> clipUniforms {};
     };
 
     

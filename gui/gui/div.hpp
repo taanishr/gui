@@ -71,7 +71,7 @@ namespace NewArch {
     struct DivGeometryUniforms {
         simd_float2 rectCenter;
         simd_float2 halfExtent;
-        ClipUniform clip;
+        uint32_t numClips;
     };
 
     struct DivUniforms {
@@ -83,12 +83,14 @@ namespace NewArch {
         DivStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(DivPoint), MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},
-            uniformsBuffer{ctx.allocator, sizeof(DivUniforms), MaxOutstandingFrameCount}
+            uniformsBuffer{ctx.allocator, sizeof(DivUniforms), MaxOutstandingFrameCount},
+            clipsBuffer{ctx.allocator, sizeof(ClipUniform) * 4, MaxOutstandingFrameCount}
         {}
 
         FrameBufferedBuffer<DivPoint> atomsBuffer;
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<DivUniforms> uniformsBuffer;
+        FrameBufferedBuffer<ClipUniform> clipsBuffer;
     };
 
     template <typename S = DivStorage>
@@ -374,10 +376,7 @@ namespace NewArch {
                 geometryUniforms.rectCenter = rectCenter;
             }
 
-            geometryUniforms.clip = {
-                .min = layout.clipRect.min,
-                .max = layout.clipRect.max
-            };
+            geometryUniforms.numClips = static_cast<uint32_t>(layout.clipUniforms.size());
             
             DivUniforms uniforms {
                 .style = styleUniforms,
@@ -385,6 +384,11 @@ namespace NewArch {
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(DivUniforms));
+            fragment.fragmentStorage.clipsBuffer.write(
+                ctx.frameIndex,
+                layout.clipUniforms.data(),
+                sizeof(ClipUniform) * layout.clipUniforms.size()
+            );
             
             return Finalized<U> {
                 .id = fragment.id,
@@ -405,12 +409,14 @@ namespace NewArch {
             
             // fragment buffers
             auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
+            auto clipsBuf = fragment.fragmentStorage.clipsBuffer.getBuffer(ctx.frameIndex);
             
             encoder->setVertexBuffer(atomBuf, 0, 0);
             encoder->setVertexBuffer(atomPlacementBuf, 0, 1);
             encoder->setVertexBuffer(frameInfoBuf, 0, 2);
             
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
+            encoder->setFragmentBuffer(clipsBuf, 0, 1);
             
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), 6);
         }

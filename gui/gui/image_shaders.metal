@@ -24,7 +24,7 @@ struct ImageGeometryUniforms {
 struct ImageUniforms {
     ImageStyleUniforms style;
     ImageGeometryUniforms geometry;
-    ClipUniform clip;
+    uint numClips;
 };
 
 struct ImageVertexIn {
@@ -59,10 +59,11 @@ vertex ImageVertexOut vertex_image(
 fragment float4 fragment_image(
     ImageVertexOut in [[stage_in]],
     constant ImageUniforms* uniforms[[buffer(0)]],
+    constant ClipUniform* clips [[buffer(1)]],
     texture2d<float, access::sample> textureMap [[texture(0)]],
     sampler textureSampler [[sampler(0)]]
 ) {
-    if (outside_clip(in.worldPosition.xy, uniforms->clip)) {
+    if (outside_clips(in.worldPosition.xy, clips, uniforms->numClips)) {
         discard_fragment();
     }
 

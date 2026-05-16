@@ -12,7 +12,7 @@ using namespace metal;
 struct TextUniforms {
     float4 color;
     float fontSize;
-    ClipUniform clip;
+    uint numClips;
 };
 
 struct TextVertexIn {
@@ -135,10 +135,11 @@ fragment float4 fragment_text(
     TextVertexOut in [[stage_in]],
     constant float2* bezierPoints [[buffer(0)]],
     constant int* glyphMeta [[buffer(1)]],
-    constant TextUniforms* uniforms [[buffer(2)]]
+    constant TextUniforms* uniforms [[buffer(2)]],
+    constant ClipUniform* clips [[buffer(3)]]
 )
 {
-    if (outside_clip(in.clipPosition.xy, uniforms->clip)) {
+    if (outside_clips(in.clipPosition.xy, clips, uniforms->numClips)) {
         discard_fragment();
     }
 
@@ -180,4 +181,3 @@ fragment float4 fragment_text(
     float3 rgb = uniforms->color.rgb;
     return float4(rgb * alpha, alpha);
 }
-

@@ -70,7 +70,7 @@ namespace NewArch {
     struct TextUniforms {
         simd_float4 color;
         float fontSize;
-        ClipUniform clip;
+        uint32_t numClips;
     };
 
 
@@ -79,7 +79,8 @@ namespace NewArch {
             atomsBuffer{ctx.allocator, 6 * sizeof(TextPoint) * 4, MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2) * 4, MaxOutstandingFrameCount},
             uniformsBuffer{ctx.allocator, sizeof(TextUniforms), MaxOutstandingFrameCount},
-            metadataBuffer{ctx.allocator,sizeof(int) * 16, MaxOutstandingFrameCount }
+            metadataBuffer{ctx.allocator,sizeof(int) * 16, MaxOutstandingFrameCount },
+            clipsBuffer{ctx.allocator, sizeof(ClipUniform) * 4, MaxOutstandingFrameCount}
         {}
 
         FrameBufferedBuffer<TextPoint> atomsBuffer;
@@ -87,6 +88,7 @@ namespace NewArch {
         FrameBufferedBuffer<TextUniforms> uniformsBuffer;
 
         FrameBufferedBuffer<int> metadataBuffer;
+        FrameBufferedBuffer<ClipUniform> clipsBuffer;
     };
 
     template <typename S = TextStorage>
@@ -373,13 +375,15 @@ namespace NewArch {
             TextUniforms uniforms {
                 .color = desc.color,
                 .fontSize = fontSize,
-                .clip = {
-                    .min = layout.clipRect.min,
-                    .max = layout.clipRect.max
-                }
+                .numClips = static_cast<uint32_t>(layout.clipUniforms.size())
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(TextUniforms));
+            fragment.fragmentStorage.clipsBuffer.write(
+                ctx.frameIndex,
+                layout.clipUniforms.data(),
+                sizeof(ClipUniform) * layout.clipUniforms.size()
+            );
 
             return Finalized<U> {
                 .id = fragment.id,
@@ -398,6 +402,7 @@ namespace NewArch {
             auto placementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto metaBuf = fragment.fragmentStorage.metadataBuffer.getBuffer(ctx.frameIndex);
             auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
+            auto clipsBuf = fragment.fragmentStorage.clipsBuffer.getBuffer(ctx.frameIndex);
             auto bezierBuf = glyphBuffer.get();
 
             encoder->setVertexBuffer(atomBuf, 0, 0);
@@ -408,6 +413,7 @@ namespace NewArch {
             encoder->setFragmentBuffer(bezierBuf, 0, 0);
             encoder->setFragmentBuffer(metaBuf, 0, 1);
             encoder->setFragmentBuffer(uniformsBuf, 0, 2);
+            encoder->setFragmentBuffer(clipsBuf, 0, 3);
 
             const auto& atoms = finalized.atomized.atoms;
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), atoms.size()*6);
@@ -435,4 +441,3 @@ namespace NewArch {
         UIContext& ctx;
     };
 }
-

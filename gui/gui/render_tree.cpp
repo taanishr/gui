@@ -50,6 +50,13 @@ namespace NewArch {
                 .min = {0.0f, 0.0f},
                 .max = {frameInfo.width, frameInfo.height}
             },
+            .clipUniforms = {
+                ClipUniform {
+                    .rectCenter = {frameInfo.width * 0.5f, frameInfo.height * 0.5f},
+                    .halfExtent = {frameInfo.width * 0.5f, frameInfo.height * 0.5f},
+                    .cornerRadius = {0.0f, 0.0f}
+                }
+            },
         };
 
         // AHH APPLE CLANG DOESN'T SUPPORT EXECUTION POLICIES YET EXECUTE ME
@@ -459,6 +466,7 @@ namespace NewArch {
         node->globalOffset = baseOrigin;
         node->clipRect = constraints.clipRect;
         layout.clipRect = constraints.clipRect;
+        layout.clipUniforms = constraints.clipUniforms;
 
         node->atomized = node->element->postLayout(constraints, node->shared, *node->measured,
                                                     *node->atomized, layout);
@@ -480,6 +488,24 @@ namespace NewArch {
 
         auto childConstraints = constraints;
         if (node->shared.overflow != Overflow::Visible) {
+            float cornerRadius = node->shared.cornerRadius.resolveOr(
+                std::min(layout.computedBox.width, layout.computedBox.height)
+            );
+
+            simd_float2 halfExtent {
+                layout.computedBox.width * 0.5f,
+                layout.computedBox.height * 0.5f
+            };
+
+            childConstraints.clipUniforms.push_back({
+                .rectCenter = {
+                    layout.computedBox.x + halfExtent.x,
+                    layout.computedBox.y + halfExtent.y
+                },
+                .halfExtent = halfExtent,
+                .cornerRadius = {cornerRadius, cornerRadius}
+            });
+
             ClipRect nodeBounds {
                 .min = { layout.computedBox.x, layout.computedBox.y },
                 .max = {

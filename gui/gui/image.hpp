@@ -48,7 +48,7 @@ namespace NewArch {
     struct ImageUniforms {
         ImageStyleUniforms style;
         ImageGeometryUniforms geometry;
-        ClipUniform clip;
+        uint32_t numClips;
     };
 
     struct ImageStorage {
@@ -65,12 +65,14 @@ namespace NewArch {
         ImageStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(ImagePoint), MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},
-            uniformsBuffer{ctx.allocator, 6*sizeof(ImageUniforms), MaxOutstandingFrameCount}
+            uniformsBuffer{ctx.allocator, 6*sizeof(ImageUniforms), MaxOutstandingFrameCount},
+            clipsBuffer{ctx.allocator, sizeof(ClipUniform) * 4, MaxOutstandingFrameCount}
         {}
 
         FrameBufferedBuffer<ImagePoint> atomsBuffer;
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<ImageUniforms> uniformsBuffer;
+        FrameBufferedBuffer<ClipUniform> clipsBuffer;
 
 
         NS::SharedPtr<MTL::Texture> texture;
@@ -392,13 +394,15 @@ namespace NewArch {
             ImageUniforms uniforms {
                 .style = styleUniforms,
                 .geometry = geometryUniforms,
-                .clip = {
-                    .min = layout.clipRect.min,
-                    .max = layout.clipRect.max
-                }
+                .numClips = static_cast<uint32_t>(layout.clipUniforms.size())
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(ImageUniforms));
+            fragment.fragmentStorage.clipsBuffer.write(
+                ctx.frameIndex,
+                layout.clipUniforms.data(),
+                sizeof(ClipUniform) * layout.clipUniforms.size()
+            );
             return Finalized<U> {
                 .id = fragment.id,
                 .atomized = atomized,
@@ -417,12 +421,14 @@ namespace NewArch {
             auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
             auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
+            auto clipsBuf = fragment.fragmentStorage.clipsBuffer.getBuffer(ctx.frameIndex);
 
             encoder->setVertexBuffer(atomBuf, 0, 0);
             encoder->setVertexBuffer(atomPlacementBuf, 0, 1);
             encoder->setVertexBuffer(frameInfoBuf, 0, 2);
 
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
+            encoder->setFragmentBuffer(clipsBuf, 0, 1);
 
             if (fragment.fragmentStorage.texture) {
                 encoder->setFragmentTexture(fragment.fragmentStorage.texture.get(), 0);

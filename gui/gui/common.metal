@@ -19,13 +19,10 @@ struct FrameInfo {
 };
 
 struct ClipUniform {
-    float2 min;
-    float2 max;
+    float2 rectCenter;
+    float2 halfExtent;
+    float2 cornerRadius;
 };
-
-inline bool outside_clip(float2 p, ClipUniform clip) {
-    return p.x < clip.min.x || p.x > clip.max.x || p.y < clip.min.y || p.y > clip.max.y;
-}
 
 inline float2 toNDC(const float2 pt, float width = 512.0f, float height = 512.0f) {
     float ndcX = (pt.x / width) * 2.0f - 1.0f;
@@ -49,4 +46,15 @@ inline float rounded_rect_sdf(float2 pt, float2 halfExtent, float2 r) {
     float distInside = min(max(q.x,q.y), 0.0);
 
     return distOutside + distInside;
+}
+
+inline bool outside_clips(float2 p, constant ClipUniform* clips, uint count) {
+    float d = -1e20;
+
+    for (uint i = 0; i < count; ++i) {
+        ClipUniform clip = clips[i];
+        d = max(d, rounded_rect_sdf(p - clip.rectCenter, clip.halfExtent, clip.cornerRadius));
+    }
+
+    return d > 0.0;
 }
