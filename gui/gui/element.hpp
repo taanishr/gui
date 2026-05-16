@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sdf_helpers.hpp"
 #include "metal_imports.hpp"
 #include "new_arch.hpp"
 #include <concepts>
@@ -221,9 +222,10 @@ namespace NewArch {
                 return false;
             }
 
-            if (point.x < clipRect.min.x || point.x > clipRect.max.x ||
-                point.y < clipRect.min.y || point.y > clipRect.max.y) {
-                return false;
+            for (auto& clip : layout->clipUniforms) {
+                if (rounded_rect_sdf(point - clip.rectCenter, clip.halfExtent, clip.cornerRadius) > 0.0f) {
+                    return false;
+                }
             }
 
             return element->preciseHitTest(point, layout.value(), finalized);
@@ -245,7 +247,6 @@ namespace NewArch {
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
         simd_float2 globalOffset {0.0f, 0.0f};
-        ClipRect clipRect {};
         simd_float2 scrollOffset {0.0f, 0.0f};
         simd_float2 scrollContentSize {0.0f, 0.0f};
         SharedDescriptor shared;

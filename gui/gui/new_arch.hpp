@@ -266,11 +266,6 @@ namespace NewArch {
         Scroll
     };
 
-    struct ClipRect {
-        simd_float2 min{};
-        simd_float2 max{};
-    };
-
     struct ClipUniform {
         simd_float2 rectCenter{};
         simd_float2 halfExtent{};
@@ -367,7 +362,6 @@ namespace NewArch {
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
-        ClipRect clipRect {};
         std::vector<ClipUniform> clipUniforms {};
 
         bool shrinkToFit{false};
@@ -490,7 +484,6 @@ namespace NewArch {
         } resolvedPadding;
 
         DeferredPositionInfo deferredPosition;
-        ClipRect clipRect {};
         std::vector<ClipUniform> clipUniforms {};
     };
 
