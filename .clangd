@@ -5,9 +5,9 @@ CompileFlags:
     - -std=c++23
 
     # project includes
-    - -Igui
-    # - -I/Users/treja/projects/gui/AppKit-Extensions-Library
-    # - -I/Users/treja/projects/gui/MTK-Extensions-Library
+    - -Isrc
+    # - -I/Users/treja/projects/gui/build/apple-extensions
+    # - -I/Users/treja/projects/gui/build/apple-extensions
 
     # metal-cpp
     - -I/Users/treja/metal-cpp

@@ -296,7 +296,7 @@ auto index() -> void {
 //                         .flexGap(gui::Size::px(4))
 //                         .alignItems(gui::AlignItems::Center)
 //                     (
-//                         svg("/Users/treja/projects/gui/gui/sources/plane.svg")
+//                         svg("/Users/treja/projects/gui/assets/plane.svg")
 //                             .width(gui::Size::px(22))
 //                             .height(gui::Size::px(22)),
 //                         text(U"SFO -> NRT").fontSize(gui::Size::pt(13)).color(simd_float4{0.1,0.1,0.1,1.0})
