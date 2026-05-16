@@ -231,6 +231,30 @@ namespace NewArch {
             return element->preciseHitTest(point, layout.value(), finalized);
         }
 
+        Position getPosition() const { return shared.position; }
+        Display getDisplay() const { return shared.display; }
+        Size getMarginTop() const { return shared.marginTop.value_or(shared.margin); }
+        Size getMarginBottom() const { return shared.marginBottom.value_or(shared.margin); }
+        Size getMarginLeft() const { return shared.marginLeft.value_or(shared.margin); }
+        Size getMarginRight() const { return shared.marginRight.value_or(shared.margin); }
+        Size getMargin() const { return shared.margin; }
+        std::optional<Size> getPaddingTop() const { return shared.paddingTop; }
+        std::optional<Size> getPaddingBottom() const { return shared.paddingBottom; }
+        Size getFlexGrow() const { return shared.flexGrow; }
+        Size getFlexShrink() const { return shared.flexShrink; }
+        FlexDirection getFlexDirection() const { return shared.flexDirection; }
+        JustifyContent getJustifyContent() const { return shared.justifyContent; }
+        AlignItems getAlignItems() const { return shared.alignItems; }
+        Size getFlexGap() const { return shared.flexGap; }
+        FlexWrap getFlexWrap() const { return shared.flexWrap; }
+        AlignContent getAlignContent() const { return shared.alignContent; }
+        AlignSelf getAlignSelf() const { return shared.alignSelf; }
+        const std::vector<Size>& getGridTemplateColumns() const { return shared.gridTemplateColumns; }
+        const std::vector<Size>& getGridTemplateRows() const { return shared.gridTemplateRows; }
+        Size getGridColumnGap() const { return shared.gridColumnGap; }
+        Size getGridRowGap() const { return shared.gridRowGap; }
+        GridPlacement getGridPlacement() const { return shared.gridPlacement; }
+
         
         std::unique_ptr<ElementBase> element;
         TreeNode* parent = nullptr;
@@ -264,29 +288,5 @@ namespace NewArch {
 
     // inline context calculated for a single child, independently of other siblings
     std::pair<std::vector<LineFragment>, std::vector<LineBox>> buildIsolatedInlineBoxes(TreeNode* node, float maxWidth);
-
-    Position getPosition(TreeNode* node);
-    Display getDisplay(TreeNode* node);
-    Size getMarginTop(TreeNode* node);
-    Size getMarginBottom(TreeNode* node);
-    Size getMarginLeft(TreeNode* node);
-    Size getMarginRight(TreeNode* node);
-    Size getMargin(TreeNode* node);
-    std::optional<Size> getPaddingTop(TreeNode* node);
-    std::optional<Size> getPaddingBottom(TreeNode* node);
-    Size getFlexGrow(TreeNode* node);
-    Size getFlexShrink(TreeNode* node);
-    FlexDirection getFlexDirection(TreeNode* node);
-    JustifyContent getJustifyContent(TreeNode* node);
-    AlignItems getAlignItems(TreeNode* node);
-    Size getFlexGap(TreeNode* node);
-    FlexWrap getFlexWrap(TreeNode* node);
-    AlignContent getAlignContent(TreeNode* node);
-    AlignSelf getAlignSelf(TreeNode* node);
-    const std::vector<Size>& getGridTemplateColumns(TreeNode* node);
-    const std::vector<Size>& getGridTemplateRows(TreeNode* node);
-    Size getGridColumnGap(TreeNode* node);
-    Size getGridRowGap(TreeNode* node);
-    GridPlacement getGridPlacement(TreeNode* node);
 
 }

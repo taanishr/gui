@@ -138,9 +138,9 @@ namespace NewArch {
             auto& childLayout = *childAsPtr->layout;
             if (childLayout.outOfFlow) continue;
 
-            float resolvedGrow = getFlexGrow(childAsPtr).resolveOr(0.0, 0.0);
-            float resolvedShrink = getFlexShrink(childAsPtr).resolveOr(0.0, 1.0);
-            auto selfAlign = getAlignSelf(childAsPtr);
+            float resolvedGrow = childAsPtr->getFlexGrow().resolveOr(0.0, 0.0);
+            float resolvedShrink = childAsPtr->getFlexShrink().resolveOr(0.0, 1.0);
+            auto selfAlign = childAsPtr->getAlignSelf();
             auto crossSizeRequest = flex.axis.isRow
                 ? childAsPtr->shared.height
                 : childAsPtr->shared.width;
@@ -160,7 +160,7 @@ namespace NewArch {
         auto& measured = *node->measured;
 
         float gapBasis = flex.axis.isRow ? parentMaxWidth : parentMaxHeight;
-        float resolvedGap = getFlexGap(node).resolveOr(gapBasis);
+        float resolvedGap = node->getFlexGap().resolveOr(gapBasis);
 
         float totalSizeFallback = 0;
         for (auto& line : flex.lines) totalSizeFallback += line.totalWithGap(resolvedGap);

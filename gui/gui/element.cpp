@@ -15,30 +15,6 @@
 namespace NewArch {
     ElementBase::~ElementBase() {};
 
-    Position getPosition(TreeNode* node) { return node->shared.position; }
-    Display getDisplay(TreeNode* node) { return node->shared.display; }
-    Size getMarginTop(TreeNode* node) { return node->shared.marginTop.value_or(node->shared.margin); }
-    Size getMarginBottom(TreeNode* node) { return node->shared.marginBottom.value_or(node->shared.margin); }
-    Size getMarginLeft(TreeNode* node) { return node->shared.marginLeft.value_or(node->shared.margin); }
-    Size getMarginRight(TreeNode* node) { return node->shared.marginRight.value_or(node->shared.margin); }
-    Size getMargin(TreeNode* node) { return node->shared.margin; }
-    std::optional<Size> getPaddingTop(TreeNode* node) { return node->shared.paddingTop; }
-    std::optional<Size> getPaddingBottom(TreeNode* node) { return node->shared.paddingBottom; }
-    Size getFlexGrow(TreeNode* node) { return node->shared.flexGrow; }
-    Size getFlexShrink(TreeNode* node) { return node->shared.flexShrink; }
-    FlexDirection getFlexDirection(TreeNode* node) { return node->shared.flexDirection; }
-    JustifyContent getJustifyContent(TreeNode* node) { return node->shared.justifyContent; }
-    AlignItems getAlignItems(TreeNode* node) { return node->shared.alignItems; }
-    Size getFlexGap(TreeNode* node) { return node->shared.flexGap; }
-    FlexWrap getFlexWrap(TreeNode* node) { return node->shared.flexWrap; }
-    AlignContent getAlignContent(TreeNode* node) { return node->shared.alignContent; }
-    AlignSelf getAlignSelf(TreeNode* node) { return node->shared.alignSelf; }
-    const std::vector<Size>& getGridTemplateColumns(TreeNode* node) { return node->shared.gridTemplateColumns; }
-    const std::vector<Size>& getGridTemplateRows(TreeNode* node) { return node->shared.gridTemplateRows; }
-    Size getGridColumnGap(TreeNode* node) { return node->shared.gridColumnGap; }
-    Size getGridRowGap(TreeNode* node) { return node->shared.gridRowGap; }
-    GridPlacement getGridPlacement(TreeNode* node) { return node->shared.gridPlacement; }
-
     // Element-specific requests still use the request system
     std::optional<std::u32string> getText(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "text"}}};
@@ -48,7 +24,6 @@ namespace NewArch {
         }
         return std::nullopt;
     }
-
     
 
     uint64_t TreeNode::nextId = 0;
@@ -92,13 +67,13 @@ namespace NewArch {
             }
         }
 
-        auto position = getPosition(node);
-        auto display = getDisplay(node);
+        auto position = node->getPosition();
+        auto display = node->getDisplay();
 
-        Size marginTop = getMarginTop(node);
-        Size marginRight = getMarginRight(node);
-        Size marginBottom = getMarginBottom(node);
-        Size marginLeft = getMarginLeft(node);
+        Size marginTop = node->getMarginTop();
+        Size marginRight = node->getMarginRight();
+        Size marginBottom = node->getMarginBottom();
+        Size marginLeft = node->getMarginLeft();
 
         ResolvedMargins margins{};
 
