@@ -164,8 +164,8 @@ namespace NewArch {
         TreeNode* lastInFlowCollapsableChild = nullptr;
 
         for (auto& child : node->children) {
-            auto position = getPosition(child.get());
-            auto display = getDisplay(child.get());
+            auto position = child->getPosition();
+            auto display = child->getDisplay();
 
             if ((position == Position::Static || position == Position::Relative) && display == Display::Block) {
                 if (firstInFlowCollapsableChild == nullptr) firstInFlowCollapsableChild = child.get();
@@ -174,7 +174,7 @@ namespace NewArch {
         }
 
         // check if out of flow
-        auto currPosition = getPosition(node);
+        auto currPosition = node->getPosition();
         bool currOutOfFlow = currPosition == Position::Absolute || currPosition == Position::Fixed;
 
         if (currOutOfFlow) {
@@ -183,8 +183,8 @@ namespace NewArch {
         }
 
         // skip continuation if padding defined
-        bool nodeBlocksTopChain = getPaddingTop(node).has_value();
-        bool nodeBlocksBottomChain = getPaddingBottom(node).has_value();
+        bool nodeBlocksTopChain = node->getPaddingTop().has_value();
+        bool nodeBlocksBottomChain = node->getPaddingBottom().has_value();
 
         if (nodeBlocksTopChain) {
             firstInFlowCollapsableChild = nullptr;
@@ -194,8 +194,8 @@ namespace NewArch {
             lastInFlowCollapsableChild = nullptr;
         }
 
-        Size marginTop = getMarginTop(node);
-        Size marginBottom = getMarginBottom(node);
+        Size marginTop = node->getMarginTop();
+        Size marginBottom = node->getMarginBottom();
 
         // check if has top chains; if not, create new ones (which will be propagated to first and last child)
         CollapsedChain newCollapsedTopChain;
@@ -323,7 +323,7 @@ namespace NewArch {
         float originX         = childConstraints.origin.x;
         float originY         = childConstraints.origin.y;
 
-        auto position = getPosition(node);
+        auto position = node->getPosition();
         if (position != Position::Static) {
             childConstraints.absoluteContainingBlock = {
                 .origin = {0.0f, 0.0f},
@@ -339,14 +339,14 @@ namespace NewArch {
         float minX = originX;
         float maxX = originX;
 
-        auto display = getDisplay(node);
+        auto display = node->getDisplay();
 
         if (display == Display::Flex) {
-            auto flexDirection = getFlexDirection(node);
-            auto justifyContent = getJustifyContent(node);
-            auto alignItems = getAlignItems(node);
-            auto alignContentVal = getAlignContent(node);
-            auto flexWrap = getFlexWrap(node);
+            auto flexDirection = node->getFlexDirection();
+            auto justifyContent = node->getJustifyContent();
+            auto alignItems = node->getAlignItems();
+            auto alignContentVal = node->getAlignContent();
+            auto flexWrap = node->getFlexWrap();
 
             FlexLayout flexContext {flexDirection, justifyContent, alignItems, alignContentVal, flexWrap};
             flexContext.axis.applyDirection(constraints.inheritedProperties.direction);
@@ -423,7 +423,7 @@ namespace NewArch {
         assert(node->layout.has_value());
 
         auto& layout = *node->layout;
-        auto position = getPosition(node);
+        auto position = node->getPosition();
 
         auto& dp = layout.deferredPosition;
         if (dp.needsRightResolution) {

@@ -5,7 +5,7 @@
 
 namespace NewArch {
     void GridLayout::addChild(TreeNode* node) {
-        auto gridPlacement = getGridPlacement(node);
+        auto gridPlacement = node->getGridPlacement();
 
         std::optional<int> cs, ce, rs, re;
 
@@ -248,7 +248,7 @@ namespace NewArch {
                                float minX, float minY, float maxX, float maxY)
         : tree{tree}, node{node}, parentConstraints{parentConstraints},
           childConstraints{std::move(childConstraints)},
-          alignItems{getAlignItems(node)},
+          alignItems{node->getAlignItems()},
           frameInfo{frameInfo},
           childMaxWidth{node->measured->explicitWidth.value_or(parentConstraints.maxWidth)},
           parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
@@ -338,19 +338,19 @@ namespace NewArch {
 
     void GridResolver::phaseC() {
         auto& measured = *node->measured;
-        auto& templateCols = getGridTemplateColumns(node);
-        auto& templateRows = getGridTemplateRows(node);
+        auto& templateCols = node->getGridTemplateColumns();
+        auto& templateRows = node->getGridTemplateRows();
         float availableWidth = measured.explicitWidth.value_or(parentConstraints.maxWidth);
         float availableHeight = measured.explicitHeight.value_or(parentConstraints.maxHeight);
-        float colGap = getGridColumnGap(node).resolveOr(availableWidth, 0);
-        float rowGap = getGridRowGap(node).resolveOr(availableHeight, 0);
+        float colGap = node->getGridColumnGap().resolveOr(availableWidth, 0);
+        float rowGap = node->getGridRowGap().resolveOr(availableHeight, 0);
 
         std::vector<float> itemWidths;
         std::vector<float> itemHeights;
 
         for (size_t i = 0; i < node->children.size(); ++i) {
             auto childAsPtr = node->children[i].get();
-            auto childPos = getPosition(childAsPtr);
+            auto childPos = childAsPtr->getPosition();
             if (childPos == Position::Absolute || childPos == Position::Fixed) continue;
 
             if (!hasIndefiniteChild) {
@@ -417,7 +417,7 @@ namespace NewArch {
 
             // resolve alignment
             AlignItems effectiveAlign = alignItems;
-            auto selfAlign = getAlignSelf(childAsPtr);
+            auto selfAlign = childAsPtr->getAlignSelf();
             if (selfAlign != AlignSelf::Auto) {
                 switch (selfAlign) {
                     case AlignSelf::Stretch:   effectiveAlign = AlignItems::Stretch; break;
