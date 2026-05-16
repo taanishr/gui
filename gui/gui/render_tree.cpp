@@ -46,10 +46,6 @@ namespace NewArch {
                 .width = frameInfo.width,
                 .height = frameInfo.height
             },
-            .clipRect = {
-                .min = {0.0f, 0.0f},
-                .max = {frameInfo.width, frameInfo.height}
-            },
             .clipUniforms = {
                 ClipUniform {
                     .rectCenter = {frameInfo.width * 0.5f, frameInfo.height * 0.5f},
@@ -464,8 +460,6 @@ namespace NewArch {
             offset.y += baseOrigin.y;
         }
         node->globalOffset = baseOrigin;
-        node->clipRect = constraints.clipRect;
-        layout.clipRect = constraints.clipRect;
         layout.clipUniforms = constraints.clipUniforms;
 
         node->atomized = node->element->postLayout(constraints, node->shared, *node->measured,
@@ -506,24 +500,6 @@ namespace NewArch {
                 .cornerRadius = {cornerRadius, cornerRadius}
             });
 
-            ClipRect nodeBounds {
-                .min = { layout.computedBox.x, layout.computedBox.y },
-                .max = {
-                    layout.computedBox.x + layout.computedBox.width,
-                    layout.computedBox.y + layout.computedBox.height
-                }
-            };
-
-            childConstraints.clipRect = {
-                .min = {
-                    std::max(constraints.clipRect.min.x, nodeBounds.min.x),
-                    std::max(constraints.clipRect.min.y, nodeBounds.min.y)
-                },
-                .max = {
-                    std::min(constraints.clipRect.max.x, nodeBounds.max.x),
-                    std::min(constraints.clipRect.max.y, nodeBounds.max.y)
-                }
-            };
         }
 
         for (auto& child : node->children) {
