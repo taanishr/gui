@@ -51,14 +51,15 @@ namespace NewArch {
     struct SVGUniforms {
         SVGStyleUniforms style;
         SVGGeometryUniforms geometry;
-        ClipUniform clip;
+        uint32_t numClips;
     };
 
     struct SVGStorage {
         SVGStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(SVGPoint), MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2), MaxOutstandingFrameCount},
-            uniformsBuffer{ctx.allocator, 6*sizeof(SVGUniforms), MaxOutstandingFrameCount}
+            uniformsBuffer{ctx.allocator, 6*sizeof(SVGUniforms), MaxOutstandingFrameCount},
+            clipsBuffer{ctx.allocator, sizeof(ClipUniform) * 4, MaxOutstandingFrameCount}
         {}
 
         ~SVGStorage() {
@@ -68,6 +69,7 @@ namespace NewArch {
             atomsBuffer{std::move(other.atomsBuffer)},
             placementsBuffer{std::move(other.placementsBuffer)},
             uniformsBuffer{std::move(other.uniformsBuffer)},
+            clipsBuffer{std::move(other.clipsBuffer)},
             tree{std::exchange(other.tree, nullptr)},
             textureCache{std::move(other.textureCache)},
             activeBucket{other.activeBucket},
@@ -78,6 +80,7 @@ namespace NewArch {
         FrameBufferedBuffer<SVGPoint> atomsBuffer;
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<SVGUniforms> uniformsBuffer;
+        FrameBufferedBuffer<ClipUniform> clipsBuffer;
 
         resvg_render_tree* tree {nullptr};
         std::map<uint32_t, NS::SharedPtr<MTL::Texture>> textureCache;
@@ -463,13 +466,15 @@ namespace NewArch {
             SVGUniforms uniforms {
                 .style = styleUniforms,
                 .geometry = geometryUniforms,
-                .clip = {
-                    .min = layout.clipRect.min,
-                    .max = layout.clipRect.max
-                }
+                .numClips = static_cast<uint32_t>(layout.clipUniforms.size())
             };
 
             fragment.fragmentStorage.uniformsBuffer.write(ctx.frameIndex, &uniforms, sizeof(SVGUniforms));
+            fragment.fragmentStorage.clipsBuffer.write(
+                ctx.frameIndex,
+                layout.clipUniforms.data(),
+                sizeof(ClipUniform) * layout.clipUniforms.size()
+            );
             return Finalized<U> {
                 .id = fragment.id,
                 .atomized = atomized,
@@ -488,12 +493,14 @@ namespace NewArch {
             auto atomPlacementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
             auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
+            auto clipsBuf = fragment.fragmentStorage.clipsBuffer.getBuffer(ctx.frameIndex);
 
             encoder->setVertexBuffer(atomBuf, 0, 0);
             encoder->setVertexBuffer(atomPlacementBuf, 0, 1);
             encoder->setVertexBuffer(frameInfoBuf, 0, 2);
 
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
+            encoder->setFragmentBuffer(clipsBuf, 0, 1);
 
             if (auto* tex = fragment.fragmentStorage.getActiveTexture()) {
                 encoder->setFragmentTexture(tex, 0);

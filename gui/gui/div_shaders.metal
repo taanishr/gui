@@ -30,7 +30,7 @@ struct DivStyleUniforms {
 struct DivGeometryUniforms {
     simd_float2 rectCenter;
     simd_float2 halfExtent;
-    ClipUniform clip;
+    uint numClips;
 };
 
 struct DivUniforms {
@@ -46,7 +46,6 @@ vertex DivVertexOut vertex_div(
 {
     DivVertexOut out;
     
-    // todo: add the offsets
     in.position += offsets[in.atom_id];
     
     float2 adjustedPosition = toNDC(in.position, frameInfo->width, frameInfo->height);
@@ -57,10 +56,11 @@ vertex DivVertexOut vertex_div(
 
 fragment float4 fragment_div(
     DivVertexOut in [[stage_in]],
-    constant DivUniforms* uniforms [[buffer(0)]]
+    constant DivUniforms* uniforms [[buffer(0)]],
+    constant ClipUniform* clips [[buffer(1)]]
 )
 {
-    if (outside_clip(in.worldPosition.xy, uniforms->geometry.clip)) {
+    if (outside_clips(in.worldPosition.xy, clips, uniforms->geometry.numClips)) {
         discard_fragment();
     }
 
