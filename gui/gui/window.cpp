@@ -24,6 +24,14 @@
 // refactor objective c into a cleaner interface? maybe a struct with key funcs?
 HandlerState hs {};
 
+using runtime::ContextManager;
+using runtime::Event;
+using runtime::EventType;
+using runtime::KeyboardPayload;
+using runtime::MouseButton;
+using runtime::MousePayload;
+using runtime::ScrollPayload;
+
 using KeyDownFunc = NS::String*(*)(id, SEL);
 using MouseDownFunc = CGPoint(*)(id, SEL);
 using ScrollWheelFunc = CGFloat(*)(id, SEL);
@@ -145,7 +153,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     
     window->setContentView(view);
 
-    NewArch::ContextManager::initContext(device, view);
+    runtime::ContextManager::initContext(device, view);
 
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
 

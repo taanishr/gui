@@ -1,7 +1,7 @@
 #include "div.hpp"
 #include "new_arch.hpp"
 
-NewArch::DivDescriptor::DivDescriptor()
+elements::DivDescriptor::DivDescriptor()
     : color{0.0f, 0.0f, 0.0f, 0.0f}
 {
 }

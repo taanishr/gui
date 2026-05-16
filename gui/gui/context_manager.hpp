@@ -7,7 +7,20 @@
 #include "text.hpp"
 #include <mutex>
 
-namespace NewArch {
+namespace runtime {
+    using elements::DivProcessor;
+    using elements::DivStorage;
+    using elements::DivUniforms;
+    using elements::ImageProcessor;
+    using elements::ImageStorage;
+    using elements::ImageUniforms;
+    using elements::SVGProcessor;
+    using elements::SVGStorage;
+    using elements::SVGUniforms;
+    using elements::TextProcessor;
+    using elements::TextStorage;
+    using elements::TextUniforms;
+
     struct ContextManager {
         static UIContext& initContext(MTL::Device* device, MTK::View* view);
         static UIContext& getContext();

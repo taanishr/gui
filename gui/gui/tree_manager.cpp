@@ -1,5 +1,5 @@
 #include "tree_manager.hpp"
 
-namespace NewArch {
+namespace tree {
     std::vector<RenderTree*> TreeStack::treeStack {};
 }

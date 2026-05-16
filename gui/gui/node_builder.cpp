@@ -3,7 +3,16 @@
 #include "tree_manager.hpp"
 #include <print>
 
-namespace NewArch {
+namespace elements {
+    using runtime::ContextManager;
+    using runtime::getDivProcessor;
+    using runtime::getImageProcessor;
+    using runtime::getSVGProcessor;
+    using runtime::getTextProcessor;
+    using style::Display;
+    using style::Size;
+    using tree::TreeStack;
+
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div()
     {
         auto& ctx = ContextManager::getContext();

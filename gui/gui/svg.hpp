@@ -20,7 +20,24 @@
 #include <utility>
 #include <resvg.h>
 
-namespace NewArch {
+namespace elements {
+    using layout::Atomized;
+    using layout::Constraints;
+    using layout::Finalized;
+    using layout::LayoutResult;
+    using layout::Measured;
+    using layout::Placed;
+    using layout::ResolvedSize;
+    using layout::SizeResolutionContext;
+    using layout::resolveSize;
+    using layout::toLayoutInput;
+    using runtime::HitTestContext;
+    using runtime::UIContext;
+    using style::ClipUniform;
+    using style::SharedDescriptor;
+    using style::Size;
+    using style::Unit;
+
     struct SVGPoint {
         simd_float2 position;
         simd_float2 uv;

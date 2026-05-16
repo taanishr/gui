@@ -13,7 +13,25 @@
 #include <print>
 #include "context_manager.hpp"
 
-namespace NewArch {
+namespace elements {
+    using runtime::ContextManager;
+    using runtime::Event;
+    using runtime::EventType;
+    using runtime::UIContext;
+    using style::AlignContent;
+    using style::AlignItems;
+    using style::AlignSelf;
+    using style::Display;
+    using style::FlexDirection;
+    using style::FlexWrap;
+    using style::GridPlacement;
+    using style::JustifyContent;
+    using style::Overflow;
+    using style::Position;
+    using style::Size;
+    using tree::RenderTree;
+    using tree::TreeNode;
+
     // Element-specific concepts (only for properties that vary by element type)
     template<typename T>
     concept HasText = requires { std::declval<T&>().text; };

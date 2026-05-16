@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
 
-namespace NewArch {
+namespace style {
     enum class Unit {
         Px,
         Percent,

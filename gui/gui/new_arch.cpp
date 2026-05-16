@@ -5,8 +5,6 @@
 //  Created by Taanish Reja on 11/20/25.
 //
 
-#pragma once
-
 #include "new_arch.hpp"
 #include "fragment_types.hpp"
 #include "sizing.hpp"
@@ -15,35 +13,13 @@
 #include <print>
 #include <simd/vector_types.h>
 
-
-/*
-    figuring out how to introduce right justificaiton with rtl setting
-        op 1) helper function that resolves the next cursor
-            problems:
-                - <span> dasdasd </span> <span>dasdasdas </span>
-                - will combine; but in right justification case, cursor needs to be adjusted in this case
-                - need some sort of "lookahead" function or preprocessing maybe?
-                - there should be a better method though
-                - inlineCtx {
-                    currentLineW
-                }
-
-        Solution:
-            - create concept of line boxes
-            - currently, i have created "inline boxes"
-            - but line boxes will be shared across all children
-            - each line box will be assigned to a line box
-            - clear this vector if the array is blank
-            - preprocess these
-*/
-
-namespace NewArch {
+namespace layout {
 
     simd_float2 resolvePosition(const PositionResolutionContext& ctx) {
         simd_float2 resolvedPosition = ctx.currentCursor;
 
         switch (ctx.layoutInput.position) {
-            case NewArch::Position::Fixed: {
+            case layout::Position::Fixed: {
                 float refWidth = ctx.constraints.frameInfo.width;
                 float refHeight = ctx.constraints.frameInfo.height;
 
@@ -65,7 +41,7 @@ namespace NewArch {
 
                 break;
             }
-            case NewArch::Position::Absolute: {
+            case layout::Position::Absolute: {
                 auto& cb = ctx.constraints.absoluteContainingBlock;
                 float refWidth = cb.width;
                 float refHeight = cb.height;
@@ -88,11 +64,11 @@ namespace NewArch {
 
                 break;
             }   
-            case NewArch::Position::Relative:
-            case NewArch::Position::Static: {
+            case layout::Position::Relative:
+            case layout::Position::Static: {
                 switch (ctx.layoutInput.display) {
-                    case NewArch::Display::Flex:
-                    case NewArch::Display::Block: {
+                    case layout::Display::Flex:
+                    case layout::Display::Block: {
                         float startingX = ctx.constraints.origin.x;
                         float startingY = ctx.constraints.cursor.y;
 
@@ -113,7 +89,7 @@ namespace NewArch {
                         resolvedPosition = {startingX, startingY};
                         break;
                     }
-                    case NewArch::Display::Inline: {
+                    case layout::Display::Inline: {
                         resolvedPosition = ctx.currentCursor;
                         break;
                     }
@@ -150,8 +126,8 @@ namespace NewArch {
         ResolvedSize resolvedSize;
 
         switch (ctx.position) {
-            case NewArch::Position::Absolute:
-            case NewArch::Position::Fixed: {
+            case layout::Position::Absolute:
+            case layout::Position::Fixed: {
                 if (ctx.requestedHeight.has_value()) {
                     resolvedSize.height = ctx.requestedHeight->resolveOr(ctx.availableHeight, 0.0f);
                 }else {
@@ -294,6 +270,10 @@ namespace NewArch {
         return resolvedMargins;
     }
 
+}
+
+namespace runtime {
+
     // pipeline specific
     UIContext::UIContext(MTL::Device* device, MTK::View* view):
         device{device},
@@ -323,25 +303,9 @@ namespace NewArch {
         std::memcpy(frameInfoBuffer.get()->contents(), &frameInfo, sizeof(FrameInfo));
     }
 
-    // absolute needs:
-    /*
-        - Out-of-flow: does not affect siblings or the parent cursor.
-        - Containing block selection:
-            - nearest ancestor with position != static (i.e. positioned ancestor) -> containing block
-            - otherwise -> root frame.
-        - Position coordinates are relative to the containing block origin (top-left by default).
-        - Internal layout (for its children) still uses inline/block semantics and the same
-          line-box logic, but the "available width" is the containing block's inner width.
-        - Shrink-to-fit for inline absolute boxes:
-            - Compute minContentWidth and maxContentWidth for the node.
-            - resolvedWidth = min( max(minContentWidth, availableWidth), maxContentWidth ).
-            - If minContentWidth > availableWidth => inline internal layout degenerates to
-              block-like stacking (vertical flow of line boxes).
-        - Absolute elements must carry owner/style and be atomized as content atoms; any
-          background/box rect for the absolute node is emitted in Finalize after layout.
-    */
+}
 
-    // fixed and absolute, block/inline
+namespace layout {
     LayoutResult LayoutEngine::layoutAbsolute(Constraints& constraints, simd_float2 currentCursor, LayoutInput& layoutInput, Atomized& atomized) {
         LayoutResult lr;
         lr.outOfFlow = true;

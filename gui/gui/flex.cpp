@@ -1,7 +1,8 @@
 #include "flex.hpp"
 #include "render_tree.hpp"
+#include "render_tree.hpp"
 
-namespace NewArch {
+namespace layout {
     Alignment distributeSpace(float remainingSpace, size_t itemCount, DistributeMode mode) {
         Alignment a;
         switch (mode) {

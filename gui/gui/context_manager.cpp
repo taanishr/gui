@@ -1,9 +1,9 @@
 
 #include "context_manager.hpp"
 
-namespace NewArch {
-    std::once_flag NewArch::ContextManager::initFlag;
-    std::optional<UIContext> NewArch::ContextManager::context = std::nullopt;
+namespace runtime {
+    std::once_flag runtime::ContextManager::initFlag;
+    std::optional<UIContext> runtime::ContextManager::context = std::nullopt;
 
     UIContext& ContextManager::initContext(MTL::Device* device, MTK::View* view) {
         std::call_once(ContextManager::initFlag, [&](){

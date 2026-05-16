@@ -40,15 +40,15 @@ public:
     MTL::Device* device;
     MTK::View* view;
     FT_Library ft;
-    NewArch::UIContext& ctx;
-    NewArch::LayoutEngine layoutEngine;
-    NewArch::DivProcessor<> divProcessor;
-    NewArch::ImageProcessor<> imgProcessor;
-    NewArch::TextProcessor<> txtProcessor;
-    NewArch::Div<> div;
-    NewArch::Image<> img;
-    NewArch::Text<> txt;
-    NewArch::RenderTree rootTree;
+    runtime::UIContext& ctx;
+    layout::LayoutEngine layoutEngine;
+    elements::DivProcessor<> divProcessor;
+    elements::ImageProcessor<> imgProcessor;
+    elements::TextProcessor<> txtProcessor;
+    elements::Div<> div;
+    elements::Image<> img;
+    elements::Text<> txt;
+    tree::RenderTree rootTree;
 
     std::chrono::high_resolution_clock clock {};
     

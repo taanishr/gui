@@ -21,7 +21,7 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     view{view},
     commandQueue(device->newCommandQueue()),
     frameSemaphore{MaxOutstandingFrameCount},
-    ctx{NewArch::ContextManager::getContext()},
+    ctx{runtime::ContextManager::getContext()},
     layoutEngine{},
     divProcessor{ctx},
     div{ctx},
@@ -31,12 +31,12 @@ Renderer::Renderer(MTL::Device* device, MTK::View* view):
     txt{ctx},
     rootTree{}
 {
-    auto rootElem = Div(ctx);
+    auto rootElem = elements::Div(ctx);
     rootElem.getDescriptor().color = simd_float4{0,0,0,0};
 
-    auto* rootNode = rootTree.createRoot(ctx, std::move(rootElem), NewArch::getDivProcessor(ctx));
-    rootNode->shared.width = NewArch::Size::percent(1.0);
-    rootNode->shared.height = NewArch::Size::percent(1.0);
+    auto* rootNode = rootTree.createRoot(ctx, std::move(rootElem), runtime::getDivProcessor(ctx));
+    rootNode->shared.width = style::Size::percent(1.0);
+    rootNode->shared.height = style::Size::percent(1.0);
     rootTree.markDirty();
     makeResources();
 }
@@ -60,7 +60,7 @@ void Renderer::makeResources()
 {
     FT_Init_FreeType(&(this->ft));
 
-    TreeStack::pushTree(&rootTree);
+    tree::TreeStack::pushTree(&rootTree);
 
     index();
 }
@@ -142,7 +142,6 @@ Renderer::~Renderer() {
     commandQueue->release();
     FT_Done_FreeType(ft);
 }
-
 
 
 
