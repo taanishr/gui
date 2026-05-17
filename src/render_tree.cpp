@@ -1,5 +1,5 @@
 #include "render_tree.hpp"
-#include "renderer_constants.hpp"
+#include "hash_combine.hpp"
 #include <algorithm>
 #include <print>
 
@@ -21,17 +21,171 @@ namespace tree {
 
     void RenderTree::markDirty() {
         needsUpdate = true;
-        pendingWarmupFrames = MaxOutstandingFrameCount;
+        pendingFrameBufferWrites = MaxOutstandingFrameCount;
+        renderOrderDirty = true;
+        if (auto root = getRoot()) {
+            markSubtreeDirty(root, allPhaseDirtyBits());
+        }
+    }
+
+    void RenderTree::markDirty(TreeNode* node, DirtyBits bits) {
+        if (!node || bits == DirtyBits::None) return;
+
+        needsUpdate = true;
+        pendingFrameBufferWrites = MaxOutstandingFrameCount;
+
+        if (hasDirty(bits, DirtyBits::PaintOrder)) {
+            renderOrderDirty = true;
+        }
+
+        DirtyBits selfBits = bits;
+        if (hasDirty(bits, DirtyBits::Measure | DirtyBits::Atomize | DirtyBits::Layout)) {
+            selfBits |= DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+        }
+        if (hasDirty(bits, DirtyBits::PostLayout)) {
+            selfBits |= DirtyBits::Place | DirtyBits::Finalize;
+        }
+        if (hasDirty(bits, DirtyBits::Place)) {
+            selfBits |= DirtyBits::Finalize;
+        }
+
+        node->dirtySelf |= selfBits;
+        node->dirtySubtree |= selfBits;
+
+        if (hasDirty(bits, DirtyBits::PostLayout | DirtyBits::Place)) {
+            markSubtreeDirty(node, selfBits & (DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize));
+        }
+
+        if (hasDirty(bits, DirtyBits::Measure | DirtyBits::Atomize | DirtyBits::Layout)) {
+            DirtyBits ancestorBits = DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+            for (auto* ancestor = node->parent; ancestor; ancestor = ancestor->parent) {
+                ancestor->dirtySelf |= ancestorBits;
+                ancestor->dirtySubtree |= ancestorBits | selfBits;
+            }
+        }
+
+        if (hasDirty(bits, DirtyBits::PostLayout)) {
+            DirtyBits ancestorBits = DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+            for (auto* ancestor = node->parent; ancestor; ancestor = ancestor->parent) {
+                ancestor->dirtySelf |= ancestorBits;
+                ancestor->dirtySubtree |= ancestorBits | selfBits;
+            }
+        }
+    }
+
+    void RenderTree::markSubtreeDirty(TreeNode* node, DirtyBits bits) {
+        if (!node || bits == DirtyBits::None) return;
+        node->dirtySelf |= bits;
+        node->dirtySubtree |= bits;
+        for (auto& child : node->children) {
+            markSubtreeDirty(child.get(), bits);
+        }
+    }
+
+    void RenderTree::clearDirty(TreeNode* node) {
+        if (!node) return;
+        node->dirtySelf = DirtyBits::None;
+        node->dirtySubtree = DirtyBits::None;
+        for (auto& child : node->children) {
+            clearDirty(child.get());
+        }
+    }
+
+    bool RenderTree::subtreeHasDirty(TreeNode* node, DirtyBits bits) const {
+        if (!node) return false;
+        return hasDirty(node->dirtySelf | node->dirtySubtree, bits);
+    }
+
+    ConstraintsKey RenderTree::makeConstraintsKey(const Constraints& constraints,
+                                                  simd_float2 extraOriginA,
+                                                  simd_float2 extraOriginB) const {
+        std::size_t hash = 0;
+        hash_combine(hash, constraints.origin.x);
+        hash_combine(hash, constraints.origin.y);
+        hash_combine(hash, constraints.cursor.x);
+        hash_combine(hash, constraints.cursor.y);
+        hash_combine(hash, constraints.maxWidth);
+        hash_combine(hash, constraints.maxHeight);
+        hash_combine(hash, constraints.frameInfo.width);
+        hash_combine(hash, constraints.frameInfo.height);
+        hash_combine(hash, constraints.frameInfo.scale);
+        hash_combine(hash, constraints.absoluteContainingBlock.origin.x);
+        hash_combine(hash, constraints.absoluteContainingBlock.origin.y);
+        hash_combine(hash, constraints.absoluteContainingBlock.width);
+        hash_combine(hash, constraints.absoluteContainingBlock.height);
+        hash_combine(hash, constraints.shrinkToFit);
+        hash_combine(hash, constraints.lineFragments.size());
+        hash_combine(hash, constraints.lineBoxes.size());
+
+        for (auto& clip : constraints.clipUniforms) {
+            hash_combine(hash, clip.rectCenter.x);
+            hash_combine(hash, clip.rectCenter.y);
+            hash_combine(hash, clip.halfExtent.x);
+            hash_combine(hash, clip.halfExtent.y);
+            hash_combine(hash, clip.cornerRadius.x);
+            hash_combine(hash, clip.cornerRadius.y);
+        }
+
+        for (auto& fragment : constraints.lineFragments) {
+            hash_combine(hash, fragment.width);
+            hash_combine(hash, fragment.atomCount);
+            hash_combine(hash, fragment.lineBoxIndex);
+            hash_combine(hash, fragment.fragmentIndex);
+        }
+        for (auto& lineBox : constraints.lineBoxes) {
+            hash_combine(hash, lineBox.fragmentCount);
+            hash_combine(hash, lineBox.width);
+            hash_combine(hash, lineBox.currentFragmentOffset);
+            for (auto offset : lineBox.fragmentOffsets) {
+                hash_combine(hash, offset);
+            }
+        }
+
+        hash_combine(hash, extraOriginA.x);
+        hash_combine(hash, extraOriginA.y);
+        hash_combine(hash, extraOriginB.x);
+        hash_combine(hash, extraOriginB.y);
+
+        return ConstraintsKey{.value = hash};
+    }
+
+    bool RenderTree::shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const {
+        return hasDirty(node->dirtySelf, bit) ||
+            !node->constraintsKey.has_value() ||
+            *node->constraintsKey != incomingKey;
+    }
+
+    const std::vector<TreeNode*>& RenderTree::sortedRenderOrder() {
+        if (!renderOrderDirty && !renderOrderCache.empty()) {
+            debugCounters.renderOrderCacheHits++;
+            return renderOrderCache;
+        }
+
+        debugCounters.renderOrderCacheMisses++;
+        renderOrderCache = collectAllNodes(getRoot());
+        std::sort(renderOrderCache.begin(), renderOrderCache.end(), [](TreeNode* a, TreeNode* b) {
+            if (a->globalZIndex != b->globalZIndex) {
+                return a->globalZIndex < b->globalZIndex;
+            }
+            return a->id < b->id;
+        });
+        renderOrderDirty = false;
+        return renderOrderCache;
     }
 
     // I have a render cache, develop some sort of caching policy that makes these useful
     void RenderTree::update(const FrameInfo& frameInfo, uint64_t frameIndex) {
+        debugCounters = {};
         bool frameInfoChanged = isFrameInfoChanged(frameInfo);
         if (frameInfoChanged) {
-            pendingWarmupFrames = MaxOutstandingFrameCount;
+            pendingFrameBufferWrites = MaxOutstandingFrameCount;
+            if (auto root = getRoot()) {
+                markSubtreeDirty(root, allPhaseDirtyBits());
+            }
+            renderOrderDirty = true;
         }
 
-        if (!needsUpdate && !frameInfoChanged && pendingWarmupFrames == 0) {
+        if (!needsUpdate && !frameInfoChanged && pendingFrameBufferWrites == 0) {
             return;
         }
 
@@ -39,7 +193,7 @@ namespace tree {
         lastFrameInfo = frameInfo;
 
         auto root = getRoot();
-        auto allNodes = collectAllNodes(root);
+        if (!root) return;
 
 
         rootCursor = simd_float2{0,0};
@@ -70,50 +224,60 @@ namespace tree {
         //     }
         // );
 
-        measurePhase(root, rootConstraints);
-        
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                node->atomized = node->element->atomize(rootConstraints, node->shared, *node->measured);
-            }
-        );
+        if (subtreeHasDirty(root, DirtyBits::Measure) || !root->measured.has_value()) {
+            measurePhase(root, rootConstraints);
+        }
+        if (subtreeHasDirty(root, DirtyBits::Atomize) || !root->atomized.has_value()) {
+            atomizePhase(root, rootConstraints);
+        }
     
         // Layout pass
         // precompute margin metadata + intents
-        preLayoutPhase(root, frameInfo, rootConstraints);
+        bool needsLayoutPass = subtreeHasDirty(root, DirtyBits::Layout) || !root->layout.has_value();
+        if (needsLayoutPass && (subtreeHasDirty(root, DirtyBits::Layout) || !root->preLayout.has_value())) {
+            preLayoutPhase(root, frameInfo, rootConstraints);
+        }
         // initial layout pass
-        layoutPhase(root, frameInfo, rootConstraints);
-        root->calculateGlobalZIndex(0);
+        if (needsLayoutPass) {
+            layoutPhase(root, frameInfo, rootConstraints);
+            root->calculateGlobalZIndex(0);
+        }
+        sortedRenderOrder();
         // postLayout: resolve global positions (serial, top-down) + reconcile atoms
-        postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
+        if (subtreeHasDirty(root, DirtyBits::PostLayout) || !root->layout.has_value()) {
+            postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
+        }
 
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                node->placed = node->element->place(rootConstraints, node->shared, *node->measured,
-                                                    *node->atomized, *node->layout);
-            }
-        );
+        if (subtreeHasDirty(root, DirtyBits::Place) || !root->placed.has_value()) {
+            placePhase(root, frameInfo, rootConstraints);
+        }
+        if (subtreeHasDirty(root, DirtyBits::Finalize) || !root->finalized.has_value()) {
+            finalizePhase(root, rootConstraints);
+        }
 
-        Parallel::for_each(allNodes.begin(), allNodes.end(),
-            [&](TreeNode* node) {
-                node->finalized = node->element->finalize(rootConstraints, node->shared, *node->measured,
-                                                        *node->atomized, *node->layout, *node->placed);
-            }
-        );
+        if (pendingFrameBufferWrites > 0) {
+            pendingFrameBufferWrites--;
+        }
+        if (pendingFrameBufferWrites == 0) {
+            clearDirty(root);
+        }
 
-        pendingWarmupFrames--;
+        if (debugDirtyPhases) {
+            std::println(
+                "dirty phases: measure {}/{} atomize {}/{} layout {}/{} post {}/{} place {}/{} finalize {}/{} order hit/miss {}/{}",
+                debugCounters.measure.recomputed, debugCounters.measure.skipped,
+                debugCounters.atomize.recomputed, debugCounters.atomize.skipped,
+                debugCounters.layout.recomputed, debugCounters.layout.skipped,
+                debugCounters.postLayout.recomputed, debugCounters.postLayout.skipped,
+                debugCounters.place.recomputed, debugCounters.place.skipped,
+                debugCounters.finalize.recomputed, debugCounters.finalize.skipped,
+                debugCounters.renderOrderCacheHits, debugCounters.renderOrderCacheMisses
+            );
+        }
     }
 
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
-        auto root = getRoot();
-        auto allNodes = collectAllNodes(root);
-
-        std::sort(allNodes.begin(), allNodes.end(), [](TreeNode* a, TreeNode* b) {
-            if (a->globalZIndex != b->globalZIndex) {
-                return a->globalZIndex < b->globalZIndex;
-            }
-            return a->id < b->id;
-        });
+        auto& allNodes = sortedRenderOrder();
         
         // serially encoded; encoders are not thread safe
         for (auto node : allNodes) { 
@@ -123,8 +287,17 @@ namespace tree {
     }
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {
-        auto measured = node->element->measure(constraints, node->shared);
-        node->measured = measured;
+        auto key = makeConstraintsKey(constraints);
+        bool recompute = shouldRecompute(node, DirtyBits::Measure, key);
+        if (recompute) {
+            auto measured = node->element->measure(constraints, node->shared);
+            node->measured = measured;
+            node->constraintsKey = key;
+            node->dirtySelf |= DirtyBits::Atomize | DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+            debugCounters.measure.recomputed++;
+        } else {
+            debugCounters.measure.skipped++;
+        }
         
         float paddingLeft = node->shared.paddingLeft.value_or(Size{}).resolveOr(constraints.maxWidth);
         float paddingTop = node->shared.paddingTop.value_or(Size{}).resolveOr(constraints.maxHeight);
@@ -135,8 +308,8 @@ namespace tree {
 
         // std::println("padidngLeft: {} paddingRight: {}", paddingLeft, paddingRight);
     
-        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth) - paddingLeft - paddingRight;
-        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight) - paddingTop - paddingBottom;
+        childConstraints.maxWidth = node->measured->explicitWidth.value_or(constraints.maxWidth) - paddingLeft - paddingRight;
+        childConstraints.maxHeight = node->measured->explicitHeight.value_or(constraints.maxHeight) - paddingTop - paddingBottom;
         
         // std::println("maxWidth: {}", childConstraints.maxWidth);
 
@@ -148,15 +321,25 @@ namespace tree {
 
     // consider safer way of accessing cache?
     void RenderTree::atomizePhase(TreeNode* node, Constraints& constraints) {
-        // assert(renderCache.measured.contains(node->id) && 
-        //    "atomizePhase called before measurePhase");
         assert(node->measured.has_value());
 
+        auto key = makeConstraintsKey(constraints);
+        bool recompute = shouldRecompute(node, DirtyBits::Atomize, key);
+        if (recompute) {
+            auto& measured  = *node->measured;
+            auto& shared = node->shared;
+            auto atomized = node->element->atomize(constraints, shared, measured);
+            node->atomized = atomized;
+            node->constraintsKey = key;
+            node->dirtySelf |= DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+            debugCounters.atomize.recomputed++;
+        } else {
+            debugCounters.atomize.skipped++;
+        }
 
-        auto& measured  = *node->measured;
-        auto& shared = node->shared;
-        auto atomized = node->element->atomize(constraints, shared, measured);
-        node->atomized = atomized;
+        for (auto& child : node->children) {
+            atomizePhase(child.get(), constraints);
+        }
     }
 
     void buildCollapsedChains(
@@ -290,6 +473,9 @@ namespace tree {
         assert(node->atomized.has_value());
         assert(node->preLayout.has_value());
 
+        auto key = makeConstraintsKey(constraints);
+        debugCounters.layout.recomputed++;
+
         auto& measured = *node->measured;
         auto& atomized = *node->atomized;
         auto& prelayout = *node->preLayout;
@@ -421,7 +607,11 @@ namespace tree {
         }
 
         // finalize layout of node
+        layout.localComputedBox = layout.computedBox;
+        layout.localAtomOffsets = layout.atomOffsets;
         node->layout = layout;
+        node->constraintsKey = key;
+        node->dirtySelf |= DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
     }
 
     void RenderTree::postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
@@ -430,7 +620,18 @@ namespace tree {
         assert(node->atomized.has_value());
         assert(node->layout.has_value());
 
+        auto key = makeConstraintsKey(constraints, parentGlobalOrigin, absBlockGlobalOrigin);
+        bool recompute = shouldRecompute(node, DirtyBits::PostLayout, key);
+        if (!recompute) {
+            debugCounters.postLayout.skipped++;
+            return;
+        }
+        debugCounters.postLayout.recomputed++;
+
         auto& layout = *node->layout;
+        layout.computedBox = layout.localComputedBox;
+        layout.atomOffsets = layout.localAtomOffsets;
+
         auto position = node->getPosition();
 
         auto& dp = layout.deferredPosition;
@@ -525,19 +726,35 @@ namespace tree {
             }
             node->scrollContentSize = contentSize;
         }
+
+        node->constraintsKey = key;
+        node->dirtySelf |= DirtyBits::Place | DirtyBits::Finalize;
     }
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         assert(node->measured.has_value());
         assert(node->atomized.has_value());
         assert(node->layout.has_value());
-        
-        auto& measured = *node->measured;
-        auto& atomized = *node->atomized;
-        auto& layout = *node->layout;
 
-        auto placed = node->element->place(constraints, node->shared, measured, atomized, layout);
-        node->placed = placed;
+        auto key = makeConstraintsKey(constraints);
+        bool recompute = shouldRecompute(node, DirtyBits::Place, key);
+        if (recompute) {
+            auto& measured = *node->measured;
+            auto& atomized = *node->atomized;
+            auto& layout = *node->layout;
+
+            auto placed = node->element->place(constraints, node->shared, measured, atomized, layout);
+            node->placed = placed;
+            node->constraintsKey = key;
+            node->dirtySelf |= DirtyBits::Finalize;
+            debugCounters.place.recomputed++;
+        } else {
+            debugCounters.place.skipped++;
+        }
+
+        for (auto& child : node->children) {
+            placePhase(child.get(), frameInfo, constraints);
+        }
     }
 
     void RenderTree::finalizePhase(TreeNode* node, Constraints& constraints) {
@@ -545,15 +762,27 @@ namespace tree {
         // so debug asserts never hurt
         assert(node->measured.has_value());
         assert(node->atomized.has_value());
-        assert(node->finalized.has_value());
-        
-            
-        auto& measured =  *node->measured;
-        auto& atomized = *node->atomized;
-        auto& layout = *node->layout;
-        auto& placed = *node->placed;
-        auto finalized = node->element->finalize(constraints, node->shared, measured, atomized, layout, placed);
-        node->finalized = finalized;
+        assert(node->layout.has_value());
+        assert(node->placed.has_value());
+
+        auto key = makeConstraintsKey(constraints);
+        bool recompute = shouldRecompute(node, DirtyBits::Finalize, key);
+        if (recompute) {
+            auto& measured =  *node->measured;
+            auto& atomized = *node->atomized;
+            auto& layout = *node->layout;
+            auto& placed = *node->placed;
+            auto finalized = node->element->finalize(constraints, node->shared, measured, atomized, layout, placed);
+            node->finalized = finalized;
+            node->constraintsKey = key;
+            debugCounters.finalize.recomputed++;
+        } else {
+            debugCounters.finalize.skipped++;
+        }
+
+        for (auto& child : node->children) {
+            finalizePhase(child.get(), constraints);
+        }
     }
 
     TreeNode* RenderTree::hitTestRecursive(TreeNode* node, simd_float2 point) {

@@ -26,6 +26,8 @@ namespace tree {
         void update(const FrameInfo& frameInfo, uint64_t frameIndex);
         void render(MTL::RenderCommandEncoder* encoder); 
         void markDirty();
+        void markDirty(TreeNode* node, DirtyBits bits);
+        void setDebugDirtyPhases(bool enabled) { debugDirtyPhases = enabled; }
   
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
         
@@ -43,12 +45,42 @@ namespace tree {
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     private:
+        struct PhaseCounter {
+            uint64_t recomputed{};
+            uint64_t skipped{};
+        };
+
+        struct DebugCounters {
+            PhaseCounter measure;
+            PhaseCounter atomize;
+            PhaseCounter layout;
+            PhaseCounter postLayout;
+            PhaseCounter place;
+            PhaseCounter finalize;
+            uint64_t renderOrderCacheHits{};
+            uint64_t renderOrderCacheMisses{};
+        };
+
         bool isFrameInfoChanged(const FrameInfo& frameInfo) const;
+        ConstraintsKey makeConstraintsKey(const Constraints& constraints,
+                                          simd_float2 extraOriginA = {0.0f, 0.0f},
+                                          simd_float2 extraOriginB = {0.0f, 0.0f}) const;
+        bool shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const;
+        void markSubtreeDirty(TreeNode* node, DirtyBits bits);
+        void clearDirty(TreeNode* node);
+        bool subtreeHasDirty(TreeNode* node, DirtyBits bits) const;
+        const std::vector<TreeNode*>& sortedRenderOrder();
 
         bool needsUpdate{true};
-        uint64_t pendingWarmupFrames{MaxOutstandingFrameCount};
+        // Retain dirty bits briefly after a mutation so every FrameBufferedBuffer slot
+        // receives the new retained data before the node becomes clean.
+        uint64_t pendingFrameBufferWrites{MaxOutstandingFrameCount};
         std::optional<FrameInfo> lastFrameInfo;
         uint64_t layoutGeneration{0};
+        bool debugDirtyPhases{false};
+        DebugCounters debugCounters{};
+        bool renderOrderDirty{true};
+        std::vector<TreeNode*> renderOrderCache;
 
 
         Constraints rootConstraints; 

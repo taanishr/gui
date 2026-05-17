@@ -182,6 +182,56 @@ namespace tree {
 
     struct TreeNode;
 
+    enum class DirtyBits : uint32_t {
+        None = 0,
+        Measure = 1 << 0,
+        Atomize = 1 << 1,
+        Layout = 1 << 2,
+        PostLayout = 1 << 3,
+        Place = 1 << 4,
+        Finalize = 1 << 5,
+        PaintOrder = 1 << 6,
+    };
+
+    constexpr DirtyBits operator|(DirtyBits a, DirtyBits b) {
+        return static_cast<DirtyBits>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+    }
+
+    constexpr DirtyBits operator&(DirtyBits a, DirtyBits b) {
+        return static_cast<DirtyBits>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+    }
+
+    constexpr DirtyBits operator~(DirtyBits bits) {
+        return static_cast<DirtyBits>(~static_cast<uint32_t>(bits));
+    }
+
+    inline DirtyBits& operator|=(DirtyBits& a, DirtyBits b) {
+        a = a | b;
+        return a;
+    }
+
+    inline DirtyBits& operator&=(DirtyBits& a, DirtyBits b) {
+        a = a & b;
+        return a;
+    }
+
+    constexpr bool hasDirty(DirtyBits value, DirtyBits bits) {
+        return (static_cast<uint32_t>(value & bits) != 0);
+    }
+
+    constexpr DirtyBits allPhaseDirtyBits() {
+        return DirtyBits::Measure | DirtyBits::Atomize | DirtyBits::Layout |
+            DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize | DirtyBits::PaintOrder;
+    }
+
+    struct ConstraintsKey {
+        std::size_t value{};
+
+        bool operator==(const ConstraintsKey& other) const {
+            return value == other.value;
+        }
+    };
+
     struct CollapsedChain {
         ChainID id;
         TreeNode* root;
@@ -207,7 +257,7 @@ namespace tree {
             eventHandlers[type].push_back(std::move(handler));
         }
 
-        void dispatch(Event& event) {
+        TreeNode* dispatch(Event& event) {
             auto it = eventHandlers.find(event.type);
             if (it != eventHandlers.end()) {
                 for (auto& handler : it->second) {
@@ -227,14 +277,20 @@ namespace tree {
                     maxScrollX = std::max(0.0f, scrollContentSize.x - viewportWidth);
                     maxScrollY = std::max(0.0f, scrollContentSize.y - viewportHeight);
                 }
+                auto oldScrollOffset = scrollOffset;
                 scrollOffset.x = std::clamp(scrollOffset.x + scroll.dx, 0.0f, maxScrollX);
                 scrollOffset.y = std::clamp(scrollOffset.y - scroll.dy, 0.0f, maxScrollY);
                 event.stopPropagation();
+                if (oldScrollOffset.x != scrollOffset.x || oldScrollOffset.y != scrollOffset.y) {
+                    return this;
+                }
             }
 
             if (!event.propagationStopped && parent) {
-                parent->dispatch(event);
+                return parent->dispatch(event);
             }
+
+            return nullptr;
         }
 
         void calculateGlobalZIndex(uint64_t parentGlobal) {
@@ -313,6 +369,9 @@ namespace tree {
         simd_float2 scrollOffset {0.0f, 0.0f};
         simd_float2 scrollContentSize {0.0f, 0.0f};
         SharedDescriptor shared;
+        DirtyBits dirtySelf{~DirtyBits::None};
+        DirtyBits dirtySubtree{~DirtyBits::None};
+        std::optional<ConstraintsKey> constraintsKey;
 
     private:
         static uint64_t nextId;
