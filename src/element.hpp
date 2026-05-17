@@ -194,15 +194,15 @@ namespace tree {
     };
 
     constexpr DirtyBits operator|(DirtyBits a, DirtyBits b) {
-        return static_cast<DirtyBits>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        return static_cast<DirtyBits>(std::to_underlying(a) | std::to_underlying(b));
     }
 
     constexpr DirtyBits operator&(DirtyBits a, DirtyBits b) {
-        return static_cast<DirtyBits>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+        return static_cast<DirtyBits>(std::to_underlying(a) & std::to_underlying(b));
     }
 
     constexpr DirtyBits operator~(DirtyBits bits) {
-        return static_cast<DirtyBits>(~static_cast<uint32_t>(bits));
+        return static_cast<DirtyBits>(~std::to_underlying(bits));
     }
 
     inline DirtyBits& operator|=(DirtyBits& a, DirtyBits b) {
