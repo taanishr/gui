@@ -30,6 +30,7 @@ namespace elements {
     using style::Position;
     using style::Size;
     using tree::RenderTree;
+    using tree::DirtyBits;
     using tree::TreeNode;
 
     // Element-specific concepts (only for properties that vary by element type)
@@ -67,196 +68,217 @@ namespace elements {
             this->node = n.get();
 
             root->attach_child(std::move(n));
-            renderTree.markDirty();
+            renderTree.markDirty(root, layoutDirtyBits() | DirtyBits::PaintOrder);
         }
 
         void markDirty() {
             renderTree.markDirty();
         }
+
+        void markDirty(DirtyBits bits) {
+            renderTree.markDirty(node, bits);
+        }
+
+        static constexpr DirtyBits layoutDirtyBits() {
+            return DirtyBits::Measure | DirtyBits::Atomize | DirtyBits::Layout |
+                DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+        }
+
+        static constexpr DirtyBits textDirtyBits() {
+            return DirtyBits::Atomize | DirtyBits::Layout |
+                DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+        }
         
         
-        static void reparent(TreeNode* newParent, TreeNode* child) {
+        static TreeNode* reparent(TreeNode* newParent, TreeNode* child) {
+            auto* oldParent = child->parent;
             auto& siblings = child->parent->children;
             auto it = std::find_if(siblings.begin(), siblings.end(), [&](auto& elem){
                 return elem.get() == child;
             });
 
-            if (it == siblings.end()) return;
+            if (it == siblings.end()) return nullptr;
 
             std::unique_ptr<TreeNode> moved = std::move(*it);
             siblings.erase(it);
 
             newParent->attach_child(std::move(moved));
+            return oldParent;
         }
 
         template <typename... Children>
         NodeBuilder& operator()(Children&&... args) {
-            (reparent(this->node, args.node), ...);
-            markDirty();
+            (([&] {
+                auto* oldParent = reparent(this->node, args.node);
+                if (oldParent) {
+                    renderTree.markDirty(oldParent, layoutDirtyBits() | DirtyBits::PaintOrder);
+                    renderTree.markDirty(this->node, layoutDirtyBits() | DirtyBits::PaintOrder);
+                }
+            }()), ...);
             return *this;
         }
 
         NodeBuilder<E,P>& position(Position position) {
             node->shared.position = position;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& display(Display display) {
             node->shared.display = display;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& width(Size width) {
             node->shared.width = width;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& height(Size height) {
             node->shared.height = height;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& top(Size top) {
             node->shared.top = top;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& right(Size right) {
             node->shared.right = right;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& bottom(Size bottom) {
             node->shared.bottom = bottom;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& left(Size left) {
             node->shared.left = left;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& flexDirection(FlexDirection direction) {
             node->shared.flexDirection = direction;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& justifyContent(JustifyContent justifyContent) { 
             node->shared.justifyContent = justifyContent; 
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this; 
         }
 
         NodeBuilder& alignItems(AlignItems alignItems) {
             node->shared.alignItems = alignItems;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& flexWrap(FlexWrap wrap) {
             node->shared.flexWrap = wrap;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& alignContent(AlignContent ac) {
             node->shared.alignContent = ac;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& alignSelf(AlignSelf as) {
             node->shared.alignSelf = as;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& overflow(Overflow overflow) {
             node->shared.overflow = overflow;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& flexGrow(Size grow) {
             node->shared.flexGrow = grow;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& flexGap(Size gap) {
             node->shared.flexGap = gap;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& flexShrink(Size shrink) {
             node->shared.flexShrink = shrink;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridTemplateColumns(std::vector<Size> tracks) {
             node->shared.gridTemplateColumns = std::move(tracks);
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridTemplateRows(std::vector<Size> tracks) {
             node->shared.gridTemplateRows = std::move(tracks);
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridColumnGap(Size gap) {
             node->shared.gridColumnGap = gap;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridRowGap(Size gap) {
             node->shared.gridRowGap = gap;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridColumn(int start, int end = 0) {
             node->shared.gridPlacement.colStart = start;
             node->shared.gridPlacement.colEnd = end;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder& gridRow(int start, int end = 0) {
             node->shared.gridPlacement.rowStart = start;
             node->shared.gridPlacement.rowEnd = end;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& cornerRadius(Size radius) {
             node->shared.cornerRadius = radius;
-            markDirty();
+            markDirty(DirtyBits::Finalize);
             return *this;
         }
 
         NodeBuilder<E,P>& borderWidth(Size width) {
             node->shared.borderWidth = width;
-            markDirty();
+            markDirty(DirtyBits::Finalize);
             return *this;
         }
 
         NodeBuilder<E,P>& borderColor(simd_float4 color) {
             node->shared.borderColor = color;
-            markDirty();
+            markDirty(DirtyBits::Finalize);
             return *this;
         }
 
@@ -266,31 +288,31 @@ namespace elements {
             node->shared.paddingRight = padding;
             node->shared.paddingBottom = padding;
             node->shared.paddingLeft = padding;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& paddingTop(Size padding) {
             node->shared.paddingTop = padding;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& paddingRight(Size padding) {
             node->shared.paddingRight = padding;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& paddingBottom(Size padding) {
             node->shared.paddingBottom = padding;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& paddingLeft(Size padding) {
             node->shared.paddingLeft = padding;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -300,7 +322,7 @@ namespace elements {
 
         NodeBuilder<E,P>& margin(Size margin) {
             node->shared.margin = margin;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -310,7 +332,7 @@ namespace elements {
 
         NodeBuilder<E,P>& marginTop(Size margin) {
             node->shared.marginTop = margin;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -320,7 +342,7 @@ namespace elements {
 
         NodeBuilder<E,P>& marginRight(Size margin) {
             node->shared.marginRight = margin;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -330,7 +352,7 @@ namespace elements {
 
         NodeBuilder<E,P>& marginBottom(Size margin) {
             node->shared.marginBottom = margin;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -340,7 +362,7 @@ namespace elements {
 
         NodeBuilder<E,P>& marginLeft(Size margin) {
             node->shared.marginLeft = margin;
-            markDirty();
+            markDirty(layoutDirtyBits());
             return *this;
         }
 
@@ -350,15 +372,23 @@ namespace elements {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.color = color;
-            markDirty();
+            markDirty(DirtyBits::Finalize);
+            return *this;
+        }
+
+        NodeBuilder<E,P>& text(const std::u32string& text) requires HasText<typename E::DescriptorType> {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            auto& desc = elem->element.getDescriptor();
+            desc.text = text;
+            markDirty(textDirtyBits());
             return *this;
         }
 
         NodeBuilder<E,P>& text(const std::string& text) requires HasText<typename E::DescriptorType> {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
-            desc.text = text;
-            markDirty();
+            desc.text.assign(text.begin(), text.end());
+            markDirty(textDirtyBits());
             return *this;
         }
 
@@ -366,7 +396,7 @@ namespace elements {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.font = fontPath;
-            markDirty();
+            markDirty(textDirtyBits());
             return *this;
         }
 
@@ -374,7 +404,7 @@ namespace elements {
             auto* elem = static_cast<ElemT*>(node->element.get());
             auto& desc = elem->element.getDescriptor();
             desc.fontSize = size;
-            markDirty();
+            markDirty(textDirtyBits());
             return *this;
         }
 
@@ -383,12 +413,19 @@ namespace elements {
 
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
             auto stableNode = node;
+            auto* tree = &renderTree;
 
-            auto func = [stableNode, handler](const Event& event){
+            auto func = [stableNode, tree, handler](const Event& event){
                 auto elem = static_cast<ElemT*>(stableNode->element.get());
                 auto& desc = elem->element.getDescriptor();
 
                 handler(desc, event);
+
+                if constexpr (HasText<typename E::DescriptorType>) {
+                    tree->markDirty(stableNode, NodeBuilder<E,P>::textDirtyBits());
+                } else {
+                    tree->markDirty(stableNode, DirtyBits::Finalize);
+                }
             };
 
             node->addEventListener(type, func);

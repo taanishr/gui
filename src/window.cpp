@@ -31,6 +31,7 @@ using runtime::KeyboardPayload;
 using runtime::MouseButton;
 using runtime::MousePayload;
 using runtime::ScrollPayload;
+using tree::DirtyBits;
 
 using KeyDownFunc = NS::String*(*)(id, SEL);
 using MouseDownFunc = CGPoint(*)(id, SEL);
@@ -230,8 +231,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             scrollNode = root;
         }
 
-        scrollNode->dispatch(e);
-        currTree.markDirty();
+        if (auto* dirtyScrollNode = scrollNode->dispatch(e)) {
+            currTree.markDirty(dirtyScrollNode,
+                DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize);
+        }
     };
 
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),

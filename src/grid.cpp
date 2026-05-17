@@ -447,11 +447,15 @@ namespace layout {
                 float dy = (cellH - childLayout.computedBox.height) / 2.0f;
                 childLayout.computedBox.x += dx;
                 childLayout.computedBox.y += dy;
+                childLayout.localComputedBox.x += dx;
+                childLayout.localComputedBox.y += dy;
             } else if (effectiveAlign == AlignItems::FlexEnd) {
                 float dx = cellW - childLayout.computedBox.width;
                 float dy = cellH - childLayout.computedBox.height;
                 childLayout.computedBox.x += dx;
                 childLayout.computedBox.y += dy;
+                childLayout.localComputedBox.x += dx;
+                childLayout.localComputedBox.y += dy;
             }
 
             maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);

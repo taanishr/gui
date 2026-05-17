@@ -465,13 +465,17 @@ namespace layout {
         Direction direction{Direction::ltr};
     };
 
+    struct LayoutBox {
+        float x, y;
+        float width, height;
+    };
+
     struct LayoutResult {
         std::vector<simd_float2> atomOffsets;
+        std::vector<simd_float2> localAtomOffsets;
 
-        struct {
-            float x, y;
-            float width, height;
-        } computedBox;
+        LayoutBox computedBox;
+        LayoutBox localComputedBox;
 
         float consumedHeight; // how much height consumed
 
