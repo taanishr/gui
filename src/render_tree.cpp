@@ -52,6 +52,10 @@ namespace tree {
         node->dirtySelf |= selfBits;
         node->dirtySubtree |= selfBits;
 
+        for (auto* ancestor = node->parent; ancestor; ancestor = ancestor->parent) {
+            ancestor->dirtySubtree |= selfBits;
+        }
+
         if (hasDirty(bits, DirtyBits::PostLayout | DirtyBits::Place)) {
             markSubtreeDirty(node, selfBits & (DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize));
         }

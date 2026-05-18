@@ -34,8 +34,8 @@ namespace elements {
         auto currTree = TreeStack::getCurrentTree();
 
         auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
-        builder.node->shared.width = width;
-        builder.node->shared.height = height;
+        builder.width(width);
+        builder.height(height);
         return builder;
     }
 
@@ -55,7 +55,7 @@ namespace elements {
         auto currTree = TreeStack::getCurrentTree();
 
         auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
-        builder.node->shared.display = Display::Inline;
+        builder.display(Display::Inline);
         return builder;
     }
 
@@ -70,8 +70,8 @@ namespace elements {
         auto currTree = TreeStack::getCurrentTree();
 
         auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
-        builder.node->shared.width = width;
-        builder.node->shared.height = height;
+        builder.width(width);
+        builder.height(height);
         return builder;
     }
 
@@ -86,8 +86,8 @@ namespace elements {
         auto currTree = TreeStack::getCurrentTree();
 
         auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
-        builder.node->shared.width = width;
-        builder.node->shared.height = height;
+        builder.width(width);
+        builder.height(height);
         return builder;
     }
 }

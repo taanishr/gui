@@ -14,13 +14,13 @@ static int count = 0;
 
 auto index() -> void {
 
-    auto onClick = [](auto& desc, Event& event){
+    auto onClick = [](auto& node, Event& event){
         count += 1;
 
         if (count % 2 == 0) {
-            desc.color = simd_float4{1.0,0.0,0.0,1.0};
+            node.color(simd_float4{1.0,0.0,0.0,1.0});
         }else {
-            desc.color = simd_float4{0.0,0.0,1.0,1.0};
+            node.color(simd_float4{0.0,0.0,1.0,1.0});
         }
 
         std::println("hello world {}", count);
