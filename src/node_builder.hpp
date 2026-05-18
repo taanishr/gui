@@ -46,30 +46,18 @@ namespace elements {
     template<typename T>
     concept HasFontSize = requires { std::declval<T&>().fontSize; };
 
-
-    template <ElementType E, typename P>
+    template <typename Derived, ElementType E, typename P>
         requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
-    struct NodeBuilder {
+    struct NodeMutation {
+    protected:
         RenderTree& renderTree;
-        UIContext& ctx;
         TreeNode* node;
-        std::vector<NodeBuilder> children;
 
-        NodeBuilder(UIContext& ctx, RenderTree& tree, E elem, P& proc): 
-            ctx{ctx},
-            renderTree{tree}
-        {
-            auto root = renderTree.getRoot();
-
-            auto n = std::make_unique<TreeNode>(
-                ctx, std::move(elem), proc
-            );
-            
-            this->node = n.get();
-
-            root->attach_child(std::move(n));
-            renderTree.markDirty(root, layoutDirtyBits() | DirtyBits::PaintOrder);
-        }
+    public:
+        NodeMutation(RenderTree& tree, TreeNode* node):
+            renderTree{tree},
+            node{node}
+        {}
 
         void markDirty() {
             renderTree.markDirty();
@@ -88,8 +76,504 @@ namespace elements {
             return DirtyBits::Atomize | DirtyBits::Layout |
                 DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
         }
-        
-        
+
+        Derived& self() {
+            return static_cast<Derived&>(*this);
+        }
+
+        const Derived& self() const {
+            return static_cast<const Derived&>(*this);
+        }
+
+        Position position() const {
+            return node->shared.position;
+        }
+
+        Derived& position(Position position) {
+            node->shared.position = position;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Display display() const {
+            return node->shared.display;
+        }
+
+        Derived& display(Display display) {
+            node->shared.display = display;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> width() const {
+            return node->shared.width;
+        }
+
+        Derived& width(Size width) {
+            node->shared.width = width;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> height() const {
+            return node->shared.height;
+        }
+
+        Derived& height(Size height) {
+            node->shared.height = height;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> top() const {
+            return node->shared.top;
+        }
+
+        Derived& top(Size top) {
+            node->shared.top = top;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> right() const {
+            return node->shared.right;
+        }
+
+        Derived& right(Size right) {
+            node->shared.right = right;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> bottom() const {
+            return node->shared.bottom;
+        }
+
+        Derived& bottom(Size bottom) {
+            node->shared.bottom = bottom;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> left() const {
+            return node->shared.left;
+        }
+
+        Derived& left(Size left) {
+            node->shared.left = left;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        FlexDirection flexDirection() const {
+            return node->shared.flexDirection;
+        }
+
+        Derived& flexDirection(FlexDirection direction) {
+            node->shared.flexDirection = direction;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        JustifyContent justifyContent() const {
+            return node->shared.justifyContent;
+        }
+
+        Derived& justifyContent(JustifyContent justifyContent) {
+            node->shared.justifyContent = justifyContent;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        AlignItems alignItems() const {
+            return node->shared.alignItems;
+        }
+
+        Derived& alignItems(AlignItems alignItems) {
+            node->shared.alignItems = alignItems;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        FlexWrap flexWrap() const {
+            return node->shared.flexWrap;
+        }
+
+        Derived& flexWrap(FlexWrap wrap) {
+            node->shared.flexWrap = wrap;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        AlignContent alignContent() const {
+            return node->shared.alignContent;
+        }
+
+        Derived& alignContent(AlignContent ac) {
+            node->shared.alignContent = ac;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        AlignSelf alignSelf() const {
+            return node->shared.alignSelf;
+        }
+
+        Derived& alignSelf(AlignSelf as) {
+            node->shared.alignSelf = as;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Overflow overflow() const {
+            return node->shared.overflow;
+        }
+
+        Derived& overflow(Overflow overflow) {
+            node->shared.overflow = overflow;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size flexGrow() const {
+            return node->shared.flexGrow;
+        }
+
+        Derived& flexGrow(Size grow) {
+            node->shared.flexGrow = grow;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size flexGap() const {
+            return node->shared.flexGap;
+        }
+
+        Derived& flexGap(Size gap) {
+            node->shared.flexGap = gap;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size flexShrink() const {
+            return node->shared.flexShrink;
+        }
+
+        Derived& flexShrink(Size shrink) {
+            node->shared.flexShrink = shrink;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        const std::vector<Size>& gridTemplateColumns() const {
+            return node->shared.gridTemplateColumns;
+        }
+
+        Derived& gridTemplateColumns(std::vector<Size> tracks) {
+            node->shared.gridTemplateColumns = std::move(tracks);
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        const std::vector<Size>& gridTemplateRows() const {
+            return node->shared.gridTemplateRows;
+        }
+
+        Derived& gridTemplateRows(std::vector<Size> tracks) {
+            node->shared.gridTemplateRows = std::move(tracks);
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size gridColumnGap() const {
+            return node->shared.gridColumnGap;
+        }
+
+        Derived& gridColumnGap(Size gap) {
+            node->shared.gridColumnGap = gap;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size gridRowGap() const {
+            return node->shared.gridRowGap;
+        }
+
+        Derived& gridRowGap(Size gap) {
+            node->shared.gridRowGap = gap;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        GridPlacement gridPlacement() const {
+            return node->shared.gridPlacement;
+        }
+
+        Derived& gridColumn(int start, int end = 0) {
+            node->shared.gridPlacement.colStart = start;
+            node->shared.gridPlacement.colEnd = end;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& gridRow(int start, int end = 0) {
+            node->shared.gridPlacement.rowStart = start;
+            node->shared.gridPlacement.rowEnd = end;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Size cornerRadius() const {
+            return node->shared.cornerRadius;
+        }
+
+        Derived& cornerRadius(Size radius) {
+            node->shared.cornerRadius = radius;
+            markDirty(DirtyBits::Finalize);
+            return self();
+        }
+
+        Size borderWidth() const {
+            return node->shared.borderWidth;
+        }
+
+        Derived& borderWidth(Size width) {
+            node->shared.borderWidth = width;
+            markDirty(DirtyBits::Finalize);
+            return self();
+        }
+
+        simd_float4 borderColor() const {
+            return node->shared.borderColor;
+        }
+
+        Derived& borderColor(simd_float4 color) {
+            node->shared.borderColor = color;
+            markDirty(DirtyBits::Finalize);
+            return self();
+        }
+
+        Size padding() const {
+            return node->shared.padding;
+        }
+
+        Derived& padding(Size padding) {
+            node->shared.padding = padding;
+            node->shared.paddingTop = padding;
+            node->shared.paddingRight = padding;
+            node->shared.paddingBottom = padding;
+            node->shared.paddingLeft = padding;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> paddingTop() const {
+            return node->shared.paddingTop;
+        }
+
+        Derived& paddingTop(Size padding) {
+            node->shared.paddingTop = padding;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> paddingRight() const {
+            return node->shared.paddingRight;
+        }
+
+        Derived& paddingRight(Size padding) {
+            node->shared.paddingRight = padding;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> paddingBottom() const {
+            return node->shared.paddingBottom;
+        }
+
+        Derived& paddingBottom(Size padding) {
+            node->shared.paddingBottom = padding;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> paddingLeft() const {
+            return node->shared.paddingLeft;
+        }
+
+        Derived& paddingLeft(Size padding) {
+            node->shared.paddingLeft = padding;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& margin(float margin) {
+            return this->margin(Size::px(margin));
+        }
+
+        Size margin() const {
+            return node->shared.margin;
+        }
+
+        Derived& margin(Size margin) {
+            node->shared.margin = margin;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& marginTop(float margin) {
+            return this->marginTop(Size::px(margin));
+        }
+
+        std::optional<Size> marginTop() const {
+            return node->shared.marginTop;
+        }
+
+        Derived& marginTop(Size margin) {
+            node->shared.marginTop = margin;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& marginRight(float margin) {
+            return this->marginRight(Size::px(margin));
+        }
+
+        std::optional<Size> marginRight() const {
+            return node->shared.marginRight;
+        }
+
+        Derived& marginRight(Size margin) {
+            node->shared.marginRight = margin;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& marginBottom(float margin) {
+            return this->marginBottom(Size::px(margin));
+        }
+
+        std::optional<Size> marginBottom() const {
+            return node->shared.marginBottom;
+        }
+
+        Derived& marginBottom(Size margin) {
+            node->shared.marginBottom = margin;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        Derived& marginLeft(float margin) {
+            return this->marginLeft(Size::px(margin));
+        }
+
+        std::optional<Size> marginLeft() const {
+            return node->shared.marginLeft;
+        }
+
+        Derived& marginLeft(Size margin) {
+            node->shared.marginLeft = margin;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        // --- Element-specific setters (write to typed descriptor) ---
+
+        simd_float4 color() const requires HasColor<typename E::DescriptorType> {
+            return descriptor().color;
+        }
+
+        Derived& color(simd_float4 color) requires HasColor<typename E::DescriptorType> {
+            descriptor().color = color;
+            markDirty(DirtyBits::Finalize);
+            return self();
+        }
+
+        const std::u32string& text() const requires HasText<typename E::DescriptorType> {
+            return descriptor().text;
+        }
+
+        Derived& text(const std::u32string& text) requires HasText<typename E::DescriptorType> {
+            descriptor().text = text;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        Derived& text(const std::string& text) requires HasText<typename E::DescriptorType> {
+            descriptor().text.assign(text.begin(), text.end());
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        const std::string& font() const requires HasFont<typename E::DescriptorType> {
+            return descriptor().font;
+        }
+
+        Derived& font(const std::string& fontPath) requires HasFont<typename E::DescriptorType> {
+            descriptor().font = fontPath;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        Size fontSize() const requires HasFontSize<typename E::DescriptorType> {
+            return descriptor().fontSize;
+        }
+
+        Derived& fontSize(Size size) requires HasFontSize<typename E::DescriptorType> {
+            descriptor().fontSize = size;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
+
+    private:
+        typename E::DescriptorType& descriptor() {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            return elem->element.getDescriptor();
+        }
+
+        const typename E::DescriptorType& descriptor() const {
+            auto* elem = static_cast<ElemT*>(node->element.get());
+            return elem->element.getDescriptor();
+        }
+    };
+
+    template <ElementType E, typename P>
+        requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
+    struct EventNode : NodeMutation<EventNode<E,P>, E, P> {
+        using Base = NodeMutation<EventNode<E,P>, E, P>;
+
+        EventNode(RenderTree& tree, TreeNode* node):
+            Base{tree, node}
+        {}
+    };
+
+    template <ElementType E, typename P>
+        requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
+    struct NodeBuilder : NodeMutation<NodeBuilder<E,P>, E, P> {
+        using Base = NodeMutation<NodeBuilder<E,P>, E, P>;
+
+        UIContext& ctx;
+        std::vector<NodeBuilder> children;
+
+        NodeBuilder(UIContext& ctx, RenderTree& tree, E elem, P& proc):
+            Base{tree, nullptr},
+            ctx{ctx}
+        {
+            auto root = this->renderTree.getRoot();
+
+            auto n = std::make_unique<TreeNode>(
+                ctx, std::move(elem), proc
+            );
+
+            this->node = n.get();
+
+            root->attach_child(std::move(n));
+            this->renderTree.markDirty(root, Base::layoutDirtyBits() | DirtyBits::PaintOrder);
+        }
+
+
         static TreeNode* reparent(TreeNode* newParent, TreeNode* child) {
             auto* oldParent = child->parent;
             auto& siblings = child->parent->children;
@@ -109,330 +593,34 @@ namespace elements {
         template <typename... Children>
         NodeBuilder& operator()(Children&&... args) {
             (([&] {
-                auto* oldParent = reparent(this->node, args.node);
+                auto* oldParent = reparent(this->node, args.treeNode());
                 if (oldParent) {
-                    renderTree.markDirty(oldParent, layoutDirtyBits() | DirtyBits::PaintOrder);
-                    renderTree.markDirty(this->node, layoutDirtyBits() | DirtyBits::PaintOrder);
+                    this->renderTree.markDirty(oldParent, Base::layoutDirtyBits() | DirtyBits::PaintOrder);
+                    this->renderTree.markDirty(this->node, Base::layoutDirtyBits() | DirtyBits::PaintOrder);
                 }
             }()), ...);
             return *this;
         }
 
-        NodeBuilder<E,P>& position(Position position) {
-            node->shared.position = position;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
 
-        NodeBuilder<E,P>& display(Display display) {
-            node->shared.display = display;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& width(Size width) {
-            node->shared.width = width;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& height(Size height) {
-            node->shared.height = height;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& top(Size top) {
-            node->shared.top = top;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& right(Size right) {
-            node->shared.right = right;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& bottom(Size bottom) {
-            node->shared.bottom = bottom;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& left(Size left) {
-            node->shared.left = left;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexDirection(FlexDirection direction) {
-            node->shared.flexDirection = direction;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& justifyContent(JustifyContent justifyContent) { 
-            node->shared.justifyContent = justifyContent; 
-            markDirty(layoutDirtyBits());
-            return *this; 
-        }
-
-        NodeBuilder& alignItems(AlignItems alignItems) {
-            node->shared.alignItems = alignItems;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& flexWrap(FlexWrap wrap) {
-            node->shared.flexWrap = wrap;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& alignContent(AlignContent ac) {
-            node->shared.alignContent = ac;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& alignSelf(AlignSelf as) {
-            node->shared.alignSelf = as;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& overflow(Overflow overflow) {
-            node->shared.overflow = overflow;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexGrow(Size grow) {
-            node->shared.flexGrow = grow;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexGap(Size gap) {
-            node->shared.flexGap = gap;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& flexShrink(Size shrink) {
-            node->shared.flexShrink = shrink;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridTemplateColumns(std::vector<Size> tracks) {
-            node->shared.gridTemplateColumns = std::move(tracks);
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridTemplateRows(std::vector<Size> tracks) {
-            node->shared.gridTemplateRows = std::move(tracks);
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridColumnGap(Size gap) {
-            node->shared.gridColumnGap = gap;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridRowGap(Size gap) {
-            node->shared.gridRowGap = gap;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridColumn(int start, int end = 0) {
-            node->shared.gridPlacement.colStart = start;
-            node->shared.gridPlacement.colEnd = end;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder& gridRow(int start, int end = 0) {
-            node->shared.gridPlacement.rowStart = start;
-            node->shared.gridPlacement.rowEnd = end;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& cornerRadius(Size radius) {
-            node->shared.cornerRadius = radius;
-            markDirty(DirtyBits::Finalize);
-            return *this;
-        }
-
-        NodeBuilder<E,P>& borderWidth(Size width) {
-            node->shared.borderWidth = width;
-            markDirty(DirtyBits::Finalize);
-            return *this;
-        }
-
-        NodeBuilder<E,P>& borderColor(simd_float4 color) {
-            node->shared.borderColor = color;
-            markDirty(DirtyBits::Finalize);
-            return *this;
-        }
-
-        NodeBuilder<E,P>& padding(Size padding) {
-            node->shared.padding = padding;
-            node->shared.paddingTop = padding;
-            node->shared.paddingRight = padding;
-            node->shared.paddingBottom = padding;
-            node->shared.paddingLeft = padding;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingTop(Size padding) {
-            node->shared.paddingTop = padding;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingRight(Size padding) {
-            node->shared.paddingRight = padding;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingBottom(Size padding) {
-            node->shared.paddingBottom = padding;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& paddingLeft(Size padding) {
-            node->shared.paddingLeft = padding;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& margin(float margin) {
-            return this->margin(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& margin(Size margin) {
-            node->shared.margin = margin;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginTop(float margin) {
-            return this->marginTop(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginTop(Size margin) {
-            node->shared.marginTop = margin;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginRight(float margin) {
-            return this->marginRight(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginRight(Size margin) {
-            node->shared.marginRight = margin;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginBottom(float margin) {
-            return this->marginBottom(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginBottom(Size margin) {
-            node->shared.marginBottom = margin;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& marginLeft(float margin) {
-            return this->marginLeft(Size::px(margin));
-        }
-
-        NodeBuilder<E,P>& marginLeft(Size margin) {
-            node->shared.marginLeft = margin;
-            markDirty(layoutDirtyBits());
-            return *this;
-        }
-
-        // --- Element-specific setters (write to typed descriptor) ---
-
-        NodeBuilder<E,P>& color(simd_float4 color) requires HasColor<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& desc = elem->element.getDescriptor();
-            desc.color = color;
-            markDirty(DirtyBits::Finalize);
-            return *this;
-        }
-
-        NodeBuilder<E,P>& text(const std::u32string& text) requires HasText<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& desc = elem->element.getDescriptor();
-            desc.text = text;
-            markDirty(textDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& text(const std::string& text) requires HasText<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& desc = elem->element.getDescriptor();
-            desc.text.assign(text.begin(), text.end());
-            markDirty(textDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& font(const std::string& fontPath) requires HasFont<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& desc = elem->element.getDescriptor();
-            desc.font = fontPath;
-            markDirty(textDirtyBits());
-            return *this;
-        }
-
-        NodeBuilder<E,P>& fontSize(Size size) requires HasFontSize<typename E::DescriptorType> {
-            auto* elem = static_cast<ElemT*>(node->element.get());
-            auto& desc = elem->element.getDescriptor();
-            desc.fontSize = size;
-            markDirty(textDirtyBits());
-            return *this;
-        }
-
-
-        using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, Event& event)>;
+        using NodeBuilderEventHandler = std::function<void(EventNode<E,P>& node, Event& event)>;
 
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
-            auto stableNode = node;
-            auto* tree = &renderTree;
+            auto stableNode = this->node;
+            auto* tree = &this->renderTree;
 
             auto func = [stableNode, tree, handler](Event& event){
-                auto elem = static_cast<ElemT*>(stableNode->element.get());
-                auto& desc = elem->element.getDescriptor();
-
-                handler(desc, event);
-
-                if constexpr (HasText<typename E::DescriptorType>) {
-                    tree->markDirty(stableNode, NodeBuilder<E,P>::textDirtyBits());
-                } else {
-                    tree->markDirty(stableNode, DirtyBits::Finalize);
-                }
+                EventNode<E,P> eventNode{*tree, stableNode};
+                handler(eventNode, event);
             };
 
-            node->addEventListener(type, func);
+            this->node->addEventListener(type, func);
             return *this;
         }
 
-        using ElemT = Element<E,P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>;
+        TreeNode* treeNode() const {
+            return this->node;
+        }
     };
 
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div();
