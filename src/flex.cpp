@@ -150,8 +150,8 @@ namespace layout {
                 ? childAsPtr->shared.width.has_value()
                 : childAsPtr->shared.height.has_value();
 
-            bool clipsOverflow = childAsPtr->shared.overflow != Overflow::Visible;
-            float minMain = (hasExplicitMain || clipsOverflow) ? 0.0f : flex.axis.mainSize(childLayout);
+                
+            float minMain = hasExplicitMain? 0.0f : flex.axis.mainSize(childLayout);
 
             flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain);
             inFlowIndices.push_back(i);
