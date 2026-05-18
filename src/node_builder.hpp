@@ -409,13 +409,13 @@ namespace elements {
         }
 
 
-        using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, const Event& event)>;
+        using NodeBuilderEventHandler = std::function<void(typename E::DescriptorType& descriptor, Event& event)>;
 
         NodeBuilder<E,P>& addEventListener(EventType type, NodeBuilderEventHandler handler) {
             auto stableNode = node;
             auto* tree = &renderTree;
 
-            auto func = [stableNode, tree, handler](const Event& event){
+            auto func = [stableNode, tree, handler](Event& event){
                 auto elem = static_cast<ElemT*>(stableNode->element.get());
                 auto& desc = elem->element.getDescriptor();
 

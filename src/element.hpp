@@ -239,7 +239,7 @@ namespace tree {
         int depth;
     };
     
-    using EventHandler = std::function<void(const Event&)>;
+    using EventHandler = std::function<void(Event&)>;
 
     struct TreeNode {
         template<ElementType E, typename P>

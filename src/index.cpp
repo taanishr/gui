@@ -18,7 +18,7 @@ auto index() -> void {
     using gui::text;
     using runtime::Event;
 
-    auto onClick = [](auto& desc, const Event& event){
+    auto onClick = [](auto& desc, Event& event){
         count += 1;
 
         if (count % 2 == 0) {
