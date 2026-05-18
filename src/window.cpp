@@ -27,44 +27,97 @@ HandlerState hs {};
 using runtime::ContextManager;
 using runtime::Event;
 using runtime::EventType;
+using runtime::FocusPayload;
 using runtime::KeyboardPayload;
+using runtime::Modifiers;
 using runtime::MouseButton;
 using runtime::MousePayload;
 using runtime::ScrollPayload;
 using tree::DirtyBits;
 
-using KeyDownFunc = NS::String*(*)(id, SEL);
-using MouseDownFunc = CGPoint(*)(id, SEL);
+using KeyCodeFunc = unsigned short(*)(id, SEL);
+using LocationFunc = CGPoint(*)(id, SEL);
 using ScrollWheelFunc = CGFloat(*)(id, SEL);
+using ModifierFlagsFunc = unsigned long(*)(id, SEL);
+using ButtonNumberFunc = long(*)(id, SEL);
+
+namespace {
+
+constexpr unsigned long NSEventModifierFlagShift = 1UL << 17;
+constexpr unsigned long NSEventModifierFlagControl = 1UL << 18;
+constexpr unsigned long NSEventModifierFlagOption = 1UL << 19;
+constexpr unsigned long NSEventModifierFlagCommand = 1UL << 20;
+
+Modifiers modifiersFromEvent(id event) {
+    ModifierFlagsFunc f = reinterpret_cast<ModifierFlagsFunc>(objc_msgSend);
+    auto flags = f(event, sel_registerName("modifierFlags"));
+
+    return Modifiers{
+        .shift = (flags & NSEventModifierFlagShift) != 0,
+        .ctrl = (flags & NSEventModifierFlagControl) != 0,
+        .alt = (flags & NSEventModifierFlagOption) != 0,
+        .meta = (flags & NSEventModifierFlagCommand) != 0
+    };
+}
+
+MouseButton mouseButtonFromEvent(id event) {
+    ButtonNumberFunc f = reinterpret_cast<ButtonNumberFunc>(objc_msgSend);
+    auto buttonNumber = f(event, sel_registerName("buttonNumber"));
+
+    if (buttonNumber == 1) return MouseButton::Right;
+    if (buttonNumber == 2) return MouseButton::Middle;
+    return MouseButton::Left;
+}
+
+simd_float2 toViewPoint(float x, float y, float height) {
+    return simd_float2{x, height - y};
+}
+
+}
 
 extern "C" bool acceptsFirstResponder(id self, SEL _cmd) {
     return true;
 }
 
 extern "C" void keyDown(id self, SEL _cmd, id event) {
-    KeyDownFunc f = (KeyDownFunc)objc_msgSend;
-    auto chars = f(event, sel_registerName("characters"));
-    
-    char inputChar = chars->cString(NS::UTF8StringEncoding)[0];
-    
-    hs.keyboardHandler(inputChar);
+    KeyCodeFunc f = reinterpret_cast<KeyCodeFunc>(objc_msgSend);
+    hs.keyDownHandler(static_cast<int>(f(event, sel_registerName("keyCode"))), modifiersFromEvent(event));
+}
+
+extern "C" void keyUp(id self, SEL _cmd, id event) {
+    KeyCodeFunc f = reinterpret_cast<KeyCodeFunc>(objc_msgSend);
+    hs.keyUpHandler(static_cast<int>(f(event, sel_registerName("keyCode"))), modifiersFromEvent(event));
 }
 
 extern "C" void mouseDown(id self, SEL _cmd, id event) {
-    MouseDownFunc f = (MouseDownFunc)objc_msgSend;
+    LocationFunc f = reinterpret_cast<LocationFunc>(objc_msgSend);
     auto point = f(event, sel_registerName("locationInWindow"));
     
-    hs.mouseDownHandler(point.x, point.y);
+    hs.mouseDownHandler(point.x, point.y, mouseButtonFromEvent(event), modifiersFromEvent(event));
+}
+
+extern "C" void mouseUp(id self, SEL _cmd, id event) {
+    LocationFunc f = reinterpret_cast<LocationFunc>(objc_msgSend);
+    auto point = f(event, sel_registerName("locationInWindow"));
+
+    hs.mouseUpHandler(point.x, point.y, mouseButtonFromEvent(event), modifiersFromEvent(event));
+}
+
+extern "C" void mouseMoved(id self, SEL _cmd, id event) {
+    LocationFunc f = reinterpret_cast<LocationFunc>(objc_msgSend);
+    auto point = f(event, sel_registerName("locationInWindow"));
+
+    hs.mouseMovedHandler(point.x, point.y, modifiersFromEvent(event));
 }
 
 extern "C" void scrollWheel(id self, SEL _cmd, id event) {
-    ScrollWheelFunc f = (ScrollWheelFunc)objc_msgSend;
-    MouseDownFunc pointFunc = (MouseDownFunc)objc_msgSend;
+    ScrollWheelFunc f = reinterpret_cast<ScrollWheelFunc>(objc_msgSend);
+    LocationFunc pointFunc = reinterpret_cast<LocationFunc>(objc_msgSend);
     auto deltaX = f(event, sel_registerName("scrollingDeltaX"));
     auto deltaY = f(event, sel_registerName("scrollingDeltaY"));
     auto point = pointFunc(event, sel_registerName("locationInWindow"));
 
-    hs.scrollWheelHandler(deltaX, deltaY, point.x, point.y);
+    hs.scrollWheelHandler(deltaX, deltaY, point.x, point.y, modifiersFromEvent(event));
 }
 
 MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
@@ -127,6 +180,38 @@ void AppDelegate::applicationWillFinishLaunching(NS::Notification* notification)
     app->setActivationPolicy(NS::ActivationPolicyRegular);
 }
 
+void AppDelegate::setFocused(tree::TreeNode* node) {
+    if (focused == node) return;
+
+    auto* oldFocused = focused;
+    focused = node;
+
+    if (oldFocused) {
+        Event blur;
+        blur.type = EventType::Blur;
+        blur.payload = FocusPayload{};
+        oldFocused->dispatch(blur);
+    }
+
+    if (focused) {
+        Event focus;
+        focus.type = EventType::Focus;
+        focus.payload = FocusPayload{};
+        focused->dispatch(focus);
+    }
+}
+
+tree::TreeNode* AppDelegate::hitTest(float x, float y, simd_float2& testPoint) {
+    auto frameInfo = viewDelegate->renderer->getFrameInfo();
+    testPoint = toViewPoint(x, y, frameInfo.height);
+
+    auto& currTree = viewDelegate->renderer->rootTree;
+    auto* root = currTree.getRoot();
+    if (!root) return nullptr;
+
+    return currTree.hitTestRecursive(root, testPoint);
+}
+
 void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 {
     CGRect frame = CGRect{{100.0, 100.0}, {512.0, 512.0}};
@@ -165,11 +250,25 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     Class cls = object_getClass(objcInstance);
 
     
-    hs.keyboardHandler = [this](char ch){
+    hs.keyDownHandler = [this](int keyCode, Modifiers modifiers){
         Event e;
         e.type = EventType::KeyDown;
         e.payload = KeyboardPayload{
-            .keyCode = static_cast<int>(ch)
+            .keyCode = keyCode,
+            .modifiers = modifiers
+        };
+
+        if (this->focused) {
+            this->focused->dispatch(e);
+        }
+    };
+
+    hs.keyUpHandler = [this](int keyCode, Modifiers modifiers){
+        Event e;
+        e.type = EventType::KeyUp;
+        e.payload = KeyboardPayload{
+            .keyCode = keyCode,
+            .modifiers = modifiers
         };
 
         if (this->focused) {
@@ -177,59 +276,112 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         }
     };
     
-    hs.mouseDownHandler = [this](float x, float y){
-        auto frameInfo = this->viewDelegate->renderer->getFrameInfo();
-        auto testPoint = simd_float2{x,frameInfo.height - y};
+    hs.mouseDownHandler = [this](float x, float y, MouseButton button, Modifiers modifiers){
+        simd_float2 testPoint;
+        auto* htnode = this->hitTest(x, y, testPoint);
+        if (!htnode) {
+            this->mouseDownTarget = nullptr;
+            return;
+        }
 
         Event e;
         e.type = EventType::MouseDown;
-        // std::println("mouse down click!");
-        e.type = EventType::MouseDown;
         e.payload = MousePayload{
             .position = testPoint,
-            .button = MouseButton::Left
+            .button = button,
+            .modifiers = modifiers
         };
-
-        auto& currTree = this->viewDelegate->renderer->rootTree;
-
-        auto root = currTree.getRoot();
-
-        if (!root) 
-            return;
-
         
-        auto htnode = currTree.hitTestRecursive(root, testPoint);
-
-        if (!htnode)
-            return;      
-        
-        this->focused = htnode;
+        this->mouseDownTarget = htnode;
+        this->setFocused(htnode);
         htnode->dispatch(e);
     };
 
-    hs.scrollWheelHandler = [this](float dx, float dy, float x, float y) {
-        auto frameInfo = this->viewDelegate->renderer->getFrameInfo();
-        auto testPoint = simd_float2{x, frameInfo.height - y};
+    hs.mouseUpHandler = [this](float x, float y, MouseButton button, Modifiers modifiers){
+        simd_float2 testPoint;
+        auto* htnode = this->hitTest(x, y, testPoint);
+        if (!htnode) {
+            this->mouseDownTarget = nullptr;
+            return;
+        }
+
+        MousePayload payload{
+            .position = testPoint,
+            .button = button,
+            .modifiers = modifiers
+        };
+
+        Event e;
+        e.type = EventType::MouseUp;
+        e.payload = payload;
+        htnode->dispatch(e);
+
+        if (this->mouseDownTarget == htnode) {
+            Event click;
+            click.type = EventType::Click;
+            click.payload = payload;
+            htnode->dispatch(click);
+        }
+
+        this->mouseDownTarget = nullptr;
+    };
+
+    hs.mouseMovedHandler = [this](float x, float y, Modifiers modifiers){
+        simd_float2 testPoint;
+        auto* htnode = this->hitTest(x, y, testPoint);
+
+        MousePayload payload{
+            .position = testPoint,
+            .button = MouseButton::None,
+            .modifiers = modifiers
+        };
+
+        if (this->hovered != htnode) {
+            if (this->hovered) {
+                Event leave;
+                leave.type = EventType::MouseLeave;
+                leave.payload = payload;
+                this->hovered->dispatch(leave);
+            }
+
+            this->hovered = htnode;
+
+            if (this->hovered) {
+                Event enter;
+                enter.type = EventType::MouseEnter;
+                enter.payload = payload;
+                this->hovered->dispatch(enter);
+            }
+        }
+
+        if (this->hovered) {
+            Event move;
+            move.type = EventType::MouseMove;
+            move.payload = payload;
+            this->hovered->dispatch(move);
+        }
+    };
+
+    hs.scrollWheelHandler = [this](float dx, float dy, float x, float y, Modifiers modifiers) {
+        simd_float2 testPoint;
+        auto* scrollNode = this->hitTest(x, y, testPoint);
+
+        auto& currTree = this->viewDelegate->renderer->rootTree;
+        auto* root = currTree.getRoot();
+        if (!root) return;
+
+        if (!scrollNode) {
+            scrollNode = root;
+        }
 
         Event e;
         e.type = EventType::ScrollWheel;
         e.payload = ScrollPayload{
-            dx = dx,
-            dy = dy
+            .position = testPoint,
+            .dx = dx,
+            .dy = dy,
+            .modifiers = modifiers
         };
-
-        
-
-        auto& currTree = this->viewDelegate->renderer->rootTree;
-        auto root = currTree.getRoot();
-
-        if (!root) 
-            return;
-
-        auto scrollNode = currTree.hitTestRecursive(root, testPoint);
-        if (!scrollNode) {
-            scrollNode = root;
-        }
 
         if (auto* dirtyScrollNode = scrollNode->dispatch(e)) {
             currTree.markDirty(dirtyScrollNode,
@@ -240,8 +392,19 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     class_addMethod(cls, sel_registerName("acceptsFirstResponder"),
                     reinterpret_cast<IMP>(acceptsFirstResponder), "B@:");
     class_addMethod( cls , sel_registerName("keyDown:"), reinterpret_cast<IMP>(keyDown), "v@:@");
+    class_addMethod( cls , sel_registerName("keyUp:"), reinterpret_cast<IMP>(keyUp), "v@:@");
     class_addMethod( cls , sel_registerName("mouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
+    class_addMethod( cls , sel_registerName("rightMouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
+    class_addMethod( cls , sel_registerName("otherMouseDown:"), reinterpret_cast<IMP>(mouseDown), "v@:@");
+    class_addMethod( cls , sel_registerName("mouseUp:"), reinterpret_cast<IMP>(mouseUp), "v@:@");
+    class_addMethod( cls , sel_registerName("rightMouseUp:"), reinterpret_cast<IMP>(mouseUp), "v@:@");
+    class_addMethod( cls , sel_registerName("otherMouseUp:"), reinterpret_cast<IMP>(mouseUp), "v@:@");
+    class_addMethod( cls , sel_registerName("mouseMoved:"), reinterpret_cast<IMP>(mouseMoved), "v@:@");
     class_addMethod( cls , sel_registerName("scrollWheel:"), reinterpret_cast<IMP>(scrollWheel), "v@:@");
+
+    using SetBoolFunc = void(*)(id, SEL, bool);
+    auto setAcceptsMouseMovedEvents = reinterpret_cast<SetBoolFunc>(objc_msgSend);
+    setAcceptsMouseMovedEvents(reinterpret_cast<id>(window), sel_registerName("setAcceptsMouseMovedEvents:"), true);
 
 
     

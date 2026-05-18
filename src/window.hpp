@@ -18,9 +18,12 @@
 #include <thread>
 
 struct HandlerState {
-    std::function<void(char ch)> keyboardHandler;
-    std::function<void(float x, float y)> mouseDownHandler;
-    std::function<void(float dx, float dy, float x, float y)> scrollWheelHandler;
+    std::function<void(int keyCode, runtime::Modifiers modifiers)> keyDownHandler;
+    std::function<void(int keyCode, runtime::Modifiers modifiers)> keyUpHandler;
+    std::function<void(float x, float y, runtime::MouseButton button, runtime::Modifiers modifiers)> mouseDownHandler;
+    std::function<void(float x, float y, runtime::MouseButton button, runtime::Modifiers modifiers)> mouseUpHandler;
+    std::function<void(float x, float y, runtime::Modifiers modifiers)> mouseMovedHandler;
+    std::function<void(float dx, float dy, float x, float y, runtime::Modifiers modifiers)> scrollWheelHandler;
 };
 
 
@@ -48,10 +51,14 @@ public:
     void applicationWillFinishLaunching(NS::Notification* notification) override;
     void applicationDidFinishLaunching(NS::Notification* notification) override;
     bool applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender) override;
+    void setFocused(tree::TreeNode* node);
+    tree::TreeNode* hitTest(float x, float y, simd_float2& testPoint);
     
     NS::Window* window;
     MTK::View* view;
     MTL::Device* device;
     tree::TreeNode* focused = nullptr;
+    tree::TreeNode* hovered = nullptr;
+    tree::TreeNode* mouseDownTarget = nullptr;
     std::unique_ptr<MTKViewDelegate> viewDelegate;
 };

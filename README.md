@@ -14,7 +14,7 @@ static int count = 0;
 
 auto index() -> void {
 
-    auto onClick = [](auto& desc, const Event& event){
+    auto onClick = [](auto& desc, Event& event){
         count += 1;
 
         if (count % 2 == 0) {
