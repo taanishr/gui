@@ -675,6 +675,30 @@ namespace tree {
         node->globalOffset = baseOrigin;
         layout.clipUniforms = constraints.clipUniforms;
 
+        if (node->shared.overflow == Overflow::Scroll) {
+            float viewportLeft = layout.computedBox.x;
+            float viewportRight = layout.computedBox.x + layout.computedBox.width;
+            float viewportTop = layout.computedBox.y;
+            float viewportBottom = layout.computedBox.y + layout.computedBox.height;
+
+            for (auto& clip : constraints.clipUniforms) {
+                viewportLeft = std::max(viewportLeft, clip.rectCenter.x - clip.halfExtent.x);
+                viewportRight = std::min(viewportRight, clip.rectCenter.x + clip.halfExtent.x);
+                viewportTop = std::max(viewportTop, clip.rectCenter.y - clip.halfExtent.y);
+                viewportBottom = std::min(viewportBottom, clip.rectCenter.y + clip.halfExtent.y);
+            }
+
+            viewportLeft += layout.resolvedPadding.left;
+            viewportRight -= layout.resolvedPadding.right;
+            viewportTop += layout.resolvedPadding.top;
+            viewportBottom -= layout.resolvedPadding.bottom;
+
+            node->scrollViewportSize = {
+                std::max(0.0f, viewportRight - viewportLeft),
+                std::max(0.0f, viewportBottom - viewportTop)
+            };
+        }
+
         node->atomized = node->element->postLayout(constraints, node->shared, *node->measured,
                                                     *node->atomized, layout);
 
