@@ -271,14 +271,12 @@ namespace tree {
                 float maxScrollX = 0.0f;
                 float maxScrollY = 0.0f;
                 if (layout.has_value()) {
-                    auto& box = layout->computedBox;
-                    float viewportWidth = box.width - layout->resolvedPadding.left - layout->resolvedPadding.right;
-                    float viewportHeight = box.height - layout->resolvedPadding.top - layout->resolvedPadding.bottom;
-                    maxScrollX = std::max(0.0f, scrollContentSize.x - viewportWidth);
-                    maxScrollY = std::max(0.0f, scrollContentSize.y - viewportHeight);
+                    maxScrollX = std::max(0.0f, scrollContentSize.x - scrollViewportSize.x);
+                    maxScrollY = std::max(0.0f, scrollContentSize.y - scrollViewportSize.y);
                 }
                 auto oldScrollOffset = scrollOffset;
-                scrollOffset.x = std::clamp(scrollOffset.x + scroll.dx, 0.0f, maxScrollX);
+
+                scrollOffset.x = std::clamp(scrollOffset.x - scroll.dx, 0.0f, maxScrollX);
                 scrollOffset.y = std::clamp(scrollOffset.y - scroll.dy, 0.0f, maxScrollY);
                 event.stopPropagation();
                 if (oldScrollOffset.x != scrollOffset.x || oldScrollOffset.y != scrollOffset.y) {
@@ -368,6 +366,7 @@ namespace tree {
         simd_float2 globalOffset {0.0f, 0.0f};
         simd_float2 scrollOffset {0.0f, 0.0f};
         simd_float2 scrollContentSize {0.0f, 0.0f};
+        simd_float2 scrollViewportSize {0.0f, 0.0f};
         SharedDescriptor shared;
         DirtyBits dirtySelf{~DirtyBits::None};
         DirtyBits dirtySubtree{~DirtyBits::None};
