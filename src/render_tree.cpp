@@ -9,6 +9,7 @@ namespace tree {
     using layout::GridResolver;
     using layout::MarginMetadata;
     using layout::SizeResolutionContext;
+    using layout::AxisResolution;
     using style::ClipUniform;
     using style::Unit;
 
@@ -622,10 +623,10 @@ namespace tree {
         }
 
         float usedWidth = layout.computedBox.width;
-        if (node->shared.maxWidth.has_value()) {
+        if (constraints.widthResolution == AxisResolution::Final && node->shared.maxWidth.has_value()) {
             usedWidth = std::min(usedWidth, node->shared.maxWidth->resolveOr(constraints.availableWidth, usedWidth));
         }
-        if (node->shared.minWidth.has_value()) {
+        if (constraints.widthResolution == AxisResolution::Final && node->shared.minWidth.has_value()) {
             usedWidth = std::max(usedWidth, node->shared.minWidth->resolveOr(constraints.availableWidth, usedWidth));
         }
 
@@ -635,10 +636,10 @@ namespace tree {
         }
 
         float usedHeight = layout.computedBox.height;
-        if (node->shared.maxHeight.has_value()) {
+        if (constraints.heightResolution == AxisResolution::Final && node->shared.maxHeight.has_value()) {
             usedHeight = std::min(usedHeight, node->shared.maxHeight->resolveOr(constraints.availableHeight, usedHeight));
         }
-        if (node->shared.minHeight.has_value()) {
+        if (constraints.heightResolution == AxisResolution::Final && node->shared.minHeight.has_value()) {
             usedHeight = std::max(usedHeight, node->shared.minHeight->resolveOr(constraints.availableHeight, usedHeight));
         }
 

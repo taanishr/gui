@@ -130,11 +130,28 @@ namespace layout {
     void FlexResolver::phaseC() {
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto childAsPtr = node->children[i].get();
+            auto selfAlign = childAsPtr->getAlignSelf();
+
+            AlignItems effectiveAlign = flex.alignItems;
+            if (selfAlign != AlignSelf::Auto) {
+                switch (selfAlign) {
+                    case AlignSelf::Stretch:   effectiveAlign = AlignItems::Stretch; break;
+                    case AlignSelf::FlexStart: effectiveAlign = AlignItems::FlexStart; break;
+                    case AlignSelf::FlexEnd:   effectiveAlign = AlignItems::FlexEnd; break;
+                    case AlignSelf::Center:    effectiveAlign = AlignItems::Center; break;
+                    default: break;
+                }
+            }
 
             if (!hasIndefiniteChild) {
                 prepareChildConstraints(childAsPtr);
 
+                auto savedCrossResolution = flex.axis.crossResolution(childConstraints);
+                if (effectiveAlign == AlignItems::Stretch && !flex.axis.hasUserCrossSize(childAsPtr->shared)) {
+                    flex.axis.setCrossResolution(childConstraints, AxisResolution::Deferred);
+                }
                 tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+                flex.axis.setCrossResolution(childConstraints, savedCrossResolution);
             }
 
             auto& childLayout = *childAsPtr->layout;
@@ -142,7 +159,6 @@ namespace layout {
 
             float resolvedGrow = childAsPtr->getFlexGrow().resolveOr(0.0, 0.0);
             float resolvedShrink = childAsPtr->getFlexShrink().resolveOr(0.0, 1.0);
-            auto selfAlign = childAsPtr->getAlignSelf();
             auto crossSizeRequest = flex.axis.isRow
                 ? childAsPtr->shared.height
                 : childAsPtr->shared.width;
@@ -222,6 +238,7 @@ namespace layout {
             flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
 
             flex.axis.setCrossAvailableSize(childConstraints, availableCross);
+            flex.axis.setCrossResolution(childConstraints, AxisResolution::Final);
             childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
 
             // Cross-axis: apply placement offset and stretch override.
@@ -229,11 +246,11 @@ namespace layout {
             // can be corrupted by Phase B from an earlier intermediate pass.
             flex.axis.setCrossPosition(childConstraints, p.crossOffset);
             if (p.crossSizeOverride.has_value()) {
-                bool hasUserCrossSize = flex.axis.isRow
-                    ? childAsPtr->shared.height.has_value()
-                    : childAsPtr->shared.width.has_value();
-                if (!hasUserCrossSize) {
-                    flex.axis.setCrossExplicit(*childAsPtr->measured, *p.crossSizeOverride);
+                if (!flex.axis.hasUserCrossSize(childAsPtr->shared)) {
+                    flex.axis.setCrossExplicit(
+                        *childAsPtr->measured,
+                        flex.axis.clampCrossSize(*p.crossSizeOverride, childAsPtr->shared, availableCross)
+                    );
                 }
             }
 
