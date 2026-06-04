@@ -1,6 +1,7 @@
 #include "flex.hpp"
 #include "render_tree.hpp"
 #include "render_tree.hpp"
+#include <print>
 
 namespace layout {
     Alignment distributeSpace(float remainingSpace, size_t itemCount, DistributeMode mode) {
@@ -169,6 +170,8 @@ namespace layout {
                     maxMain = childAsPtr->shared.maxHeight->resolveOr(parentAvailableHeight, flex.axis.mainSize(childLayout));
                 }
             }
+
+            std::println("childConstraints.availableWidth: {}", childConstraints.availableWidth);
 
             flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain, maxMain);
             inFlowIndices.push_back(i);

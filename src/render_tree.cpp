@@ -508,8 +508,12 @@ namespace tree {
 
             auto newSize = resolveSize(sizeCtx);
             
-            node->measured->explicitWidth = newSize.width;
-            node->measured->explicitHeight = newSize.height;
+            if (node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) {
+                node->measured->explicitWidth = newSize.width;
+            }
+            if (node->shared.height.has_value() && node->shared.height->unit == Unit::Percent) {
+                node->measured->explicitHeight = newSize.height;
+            }
         }
 
 
@@ -689,13 +693,13 @@ namespace tree {
 
             if (widthChanged) {
                 layout.computedBox.width = usedWidth;
-            } else if (!measured.explicitWidth.has_value()) {
+            } else if (!measured.explicitWidth.has_value() || constraints.shrinkToFit) {
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
             }
 
             if (heightChanged) {
                 layout.computedBox.height = usedHeight;
-            } else if (!measured.explicitHeight.has_value()) {
+            } else if (!measured.explicitHeight.has_value() || constraints.shrinkToFit) {
                 layout.computedBox.height = maxY - minY + layout.resolvedPadding.top + layout.resolvedPadding.bottom;
                 if (node->shared.maxHeight.has_value()) {
                     layout.computedBox.height = std::min(layout.computedBox.height, node->shared.maxHeight->resolveOr(constraints.availableHeight, layout.computedBox.height));
@@ -846,11 +850,21 @@ namespace tree {
 
         if (node->shared.overflow == Overflow::Scroll) {
             simd_float2 contentSize {0.0f, 0.0f};
-            for (auto& child : node->children) {
-                if (!child->layout.has_value() || child->layout->outOfFlow) continue;
+            std::function<void(TreeNode*)> includeChildOverflow;
+            includeChildOverflow = [&](TreeNode* child) {
+                if (!child->layout.has_value() || child->layout->outOfFlow) return;
                 auto& childBox = child->layout->computedBox;
                 contentSize.x = std::max(contentSize.x, childBox.x + childBox.width - currContentOrigin.x);
                 contentSize.y = std::max(contentSize.y, childBox.y + childBox.height - currContentOrigin.y);
+
+                if (child->shared.overflow != Overflow::Visible) return;
+                for (auto& grandchild : child->children) {
+                    includeChildOverflow(grandchild.get());
+                }
+            };
+
+            for (auto& child : node->children) {
+                includeChildOverflow(child.get());
             }
             node->scrollContentSize = contentSize;
         }
