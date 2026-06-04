@@ -347,6 +347,12 @@ namespace layout {
         float height{};
     };
 
+    enum class AxisResolution {
+        Final,
+        Intrinsic,
+        Deferred
+    };
+
     struct Constraints {
         simd_float2 origin{};
         simd_float2 cursor{};
@@ -368,6 +374,8 @@ namespace layout {
         std::vector<ClipUniform> clipUniforms {};
 
         bool shrinkToFit{false};
+        AxisResolution widthResolution{AxisResolution::Final};
+        AxisResolution heightResolution{AxisResolution::Final};
     };
 
     struct LayoutInput {

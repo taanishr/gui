@@ -83,6 +83,23 @@ namespace layout {
             if (isRow) c.availableHeight = v;
             else       c.availableWidth = v;
         }
+        AxisResolution crossResolution(const Constraints& c) const {
+            return isRow ? c.heightResolution : c.widthResolution;
+        }
+        void setCrossResolution(Constraints& c, AxisResolution v) const {
+            if (isRow) c.heightResolution = v;
+            else       c.widthResolution = v;
+        }
+        bool hasUserCrossSize(const SharedDescriptor& s) const {
+            return isRow ? s.height.has_value() : s.width.has_value();
+        }
+        float clampCrossSize(float v, const SharedDescriptor& s, float referenceSize) const {
+            auto& maxSize = isRow ? s.maxHeight : s.maxWidth;
+            auto& minSize = isRow ? s.minHeight : s.minWidth;
+            if (maxSize.has_value()) v = std::min(v, maxSize->resolveOr(referenceSize, v));
+            if (minSize.has_value()) v = std::max(v, minSize->resolveOr(referenceSize, v));
+            return v;
+        }
 
         float availableMain(const Measured& m, float fallback) const {
             return isRow ? m.explicitWidth.value_or(fallback) : m.explicitHeight.value_or(fallback);
