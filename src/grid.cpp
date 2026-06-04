@@ -198,7 +198,7 @@ namespace layout {
             if (def.isFr()) {
                 frTotal += def.value;
             }else if (!def.isAuto()) {
-                sizes[i] = std::max(def.resolveOr(available, 0), trackMinSizes[i]);
+                sizes[i] = def.resolveOr(available, 0);
                 fixedTotal += sizes[i];
             }
         }
@@ -221,7 +221,7 @@ namespace layout {
 
         if (frTotal > 0) {
             for (size_t i = 0; i < n; ++i)
-                if (defs[i].isFr()) sizes[i] = std::max((defs[i].value / frTotal) * remaining, trackMinSizes[i]);
+                if (defs[i].isFr()) sizes[i] = (defs[i].value / frTotal) * remaining;
         }
 
         float offset = 0;
