@@ -1,9 +1,22 @@
 #include "grid.hpp"
 #include "render_tree.hpp"
+#include <algorithm>
 #include <optional>
 #include <print>
 
 namespace layout {
+    namespace {
+        float applyMinMax(float value, const std::optional<Size>& minSize, const std::optional<Size>& maxSize, float referenceSize) {
+            if (maxSize.has_value()) {
+                value = std::min(value, maxSize->resolveOr(referenceSize, value));
+            }
+            if (minSize.has_value()) {
+                value = std::max(value, minSize->resolveOr(referenceSize, value));
+            }
+            return value;
+        }
+    }
+
     void GridLayout::addChild(TreeNode* node) {
         auto gridPlacement = node->getGridPlacement();
 
@@ -244,14 +257,14 @@ namespace layout {
 
     GridResolver::GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                                Constraints childConstraints, const FrameInfo& frameInfo,
-                               float parentMaxWidth, float parentMaxHeight,
+                               float parentAvailableWidth, float parentAvailableHeight,
                                float minX, float minY, float maxX, float maxY)
         : tree{tree}, node{node}, parentConstraints{parentConstraints},
           childConstraints{std::move(childConstraints)},
           alignItems{node->getAlignItems()},
           frameInfo{frameInfo},
-          childMaxWidth{node->measured->explicitWidth.value_or(parentConstraints.maxWidth)},
-          parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
+          childAvailableWidth{node->measured->explicitWidth.value_or(parentConstraints.availableWidth)},
+          parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
           minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
     {
         for (auto& child : node->children) {
@@ -273,10 +286,10 @@ namespace layout {
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
-        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childMaxWidth);
+        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childAvailableWidth);
         childConstraints.lineFragments = frags;
         childConstraints.lineBoxes = boxes;
-        childConstraints.maxWidth = childMaxWidth;
+        childConstraints.availableWidth = childAvailableWidth;
         childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
     }
 
@@ -340,8 +353,8 @@ namespace layout {
         auto& measured = *node->measured;
         auto& templateCols = node->getGridTemplateColumns();
         auto& templateRows = node->getGridTemplateRows();
-        float availableWidth = measured.explicitWidth.value_or(parentConstraints.maxWidth);
-        float availableHeight = measured.explicitHeight.value_or(parentConstraints.maxHeight);
+        float availableWidth = measured.explicitWidth.value_or(parentConstraints.availableWidth);
+        float availableHeight = measured.explicitHeight.value_or(parentConstraints.availableHeight);
         float colGap = node->getGridColumnGap().resolveOr(availableWidth, 0);
         float rowGap = node->getGridRowGap().resolveOr(availableHeight, 0);
 
@@ -366,16 +379,29 @@ namespace layout {
             gridLayout.addChild(childAsPtr);
             inFlowIndices.push_back(i);
 
-            itemWidths.push_back(childLayout.computedBox.width);
-            itemHeights.push_back(childLayout.consumedHeight);
+            float itemWidth = applyMinMax(
+                childLayout.computedBox.width,
+                childAsPtr->shared.minWidth,
+                childAsPtr->shared.maxWidth,
+                availableWidth
+            );
+            float itemHeight = applyMinMax(
+                childLayout.consumedHeight,
+                childAsPtr->shared.minHeight,
+                childAsPtr->shared.maxHeight,
+                availableHeight
+            );
+
+            itemWidths.push_back(itemWidth);
+            itemHeights.push_back(itemHeight);
         }
 
         float trackAvailableWidth = parentConstraints.shrinkToFit && !measured.explicitWidth.has_value()
             ? 0.0f
-            : parentMaxWidth;
+            : parentAvailableWidth;
         float trackAvailableHeight = parentConstraints.shrinkToFit && !measured.explicitHeight.has_value()
             ? 0.0f
-            : parentMaxHeight;
+            : parentAvailableHeight;
 
         gridLayout.resolve(templateRows.size(), templateCols.size(),
             templateRows, templateCols,
@@ -387,8 +413,8 @@ namespace layout {
 
     GridResolver::Bounds GridResolver::phaseD() {
         auto& measured = *node->measured;
-        float availableWidth = measured.explicitWidth.value_or(parentConstraints.maxWidth);
-        float availableHeight = measured.explicitHeight.value_or(parentConstraints.maxHeight);
+        float availableWidth = measured.explicitWidth.value_or(parentConstraints.availableWidth);
+        float availableHeight = measured.explicitHeight.value_or(parentConstraints.availableHeight);
 
         for (size_t pi = 0; pi < inFlowIndices.size(); ++pi) {
             size_t i = inFlowIndices[pi];
@@ -404,12 +430,14 @@ namespace layout {
             float cellW = colTracks[*item.colEnd - 1].offset + colTracks[*item.colEnd - 1].size - cellX;
             float cellH = rowTracks[*item.rowEnd - 1].offset + rowTracks[*item.rowEnd - 1].size - cellY;
 
+            float itemW = applyMinMax(cellW, childAsPtr->shared.minWidth, childAsPtr->shared.maxWidth, cellW);
+            float itemH = applyMinMax(cellH, childAsPtr->shared.minHeight, childAsPtr->shared.maxHeight, cellH);
 
-            auto&& [frags, boxes] = buildIsolatedInlineBoxes(childAsPtr, cellW);
+            auto&& [frags, boxes] = buildIsolatedInlineBoxes(childAsPtr, itemW);
             childConstraints.lineFragments = frags;
             childConstraints.lineBoxes = boxes;
-            childConstraints.maxWidth = cellW;
-            childConstraints.maxHeight = cellH;
+            childConstraints.availableWidth = itemW;
+            childConstraints.availableHeight = itemH;
             childConstraints.origin.x = cellX;
             childConstraints.cursor.y = cellY;
             childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
@@ -431,9 +459,9 @@ namespace layout {
             // stretch: override measured size if child has no explicit size
             if (effectiveAlign == AlignItems::Stretch) {
                 if (!childAsPtr->shared.width.has_value())
-                    childAsPtr->measured->explicitWidth = cellW;
+                    childAsPtr->measured->explicitWidth = itemW;
                 if (!childAsPtr->shared.height.has_value())
-                    childAsPtr->measured->explicitHeight = cellH;
+                    childAsPtr->measured->explicitHeight = itemH;
             } else {
                 childConstraints.shrinkToFit = true;
             }

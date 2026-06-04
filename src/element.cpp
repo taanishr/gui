@@ -108,7 +108,7 @@ namespace tree {
             if (width > 0) {
                 contentWidth = width;
             } else {
-                contentWidth = constraints.maxWidth;
+                contentWidth = constraints.availableWidth;
             }
 
             LayoutInput li{
@@ -122,7 +122,7 @@ namespace tree {
                 .marginLeft = marginLeft,
             };
 
-            margins = LayoutEngine::resolveAutoMargins(li, constraints.replacedAttributes, constraints.maxWidth, contentWidth);
+            margins = LayoutEngine::resolveAutoMargins(li, constraints.replacedAttributes, constraints.availableWidth, contentWidth);
         } else {
             margins = {
                 .top = marginTop.resolveOr(0.0f, 0.0f),
@@ -136,8 +136,8 @@ namespace tree {
 
         auto& measured = *node->measured;
         Constraints childConstraints{};
-        childConstraints.maxWidth = measured.explicitWidth.value_or(constraints.maxWidth);
-        childConstraints.maxHeight = measured.explicitHeight.value_or(constraints.maxHeight);
+        childConstraints.availableWidth = measured.explicitWidth.value_or(constraints.availableWidth);
+        childConstraints.availableHeight = measured.explicitHeight.value_or(constraints.availableHeight);
         childConstraints.frameInfo = constraints.frameInfo;
 
         for (auto& child : node->children) {
@@ -277,7 +277,7 @@ namespace tree {
                             .atomCount = runningAtomCount,
                         };
 
-                        if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                        if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.availableWidth) {
                             childrenLineBoxes.push_back(currentLineBox);
                             currentLineBox = {};
                             currentLineBoxIndex++;
@@ -303,7 +303,7 @@ namespace tree {
                         .atomCount = runningAtomCount,
                     };
 
-                    if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.maxWidth) {
+                    if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.availableWidth) {
                         childrenLineBoxes.push_back(currentLineBox);
                         currentLineBox = {};
                         currentLineBoxIndex++;

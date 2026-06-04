@@ -272,6 +272,7 @@ namespace style {
         Display display{Display::Block};
 
         std::optional<Size> width, height;
+        std::optional<Size> minWidth, minHeight, maxWidth, maxHeight;
         std::optional<Size> top, left, bottom, right;
 
         Size margin{};
@@ -349,8 +350,8 @@ namespace layout {
     struct Constraints {
         simd_float2 origin{};
         simd_float2 cursor{};
-        float maxWidth{};
-        float maxHeight{};
+        float availableWidth{};
+        float availableHeight{};
 
         InheritedProperties inheritedProperties{};
 
@@ -374,6 +375,7 @@ namespace layout {
         Display display;
 
         std::optional<float> width, height;
+        std::optional<Size> minWidth, minHeight, maxWidth, maxHeight;
         
         std::optional<Size> top, left, bottom, right;
 
@@ -394,6 +396,10 @@ namespace layout {
         li.display = s.display;
         li.width = m.explicitWidth;
         li.height = m.explicitHeight;
+        li.minWidth = s.minWidth;
+        li.minHeight = s.minHeight;
+        li.maxWidth = s.maxWidth;
+        li.maxHeight = s.maxHeight;
         li.top = s.top;
         li.left = s.left;
         li.bottom = s.bottom;

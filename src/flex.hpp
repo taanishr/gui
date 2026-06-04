@@ -75,13 +75,13 @@ namespace layout {
             }
         }
 
-        void setMainMaxSize(Constraints& c, float v) const {
-            if (isRow) c.maxWidth = v;
-            else       c.maxHeight = v;
+        void setMainAvailableSize(Constraints& c, float v) const {
+            if (isRow) c.availableWidth = v;
+            else       c.availableHeight = v;
         }
-        void setCrossMaxSize(Constraints& c, float v) const {
-            if (isRow) c.maxHeight = v;
-            else       c.maxWidth = v;
+        void setCrossAvailableSize(Constraints& c, float v) const {
+            if (isRow) c.availableHeight = v;
+            else       c.availableWidth = v;
         }
 
         float availableMain(const Measured& m, float fallback) const {
@@ -96,6 +96,7 @@ namespace layout {
     struct FlexLine {
         std::vector<float> childSizes;
         std::vector<float> minMainSizes;
+        std::vector<std::optional<float>> maxMainSizes;
         std::vector<float> shrinkScaled;
         std::vector<float> growthScaled;
 
@@ -104,9 +105,11 @@ namespace layout {
         float growthScaledTotal{};
         float maxCrossSize{};
 
-        void addChild(float mainSize, float crossSize, float grow, float shrink, float minMainSize = 0.0f) {
+        void addChild(float mainSize, float crossSize, float grow, float shrink,
+                      float minMainSize = 0.0f, std::optional<float> maxMainSize = std::nullopt) {
             childSizes.push_back(mainSize);
             minMainSizes.push_back(minMainSize);
+            maxMainSizes.push_back(maxMainSize);
             totalSize += mainSize;
 
             if (shrink > 0.0f) {
@@ -140,19 +143,62 @@ namespace layout {
 
         ResolveResult resolve(float availableMain) const {
             ResolveResult result;
-            float space = availableMain - totalSize;
+            result.sizes = childSizes;
 
-            for (size_t i = 0; i < childSizes.size(); ++i) {
-                if (space > 0 && growthScaled[i] > 0) {
-                    result.sizes.push_back(childSizes[i] + (growthScaled[i] / growthScaledTotal) * space);
-                } else if (space < 0 && shrinkScaled[i] > 0) {
-                    float shrunk = childSizes[i] + (shrinkScaled[i] / shrinkScaledTotal) * space;
-                    result.sizes.push_back(std::max(shrunk, minMainSizes[i]));
-                } else {
-                    result.sizes.push_back(childSizes[i]);
+            std::vector<bool> frozen(childSizes.size(), false);
+
+            while (true) {
+                float frozenTotal = 0.0f;
+                float unfrozenBaseTotal = 0.0f;
+                float unfrozenGrowthTotal = 0.0f;
+                float unfrozenShrinkTotal = 0.0f;
+
+                for (size_t i = 0; i < childSizes.size(); ++i) {
+                    if (frozen[i]) {
+                        frozenTotal += result.sizes[i];
+                    } else {
+                        unfrozenBaseTotal += childSizes[i];
+                        unfrozenGrowthTotal += growthScaled[i];
+                        unfrozenShrinkTotal += shrinkScaled[i];
+                    }
                 }
-                result.totalAfter += result.sizes.back();
+
+                float space = availableMain - frozenTotal - unfrozenBaseTotal;
+
+                for (size_t i = 0; i < childSizes.size(); ++i) {
+                    if (frozen[i]) continue;
+
+                    if (space > 0.0f && growthScaled[i] > 0.0f && unfrozenGrowthTotal > 0.0f) {
+                        result.sizes[i] = childSizes[i] + (growthScaled[i] / unfrozenGrowthTotal) * space;
+                    } else if (space < 0.0f && shrinkScaled[i] > 0.0f && unfrozenShrinkTotal > 0.0f) {
+                        result.sizes[i] = childSizes[i] + (shrinkScaled[i] / unfrozenShrinkTotal) * space;
+                    } else {
+                        result.sizes[i] = childSizes[i];
+                    }
+                }
+
+                bool anyViolation = false;
+
+                for (size_t i = 0; i < childSizes.size(); ++i) {
+                    if (frozen[i]) continue;
+
+                    float clamped = result.sizes[i];
+                    if (maxMainSizes[i].has_value()) {
+                        clamped = std::min(clamped, *maxMainSizes[i]);
+                    }
+                    clamped = std::max(clamped, minMainSizes[i]);
+
+                    if (clamped != result.sizes[i]) {
+                        result.sizes[i] = clamped;
+                        frozen[i] = true;
+                        anyViolation = true;
+                    }
+                }
+
+                if (!anyViolation) break;
             }
+
+            for (auto size : result.sizes) result.totalAfter += size;
             result.remainingSpace = availableMain - result.totalAfter;
             return result;
         }
@@ -206,7 +252,8 @@ namespace layout {
 
         void addChild(const LayoutResult& layout, float grow, float shrink,
                         AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
-                        float avMain, float minMainSize = 0.0f) {
+                        float avMain, float minMainSize = 0.0f,
+                        std::optional<float> maxMainSize = std::nullopt) {
             float childMain = axis.mainSize(layout);
 
             float childCross = axis.crossSize(layout);
@@ -222,7 +269,7 @@ namespace layout {
                 }
             }
 
-            currentLine.addChild(childMain, childCross, grow, shrink, minMainSize);
+            currentLine.addChild(childMain, childCross, grow, shrink, minMainSize, maxMainSize);
             childAlignSelfs.push_back(selfAlign);
             childCrossSizes.push_back(childCross);
             childCrossSizeRequests.push_back(crossSizeRequest);
@@ -270,7 +317,8 @@ namespace layout {
                     totalNaturalCross += lines[li].maxCrossSize;
                 }
 
-                float remainingCross = availableCross - totalNaturalCross;
+                float crossGap = gap * (lineCount - 1);
+                float remainingCross = availableCross - totalNaturalCross - crossGap;
 
                 if (alignContent == AlignContent::Stretch && remainingCross > 0) {
                     float extra = remainingCross / lineCount;
@@ -280,7 +328,7 @@ namespace layout {
                     float crossAccum = 0;
                     for (size_t li = 0; li < lineCount; ++li) {
                         lineCrossOffsets[li] = crossAccum;
-                        crossAccum += lineCrossSizes[li];
+                        crossAccum += lineCrossSizes[li] + gap;
                     }
                 } else {
                     auto crossAlign = distributeSpace(
@@ -288,7 +336,7 @@ namespace layout {
                     float crossAccum = crossAlign.initialOffset;
                     for (size_t li = 0; li < lineCount; ++li) {
                         lineCrossOffsets[li] = crossAccum;
-                        crossAccum += lineCrossSizes[li] + crossAlign.spaceBetween;
+                        crossAccum += lineCrossSizes[li] + crossAlign.spaceBetween + gap;
                     }
                 }
 
@@ -374,10 +422,10 @@ namespace layout {
         Constraints       childConstraints;
         FlexLayout        flex;
         const FrameInfo&  frameInfo;
-        float             childMaxWidth;
+        float             childAvailableWidth;
         float             avMain;
-        float             parentMaxWidth;
-        float             parentMaxHeight;
+        float             parentAvailableWidth;
+        float             parentAvailableHeight;
 
         float minX;
         float minY;
@@ -398,14 +446,14 @@ namespace layout {
 
         FlexResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                         Constraints childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
-                        float parentMaxWidth, float parentMaxHeight,
+                        float parentAvailableWidth, float parentAvailableHeight,
                         float minX, float minY, float maxX, float maxY)
             : tree{tree}, node{node}, parentConstraints{parentConstraints},
                 childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
                 frameInfo{frameInfo},
-                childMaxWidth{parentMaxWidth},
-                avMain{this->flex.axis.isRow ? parentMaxWidth : parentMaxHeight},
-                parentMaxWidth{parentMaxWidth}, parentMaxHeight{parentMaxHeight},
+                childAvailableWidth{parentAvailableWidth},
+                avMain{this->flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight},
+                parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
                 minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
         {
             bool needsCrossShrink = this->flex.axis.isRow
