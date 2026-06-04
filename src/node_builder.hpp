@@ -115,12 +115,52 @@ namespace elements {
             return self();
         }
 
+        std::optional<Size> minWidth() const {
+            return node->shared.minWidth;
+        }
+
+        Derived& minWidth(Size width) {
+            node->shared.minWidth = width;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> maxWidth() const {
+            return node->shared.maxWidth;
+        }
+
+        Derived& maxWidth(Size width) {
+            node->shared.maxWidth = width;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
         std::optional<Size> height() const {
             return node->shared.height;
         }
 
         Derived& height(Size height) {
             node->shared.height = height;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> minHeight() const {
+            return node->shared.minHeight;
+        }
+
+        Derived& minHeight(Size height) {
+            node->shared.minHeight = height;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<Size> maxHeight() const {
+            return node->shared.maxHeight;
+        }
+
+        Derived& maxHeight(Size height) {
+            node->shared.maxHeight = height;
             markDirty(layoutDirtyBits());
             return self();
         }

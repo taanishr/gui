@@ -56,10 +56,10 @@ namespace layout {
     }
 
     void FlexResolver::prepareChildConstraints(TreeNode* child) {
-        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childMaxWidth);
+        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childAvailableWidth);
         childConstraints.lineFragments = frags;
         childConstraints.lineBoxes = boxes;
-        childConstraints.maxWidth = childMaxWidth;
+        childConstraints.availableWidth = childAvailableWidth;
         childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
     }
 
@@ -152,8 +152,25 @@ namespace layout {
 
                 
             float minMain = hasExplicitMain? 0.0f : flex.axis.mainSize(childLayout);
+            std::optional<float> maxMain;
 
-            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain);
+            if (flex.axis.isRow) {
+                if (childAsPtr->shared.minWidth.has_value()) {
+                    minMain = std::max(minMain, childAsPtr->shared.minWidth->resolveOr(parentAvailableWidth, minMain));
+                }
+                if (childAsPtr->shared.maxWidth.has_value()) {
+                    maxMain = childAsPtr->shared.maxWidth->resolveOr(parentAvailableWidth, flex.axis.mainSize(childLayout));
+                }
+            } else {
+                if (childAsPtr->shared.minHeight.has_value()) {
+                    minMain = std::max(minMain, childAsPtr->shared.minHeight->resolveOr(parentAvailableHeight, minMain));
+                }
+                if (childAsPtr->shared.maxHeight.has_value()) {
+                    maxMain = childAsPtr->shared.maxHeight->resolveOr(parentAvailableHeight, flex.axis.mainSize(childLayout));
+                }
+            }
+
+            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain, maxMain);
             inFlowIndices.push_back(i);
         }
     }
@@ -161,7 +178,7 @@ namespace layout {
     FlexResolver::Bounds FlexResolver::phaseD() {
         auto& measured = *node->measured;
 
-        float gapBasis = flex.axis.isRow ? parentMaxWidth : parentMaxHeight;
+        float gapBasis = flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight;
         float resolvedGap = node->getFlexGap().resolveOr(gapBasis);
 
         float totalSizeFallback = 0;
@@ -169,7 +186,7 @@ namespace layout {
         totalSizeFallback += flex.currentLine.totalWithGap(resolvedGap);
         auto explicitMain = flex.axis.isRow ? measured.explicitWidth : measured.explicitHeight;
         float availableMain = explicitMain.has_value()
-            ? (flex.axis.isRow ? parentMaxWidth : parentMaxHeight)
+            ? (flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight)
             : totalSizeFallback;
         if (node->shared.overflow == Overflow::Scroll) {
             availableMain = std::max(availableMain, totalSizeFallback);
@@ -181,9 +198,10 @@ namespace layout {
         float naturalCross = 0;
 
         for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
+        if (flex.lines.size() > 1) naturalCross += resolvedGap * (flex.lines.size() - 1);
         auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
         float availableCross = explicitCross.has_value()
-            ? (flex.axis.isRow ? parentMaxHeight : parentMaxWidth)
+            ? (flex.axis.isRow ? parentAvailableHeight : parentAvailableWidth)
             : naturalCross;
 
         auto placements = flex.computePlacements(resolved, availableCross, resolvedGap);
@@ -197,10 +215,10 @@ namespace layout {
             prepareChildConstraints(childAsPtr);
 
             flex.axis.setMainPosition(childConstraints, p.mainOffset);
-            flex.axis.setMainMaxSize(childConstraints, p.mainSize);
+            flex.axis.setMainAvailableSize(childConstraints, p.mainSize);
             flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
 
-            flex.axis.setCrossMaxSize(childConstraints, availableCross);
+            flex.axis.setCrossAvailableSize(childConstraints, availableCross);
             childConstraints.shrinkToFit = p.needsCrossShrinkToFit;
 
             // Cross-axis: apply placement offset and stretch override.

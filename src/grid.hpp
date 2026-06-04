@@ -88,9 +88,9 @@ namespace layout {
         GridLayout        gridLayout;
         AlignItems        alignItems;
         const FrameInfo&  frameInfo;
-        float             childMaxWidth;
-        float             parentMaxWidth;
-        float             parentMaxHeight;
+        float             childAvailableWidth;
+        float             parentAvailableWidth;
+        float             parentAvailableHeight;
 
         float minX;
         float minY;
@@ -111,7 +111,7 @@ namespace layout {
 
         GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                      Constraints childConstraints, const FrameInfo& frameInfo,
-                     float parentMaxWidth, float parentMaxHeight,
+                     float parentAvailableWidth, float parentAvailableHeight,
                      float minX, float minY, float maxX, float maxY);
 
         bool isXIndefinite(TreeNode* child) const;

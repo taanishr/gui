@@ -330,8 +330,8 @@ namespace elements {
                 .left = shared.left,
                 .requestedWidth = shared.width,
                 .requestedHeight = shared.height,
-                .availableWidth = constraints.maxWidth,
-                .availableHeight = constraints.maxHeight
+                .availableWidth = constraints.availableWidth,
+                .availableHeight = constraints.availableHeight
             };
 
             ResolvedSize resolvedSize = resolveSize(sizeCtx);
@@ -455,7 +455,7 @@ namespace elements {
             float borderWidth = 0.0;
 
             if (shared.borderWidth.unit == Unit::Px) {
-                borderWidth = shared.borderWidth.resolveOr(constraints.maxWidth);
+                borderWidth = shared.borderWidth.resolveOr(constraints.availableWidth);
             }
 
             simd_float2 cornerRadius {
