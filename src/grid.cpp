@@ -432,8 +432,8 @@ namespace layout {
             childConstraints.lineBoxes = boxes;
             childConstraints.availableWidth = itemW;
             childConstraints.availableHeight = itemH;
-            childConstraints.origin.x = cellX;
-            childConstraints.cursor.y = cellY;
+            childConstraints.origin = {cellX, cellY};
+            childConstraints.cursor = {cellX, cellY};
             childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
             childConstraints.shrinkToFit = false;
 

@@ -490,10 +490,18 @@ namespace tree {
         // Re-resolve percent sizes from current constraints, but only in final layout
         // passes (shrinkToFit = false). During intermediate measurements (shrinkToFit = true),
         // maxWidth comes from an indefinite ancestor and would give wrong values.
-        if (!constraints.shrinkToFit &&
-            ((node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) ||
-             (node->shared.height.has_value() && node->shared.height->unit == Unit::Percent))
-        ) {
+        bool shouldResolvePercentWidth =
+            !constraints.shrinkToFit &&
+            constraints.widthResolution == AxisResolution::Final &&
+            node->shared.width.has_value() &&
+            node->shared.width->unit == Unit::Percent;
+        bool shouldResolvePercentHeight =
+            !constraints.shrinkToFit &&
+            constraints.heightResolution == AxisResolution::Final &&
+            node->shared.height.has_value() &&
+            node->shared.height->unit == Unit::Percent;
+
+        if (shouldResolvePercentWidth || shouldResolvePercentHeight) {
             SizeResolutionContext sizeCtx {
                 .position = node->shared.position,
                 .parentConstraints = constraints,
@@ -509,10 +517,10 @@ namespace tree {
 
             auto newSize = resolveSize(sizeCtx);
             
-            if (node->shared.width.has_value() && node->shared.width->unit == Unit::Percent) {
+            if (shouldResolvePercentWidth) {
                 node->measured->explicitWidth = newSize.width;
             }
-            if (node->shared.height.has_value() && node->shared.height->unit == Unit::Percent) {
+            if (shouldResolvePercentHeight) {
                 node->measured->explicitHeight = newSize.height;
             }
         }
@@ -701,6 +709,7 @@ namespace tree {
             if (heightChanged) {
                 layout.computedBox.height = usedHeight;
             } else if (!measured.explicitHeight.has_value() || constraints.shrinkToFit) {
+                // std::cout << "maxY: " << maxY << " minY: " << minY << '\n';
                 layout.computedBox.height = maxY - minY + layout.resolvedPadding.top + layout.resolvedPadding.bottom;
                 if (node->shared.maxHeight.has_value()) {
                     layout.computedBox.height = std::min(layout.computedBox.height, node->shared.maxHeight->resolveOr(constraints.availableHeight, layout.computedBox.height));
