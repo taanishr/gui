@@ -128,6 +128,9 @@ namespace layout {
     }
 
     void FlexResolver::phaseC() {
+        float gapBasis = flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight;
+        float resolvedGap = node->getFlexGap().resolveOr(gapBasis);
+
         for (uint64_t i = 0; i < node->children.size(); ++i) {
             auto childAsPtr = node->children[i].get();
             auto selfAlign = childAsPtr->getAlignSelf();
@@ -189,7 +192,7 @@ namespace layout {
 
             std::println("childConstraints.availableWidth: {}", childConstraints.availableWidth);
 
-            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, minMain, maxMain);
+            flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, resolvedGap, minMain, maxMain);
             inFlowIndices.push_back(i);
         }
     }

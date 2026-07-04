@@ -269,18 +269,16 @@ namespace layout {
 
         void addChild(const LayoutResult& layout, float grow, float shrink,
                         AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
-                        float avMain, float minMainSize = 0.0f,
+                        float avMain, float gap, float minMainSize = 0.0f,
                         std::optional<float> maxMainSize = std::nullopt) {
             float childMain = axis.mainSize(layout);
 
             float childCross = axis.crossSize(layout);
 
-
             availableMain = avMain;
 
             if (flexWrap != FlexWrap::NoWrap && currentLine.count() > 0) {
-                float totalWithGap = currentLine.totalSize;
-                if (totalWithGap + childMain > avMain) {
+                if (currentLine.totalWithGap(gap) + gap + childMain > avMain) {
                     lines.push_back(std::move(currentLine));
                     currentLine = FlexLine{};
                 }

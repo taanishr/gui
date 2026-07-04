@@ -71,13 +71,14 @@ namespace layout {
 
         // helpers
         void resolveStructure(size_t templateRows, size_t templateCols);
-        std::vector<Track> resolveTracks(std::vector<Size>& templateTracks, std::vector<float> itemSizes, float available, float gap, bool isCol);
+        std::vector<Track> resolveTracks(std::vector<Size>& templateTracks, std::vector<float> itemSizes, float available, float gap, bool isCol, bool axisDefinite);
 
         void resolve(size_t numRows, size_t numCols,
             const std::vector<Size>& templateRows, const std::vector<Size>& templateCols,
             float availableWidth, float availableHeight,
             float colGap, float rowGap,
-            std::vector<float> itemWidths, std::vector<float> itemHeights);
+            std::vector<float> itemWidths, std::vector<float> itemHeights,
+            bool widthDefinite, bool heightDefinite);
     };
 
     struct GridResolver {

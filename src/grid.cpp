@@ -170,7 +170,7 @@ namespace layout {
     }
 
 
-    std::vector<Track> GridLayout::resolveTracks(std::vector<Size>& defs, std::vector<float> itemSizes, float available, float gap, bool isCol) {
+    std::vector<Track> GridLayout::resolveTracks(std::vector<Size>& defs, std::vector<float> itemSizes, float available, float gap, bool isCol, bool axisDefinite) {
         size_t n = defs.size();
         float totalGap = (n > 1) ? gap * (float)(n - 1) : 0;
         float usable = available - totalGap;
@@ -181,6 +181,7 @@ namespace layout {
 
         float fixedTotal {};
         float frTotal {};
+        float autoTotal {};
 
         for (auto [item, itemSize]: std::ranges::views::zip(items, itemSizes)) {
             size_t s = isCol ? *item.colStart : *item.rowStart;
@@ -195,26 +196,18 @@ namespace layout {
         // resolve fixed tracks
         for (size_t i = 0; i < n; ++i) {
             auto& def = defs[i];
-            if (def.isFr()) {
+            bool indefinite = !axisDefinite && (def.unit == Unit::Percent || def.isFr());
+
+            if (indefinite || def.isAuto()) {
+                sizes[i] = trackMinSizes[i];
+                autoTotal += sizes[i];
+            } else if (def.isFr()) {
                 frTotal += def.value;
-            }else if (!def.isAuto()) {
+            } else {
                 sizes[i] = def.resolveOr(available, 0);
                 fixedTotal += sizes[i];
             }
         }
-
-        // resolve auto
-        std::vector<float> autoSizes (n, 0);
-
-        for (size_t i = 0; i < n; ++i) {
-            if (!defs[i].isAuto())
-                continue;
-
-            sizes[i] = trackMinSizes[i];
-            autoSizes[i] = sizes[i];
-        }
-
-        float autoTotal = std::ranges::fold_left(autoSizes, 0.0f, std::plus<>());
 
         // resolve fr
         float remaining = std::max(0.0f, usable - fixedTotal - autoTotal);
@@ -238,7 +231,8 @@ namespace layout {
         const std::vector<Size>& templateRows, const std::vector<Size>& templateCols,
         float availableWidth, float availableHeight,
         float colGap, float rowGap,
-        std::vector<float> itemWidths, std::vector<float> itemHeights) {
+        std::vector<float> itemWidths, std::vector<float> itemHeights,
+        bool widthDefinite, bool heightDefinite) {
         GridLayout::resolveStructure(numRows, numCols);
 
         // init fixed tracks
@@ -251,8 +245,8 @@ namespace layout {
         for (int j = 0; j < templateCols.size(); ++j)
             colDefs[j] = templateCols[j];
 
-        colTracks = resolveTracks(colDefs, itemWidths, availableWidth, colGap, true);
-        rowTracks = resolveTracks(rowDefs, itemHeights, availableHeight, rowGap, false);
+        colTracks = resolveTracks(colDefs, itemWidths, availableWidth, colGap, true, widthDefinite);
+        rowTracks = resolveTracks(rowDefs, itemHeights, availableHeight, rowGap, false, heightDefinite);
     }
 
     GridResolver::GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
@@ -407,8 +401,8 @@ namespace layout {
             templateRows, templateCols,
             trackAvailableWidth, trackAvailableHeight,
             colGap, rowGap,
-            itemWidths, itemHeights);
-
+            itemWidths, itemHeights,
+            measured.explicitWidth.has_value(), measured.explicitHeight.has_value());
     }
 
     GridResolver::Bounds GridResolver::phaseD() {
