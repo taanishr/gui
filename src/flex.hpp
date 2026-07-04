@@ -43,7 +43,6 @@ namespace layout {
         float crossSize(const LayoutResult& lr) const {
             return isRow ? lr.computedBox.height : lr.computedBox.width;
         }
-
         void setMainExplicit(Measured& m, float v) const {
             if (isRow) m.explicitWidth = v;
             else       m.explicitHeight = v;
@@ -82,6 +81,10 @@ namespace layout {
         void setCrossAvailableSize(Constraints& c, float v) const {
             if (isRow) c.availableHeight = v;
             else       c.availableWidth = v;
+        }
+        void setMainResolution(Constraints& c, AxisResolution v) const {
+            if (isRow) c.widthResolution = v;
+            else       c.heightResolution = v;
         }
         AxisResolution crossResolution(const Constraints& c) const {
             return isRow ? c.heightResolution : c.widthResolution;

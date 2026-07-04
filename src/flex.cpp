@@ -85,8 +85,10 @@ namespace layout {
             bool savedShrink = childConstraints.shrinkToFit;
             if (isIndef) childConstraints.shrinkToFit = true;
 
+            std::println("calling layoutphase from phase A");
             tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
             auto& childLayout = *childAsPtr->layout;
+            std::println("done calling layoutphase from phase A\n\n");
 
             maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
@@ -146,16 +148,23 @@ namespace layout {
                 }
             }
 
-            if (!hasIndefiniteChild) {
-                prepareChildConstraints(childAsPtr);
+            prepareChildConstraints(childAsPtr);
 
-                auto savedCrossResolution = flex.axis.crossResolution(childConstraints);
-                if (effectiveAlign == AlignItems::Stretch && !flex.axis.hasUserCrossSize(childAsPtr->shared)) {
-                    flex.axis.setCrossResolution(childConstraints, AxisResolution::Deferred);
+            auto mainSizeRequest = flex.axis.isRow
+                ? childAsPtr->shared.width
+                : childAsPtr->shared.height;
+            if (mainSizeRequest.has_value()) {
+                if (auto resolvedMainSize = mainSizeRequest->resolve(avMain)) {
+                    flex.axis.setMainExplicit(*childAsPtr->measured, *resolvedMainSize);
                 }
-                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
-                flex.axis.setCrossResolution(childConstraints, savedCrossResolution);
             }
+
+            auto savedCrossResolution = flex.axis.crossResolution(childConstraints);
+            if (effectiveAlign == AlignItems::Stretch && !flex.axis.hasUserCrossSize(childAsPtr->shared)) {
+                flex.axis.setCrossResolution(childConstraints, AxisResolution::Deferred);
+            }
+            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            flex.axis.setCrossResolution(childConstraints, savedCrossResolution);
 
             auto& childLayout = *childAsPtr->layout;
             if (childLayout.outOfFlow) continue;
@@ -189,8 +198,6 @@ namespace layout {
                     maxMain = childAsPtr->shared.maxHeight->resolveOr(parentAvailableHeight, flex.axis.mainSize(childLayout));
                 }
             }
-
-            std::println("childConstraints.availableWidth: {}", childConstraints.availableWidth);
 
             flex.addChild(childLayout, resolvedGrow, resolvedShrink, selfAlign, crossSizeRequest, avMain, resolvedGap, minMain, maxMain);
             inFlowIndices.push_back(i);
@@ -238,6 +245,7 @@ namespace layout {
 
             flex.axis.setMainPosition(childConstraints, p.mainOffset);
             flex.axis.setMainAvailableSize(childConstraints, p.mainSize);
+            flex.axis.setMainResolution(childConstraints, AxisResolution::Deferred);
             flex.axis.setMainExplicit(*childAsPtr->measured, p.mainSize);
 
             flex.axis.setCrossAvailableSize(childConstraints, availableCross);
