@@ -11,6 +11,7 @@ BIN_OUT="$BUILD_DIR/bin"
 OBJ_DIR="$BIN_OUT/obj"
 APPLE_EXT_BUILD="$BUILD_DIR/apple-extensions"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
+ENABLE_DEBUG_UI=0
 
 XCODEBUILD="/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
 SDK_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
@@ -25,7 +26,7 @@ LIB_MTK_EXT="$APPLE_EXT_BUILD/MTK-Extensions"
 LIB_APPKIT_EXT="$APPLE_EXT_BUILD/AppKit-Extensions"
 
 CXXFLAGS=(
-    -std=c++23
+    -std=c++26
     -isysroot "$SDK_PATH"
     -fno-objc-arc
     -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE
@@ -40,7 +41,10 @@ CXXFLAGS=(
 
 usage() {
     cat <<EOF
-Usage: scripts/ship.sh [build|run|buildrun|debug|extensions|xcode]
+Usage: scripts/ship.sh [--debug-ui] [build|run|buildrun|debug|extensions|xcode]
+
+Options:
+  --debug-ui  Enable the compile-time debug inspector UI
 
 Commands:
   build       Build Swift extensions, Metal shaders, and C++ executable
@@ -52,6 +56,32 @@ Commands:
 EOF
     exit 1
 }
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --debug-ui)
+            ENABLE_DEBUG_UI=1
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            usage
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [[ $ENABLE_DEBUG_UI -eq 1 ]]; then
+    CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=1)
+    OBJ_DIR="$BIN_OUT/obj-debug-ui"
+else
+    CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=0)
+fi
 
 needs_rebuild() {
     local src="$1" out="$2" dep="${3:-}"
@@ -192,7 +222,7 @@ build_cpp() {
     if [[ $any_rebuilt -eq 1 || ! -f "$bin" || "$LIB_MTK_EXT" -nt "$bin" || "$LIB_APPKIT_EXT" -nt "$bin" ]]; then
         echo "Linking $BINARY_NAME..."
         "$llvm_prefix/bin/clang++" \
-            -std=c++23 \
+            -std=c++26 \
             -isysroot "$SDK_PATH" \
             -fno-objc-arc \
             -stdlib=libc++ \
@@ -219,12 +249,14 @@ build_cpp() {
 
 build_xcode() {
     build_extensions
+    local inspector_definition="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI"
     "$XCODEBUILD" \
         -project "$ROOT_DIR/gui.xcodeproj" \
         -scheme gui \
         -configuration Debug \
         -derivedDataPath "$BUILD_DIR/xcode-derived/gui" \
         CODE_SIGNING_ALLOWED=NO \
+        GCC_PREPROCESSOR_DEFINITIONS="\$(inherited) $inspector_definition" \
         build
 }
 

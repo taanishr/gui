@@ -371,6 +371,7 @@ namespace layout {
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
+        float prevInlineHeight{};
         std::vector<ClipUniform> clipUniforms {};
 
         bool shrinkToFit{false};
@@ -492,6 +493,7 @@ namespace layout {
         LayoutBox localComputedBox;
 
         float consumedHeight; // how much height consumed
+        float prevInlineHeight{};
 
         Constraints childConstraints; // child constraints
 

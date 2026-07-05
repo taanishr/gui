@@ -20,6 +20,9 @@
 #include "AppKit_Extensions.hpp"
 #include "sizing.hpp"
 
+namespace Inspector {
+    struct Inspector;
+}
 
 class Renderer {
 public:
@@ -28,6 +31,7 @@ public:
     MTL::DepthStencilState* getDefaultDepthStencilState();
     void updateConstants();
     void makeResources();
+    void registerInspector(Inspector::Inspector& inspector);
     void draw();
     FrameInfo getFramePixelSize();
     FrameInfo getFrameInfo();

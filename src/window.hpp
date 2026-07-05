@@ -10,11 +10,13 @@
 #include <functional>
 #include "metal_imports.hpp"
 #include "renderer.hpp"
+#include "inspector.hpp"
 #include <ApplicationServices/ApplicationServices.h>
 #include <objc/runtime.h>
 #include "events.hpp"
 #include <mutex>
 #include <condition_variable>
+#include <optional>
 #include <thread>
 
 struct HandlerState {
@@ -33,6 +35,7 @@ public:
     ~MTKViewDelegate();
 
     void resizeWatcher();
+    void registerInspector(Inspector::Inspector& inspector);
 
     void drawInMTKView(MTK::View* view) override;
     void drawableSizeWillChange(MTK::View* view, CGSize frameSize) override;
@@ -46,6 +49,7 @@ public:
 
 class AppDelegate : public NS::ApplicationDelegate {
 public:
+    AppDelegate();
     ~AppDelegate();
     
     void applicationWillFinishLaunching(NS::Notification* notification) override;
@@ -60,5 +64,6 @@ public:
     tree::TreeNode* focused = nullptr;
     tree::TreeNode* hovered = nullptr;
     tree::TreeNode* mouseDownTarget = nullptr;
+    std::optional<Inspector::Inspector> inspector;
     std::unique_ptr<MTKViewDelegate> viewDelegate;
 };

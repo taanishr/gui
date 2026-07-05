@@ -9,6 +9,7 @@
 #include "text.hpp"
 #include "new_arch.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <print>
 #include "context_manager.hpp"
@@ -517,7 +518,11 @@ namespace elements {
             return self();
         }
 
-        // --- Element-specific setters (write to typed descriptor) ---
+        Derived& zIndex(uint64_t zIndex) {
+            node->localZIndex = zIndex; // may need to make this global lol and check nvm we good
+            markDirty(DirtyBits::PaintOrder);
+            return self();
+        }
 
         simd_float4 color() const requires HasColor<typename E::DescriptorType> {
             return descriptor().color;

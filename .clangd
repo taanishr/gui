@@ -2,7 +2,7 @@ CompileFlags:
   Compiler: /opt/homebrew/opt/llvm/bin/clang++
   Add:
     # language
-    - -std=c++23
+    - -std=c++26
 
     # project includes
     - -Isrc
