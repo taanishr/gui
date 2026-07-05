@@ -186,16 +186,15 @@ namespace tree {
                 return a->globalZIndex < b->globalZIndex;
             }
 
-            auto isAncestor = [](TreeNode* ancestor, TreeNode* descendant) {
-                return ancestor != descendant
-                    && ancestor->paintPreorderIndex < descendant->paintPreorderIndex
-                    && descendant->paintPostorderIndex < ancestor->paintPostorderIndex;
-            };
+            auto aIsAncestor = a->paintPreorderIndex < b->paintPreorderIndex
+                && b->paintPostorderIndex < a->paintPostorderIndex;
+            auto bIsAncestor = b->paintPreorderIndex < a->paintPreorderIndex
+                && a->paintPostorderIndex < b->paintPostorderIndex;
 
-            if (isAncestor(a, b)) {
+            if (aIsAncestor) {
                 return true;
             }
-            if (isAncestor(b, a)) {
+            if (bIsAncestor) {
                 return false;
             }
 

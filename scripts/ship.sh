@@ -173,6 +173,13 @@ build_cpp() {
     local objs=()
     local srcs_to_compile=()
     local any_rebuilt=0
+    local build_flags_stamp="$BIN_OUT/.${BINARY_NAME}-build-flags"
+    local build_flags="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI"
+    local force_recompile=0
+
+    if [[ ! -f "$build_flags_stamp" || "$(< "$build_flags_stamp")" != "$build_flags" ]]; then
+        force_recompile=1
+    fi
 
     for src in "$SRC_DIR"/*.cpp; do
         [[ -f "$src" ]] || continue
@@ -182,7 +189,7 @@ build_cpp() {
         dep="$OBJ_DIR/${base}.d"
         objs+=("$obj")
 
-        if needs_rebuild "$src" "$obj" "$dep"; then
+        if [[ $force_recompile -eq 1 ]] || needs_rebuild "$src" "$obj" "$dep"; then
             srcs_to_compile+=("$src")
             any_rebuilt=1
         fi
@@ -241,6 +248,7 @@ build_cpp() {
             -Wl,-rpath,/usr/lib/swift \
             -lc++ \
             -o "$bin"
+        printf '%s\n' "$build_flags" > "$build_flags_stamp"
         echo "Build successful: $bin"
     else
         echo "Nothing to rebuild."
