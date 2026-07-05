@@ -3,6 +3,7 @@
 #include "element.hpp"
 #include "div.hpp"
 #include "events.hpp"
+#include "fonts.hpp"
 #include "renderer.hpp"
 #include "image.hpp"
 #include "svg.hpp"
@@ -672,7 +673,7 @@ namespace elements {
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color);
     NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::u32string& text, 
                  Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 
-                 const std::string& font = "/System/Library/Fonts/Supplemental/Arial.ttf");
+                 const std::string& font = Arial);
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
                     Size width = Size::px(0), Size height = Size::px(0));
     NodeBuilder<SVG<SVGStorage>, SVGProcessor<SVGStorage, SVGUniforms>> svg(const std::string& path,

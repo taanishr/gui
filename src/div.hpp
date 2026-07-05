@@ -113,6 +113,8 @@ namespace elements {
 
     template <typename S = DivStorage>
     struct Div {
+        static constexpr std::string_view elementName = "Div";
+
         Div(UIContext& ctx):
         desc{},
         fragment{ctx}

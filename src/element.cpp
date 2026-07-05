@@ -255,7 +255,7 @@ namespace tree {
                 runningWidth += marginLeft;
 
                 while (idx < text.size() && idx < atoms.size()) {
-                    char ch = text[idx];
+                    char32_t ch = text[idx];
 
                     if (ch != ' ') {
                         runningWidth += atoms[idx].width;

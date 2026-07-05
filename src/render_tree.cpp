@@ -990,4 +990,17 @@ namespace tree {
         
         return nullptr;
     }
+
+    std::vector<TreeNode*> RenderTree::hitTestAll(simd_float2 point) {
+        std::vector<TreeNode*> hits;
+        auto& renderOrder = sortedRenderOrder();
+
+        for (auto it = renderOrder.rbegin(); it != renderOrder.rend(); ++it) {
+            if ((*it)->contains(point)) {
+                hits.push_back(*it);
+            }
+        }
+
+        return hits;
+    }
 }

@@ -108,6 +108,8 @@ namespace elements {
 
     template <typename S = TextStorage>
     struct Text {
+        static constexpr std::string_view elementName = "Text";
+
         Text(UIContext& ctx):
             desc{},
             fragment{ctx}
@@ -258,7 +260,7 @@ namespace elements {
                 uint32_t codepoint = desc.text[i];
                 Atom atom;
 
-                if (codepoint == '\n') {
+                if (codepoint == U'\n') {
                     metadata.push_back(0); 
                     metadata.push_back(0); 
                     
