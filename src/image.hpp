@@ -88,6 +88,8 @@ namespace elements {
 
     template <typename S = ImageStorage>
     struct Image {
+        static constexpr std::string_view elementName = "Image";
+
         Image(UIContext& ctx):
             desc{},
             fragment{ctx}

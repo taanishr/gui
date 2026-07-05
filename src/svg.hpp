@@ -114,6 +114,8 @@ namespace elements {
 
     template <typename S = SVGStorage>
     struct SVG {
+        static constexpr std::string_view elementName = "SVG";
+
         SVG(UIContext& ctx):
             desc{},
             fragment{ctx}

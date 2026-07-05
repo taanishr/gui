@@ -12,6 +12,7 @@
 #include <optional>
 #include <print>
 #include <simd/vector_types.h>
+#include <string_view>
 #include "parallel.hpp"
 #include "events.hpp"
 #include "printers.hpp"
@@ -79,6 +80,7 @@ namespace elements {
         virtual std::any finalize(Constraints& constraints, SharedDescriptor& shared, Measured& measured, Atomized& atomized, LayoutResult& layout, Placed& placed) = 0;
         virtual std::any request(RequestTarget target, std::any& payload) = 0;
         virtual void encode(MTL::RenderCommandEncoder* encoder, std::any& finalized) = 0;
+        virtual std::string_view elementTypeName() const = 0;
         virtual bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) {
             return true;
         }
@@ -128,6 +130,14 @@ namespace elements {
         void encode(MTL::RenderCommandEncoder* encoder, std::any& finalizedErased) override {
             auto finalized = std::any_cast<Finalized<typename E::UniformsType>>(finalizedErased);
             return processor.encode(encoder, element.getFragment(), finalized);
+        }
+
+        std::string_view elementTypeName() const override {
+            if constexpr (requires { E::elementName; }) {
+                return E::elementName;
+            }
+
+            return "Unknown";
         }
 
         bool preciseHitTest(simd_float2 point, const LayoutResult& layout, const std::any& finalized) override {

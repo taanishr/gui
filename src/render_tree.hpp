@@ -30,6 +30,7 @@ namespace tree {
         void setDebugDirtyPhases(bool enabled) { debugDirtyPhases = enabled; }
   
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
+        std::vector<TreeNode*> hitTestAll(simd_float2 point);
         
 
         void measurePhase(TreeNode* node, Constraints& constraints);

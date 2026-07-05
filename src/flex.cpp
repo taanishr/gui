@@ -84,11 +84,9 @@ namespace layout {
             bool isIndef = xIndef || yIndef;
             bool savedShrink = childConstraints.shrinkToFit;
             if (isIndef) childConstraints.shrinkToFit = true;
-
-            std::println("calling layoutphase from phase A");
+            
             tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
             auto& childLayout = *childAsPtr->layout;
-            std::println("done calling layoutphase from phase A\n\n");
 
             maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
