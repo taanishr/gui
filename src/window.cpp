@@ -131,6 +131,10 @@ MTKViewDelegate::MTKViewDelegate(MTL::Device* device, MTK::View* view):
     resizeThread = std::thread(&MTKViewDelegate::resizeWatcher, this);
 }
 
+void MTKViewDelegate::registerInspector(Inspector::Inspector& inspector) {
+    renderer->registerInspector(inspector);
+}
+
 void MTKViewDelegate::resizeWatcher() {
     while (true) {
         std::unique_lock<std::mutex> lock(m);
@@ -166,6 +170,10 @@ void MTKViewDelegate::drawInMTKView(MTK::View* view)
 }
 
 
+AppDelegate::AppDelegate()
+{
+}
+
 
 AppDelegate::~AppDelegate()
 {
@@ -190,6 +198,9 @@ void AppDelegate::setFocused(tree::TreeNode* node) {
         Event blur;
         blur.type = EventType::Blur;
         blur.payload = FocusPayload{};
+        if (inspector) {
+            inspector->observe(blur);
+        }
         oldFocused->dispatch(blur);
     }
 
@@ -197,6 +208,9 @@ void AppDelegate::setFocused(tree::TreeNode* node) {
         Event focus;
         focus.type = EventType::Focus;
         focus.payload = FocusPayload{};
+        if (inspector) {
+            inspector->observe(focus);
+        }
         focused->dispatch(focus);
     }
 }
@@ -243,6 +257,11 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 
     viewDelegate = std::make_unique<MTKViewDelegate>(device,view);
 
+    if constexpr (GUI_INSPECTOR_ENABLED) {
+        inspector.emplace();
+        viewDelegate->registerInspector(*inspector);
+    }
+
     view->setDelegate(viewDelegate.get());
     
     // adding input!!!
@@ -258,6 +277,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .modifiers = modifiers
         };
 
+        if (this->inspector) {
+            this->inspector->observe(e);
+        }
+
         if (this->focused) {
             this->focused->dispatch(e);
         }
@@ -271,13 +294,17 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .modifiers = modifiers
         };
 
+        if (this->inspector) {
+            this->inspector->observe(e);
+        }
+
         if (this->focused) {
             this->focused->dispatch(e);
         }
     };
     
     hs.mouseDownHandler = [this](float x, float y, MouseButton button, Modifiers modifiers){
-        simd_float2 testPoint;
+        simd_float2 testPoint{0.0f, 0.0f};
         auto* htnode = this->hitTest(x, y, testPoint);
         if (!htnode) {
             this->mouseDownTarget = nullptr;
@@ -291,6 +318,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .button = button,
             .modifiers = modifiers
         };
+
+        if (this->inspector) {
+            this->inspector->observe(e);
+        }
         
         this->mouseDownTarget = htnode;
         this->setFocused(htnode);
@@ -298,7 +329,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     };
 
     hs.mouseUpHandler = [this](float x, float y, MouseButton button, Modifiers modifiers){
-        simd_float2 testPoint;
+        simd_float2 testPoint{0.0f, 0.0f};
         auto* htnode = this->hitTest(x, y, testPoint);
         if (!htnode) {
             this->mouseDownTarget = nullptr;
@@ -314,12 +345,20 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
         Event e;
         e.type = EventType::MouseUp;
         e.payload = payload;
+
+        if (this->inspector) {
+            this->inspector->observe(e);
+        }
+
         htnode->dispatch(e);
 
         if (this->mouseDownTarget == htnode) {
             Event click;
             click.type = EventType::Click;
             click.payload = payload;
+            if (this->inspector) {
+                this->inspector->observe(click);
+            }
             htnode->dispatch(click);
         }
 
@@ -327,7 +366,7 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
     };
 
     hs.mouseMovedHandler = [this](float x, float y, Modifiers modifiers){
-        simd_float2 testPoint;
+        simd_float2 testPoint{0.0f, 0.0f};
         auto* htnode = this->hitTest(x, y, testPoint);
 
         MousePayload payload{
@@ -358,12 +397,15 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             Event move;
             move.type = EventType::MouseMove;
             move.payload = payload;
+            if (this->inspector) {
+                this->inspector->observe(move);
+            }
             this->hovered->dispatch(move);
         }
     };
 
     hs.scrollWheelHandler = [this](float dx, float dy, float x, float y, Modifiers modifiers) {
-        simd_float2 testPoint;
+        simd_float2 testPoint{0.0f, 0.0f};
         auto* scrollNode = this->hitTest(x, y, testPoint);
 
         auto& currTree = this->viewDelegate->renderer->rootTree;
@@ -382,6 +424,10 @@ void AppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
             .dy = dy,
             .modifiers = modifiers
         };
+
+        if (this->inspector) {
+            this->inspector->observe(e);
+        }
 
         if (auto* dirtyScrollNode = scrollNode->dispatch(e)) {
             currTree.markDirty(dirtyScrollNode,

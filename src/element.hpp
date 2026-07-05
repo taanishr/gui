@@ -15,6 +15,7 @@
 #include "parallel.hpp"
 #include "events.hpp"
 #include "printers.hpp"
+#include <numeric> 
 
 namespace elements {
     using layout::Atomized;
@@ -249,7 +250,9 @@ namespace tree {
             parent(nullptr),
             id(nextId++),
             localZIndex{0},
-            globalZIndex{0}
+            globalZIndex{0},
+            paintPreorderIndex{0},
+            paintPostorderIndex{0}
         {}
 
 
@@ -292,7 +295,7 @@ namespace tree {
         }
 
         void calculateGlobalZIndex(uint64_t parentGlobal) {
-            globalZIndex = parentGlobal + localZIndex;
+            globalZIndex = std::add_sat(parentGlobal, localZIndex);
             
             for (auto& child : children) {
                 child->calculateGlobalZIndex(globalZIndex);
@@ -355,6 +358,8 @@ namespace tree {
         uint64_t id;
         uint64_t localZIndex;
         uint64_t globalZIndex;
+        uint64_t paintPreorderIndex;
+        uint64_t paintPostorderIndex;
 
         std::optional<Measured> measured;
         std::optional<Atomized> atomized;

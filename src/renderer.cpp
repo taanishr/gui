@@ -13,6 +13,7 @@
 #include "new_arch.hpp"
 #include <simd/vector_types.h>
 #include "index.hpp"
+#include "inspector.hpp"
 
 Renderer* Renderer::current = nullptr;
 
@@ -63,6 +64,14 @@ void Renderer::makeResources()
     tree::TreeStack::pushTree(&rootTree);
 
     index();
+}
+
+void Renderer::registerInspector(Inspector::Inspector& inspector)
+{
+    if constexpr (GUI_INSPECTOR_ENABLED) {
+        tree::TreeStack::pushTree(&rootTree);
+        inspector.visualizer();
+    }
 }
 
 void Renderer::draw() {
@@ -142,6 +151,4 @@ Renderer::~Renderer() {
     commandQueue->release();
     FT_Done_FreeType(ft);
 }
-
-
 

@@ -12,6 +12,7 @@
 #include "freetype.hpp"
 #include "printers.hpp"
 #include "metal_imports.hpp"
+#include <vector>
 
 constexpr float BASE_PIXEL_HEIGHT = 256.0f;
 

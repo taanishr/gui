@@ -2,6 +2,8 @@
 
 #include "buffer_allocator.hpp"
 #include <cstdint>
+#include <vector>
+
 template <typename T>
 struct FrameBufferedBuffer {
     FrameBufferedBuffer<T>(DrawableBufferAllocator& allocator, size_t size, uint64_t numFrames):

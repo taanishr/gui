@@ -2,6 +2,6 @@
   {
     "directory": "/Users/treja/projects/gui",
     "file": "src/main.cpp",
-    "command": "/usr/bin/clang++ -std=c++23 -Isrc src/main.cpp"
+    "command": "/usr/bin/clang++ -std=c++26 -Isrc src/main.cpp"
   }
 ]

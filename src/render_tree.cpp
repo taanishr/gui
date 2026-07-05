@@ -168,10 +168,37 @@ namespace tree {
 
         debugCounters.renderOrderCacheMisses++;
         renderOrderCache = collectAllNodes(getRoot());
+
+        uint64_t paintOrderIndex = 0;
+        std::function<void(TreeNode*)> assignPaintOrderIndices = [&](TreeNode* node) {
+            if (!node) return;
+
+            node->paintPreorderIndex = paintOrderIndex++;
+            for (auto& child : node->children) {
+                assignPaintOrderIndices(child.get());
+            }
+            node->paintPostorderIndex = paintOrderIndex++;
+        };
+        assignPaintOrderIndices(getRoot());
+
         std::sort(renderOrderCache.begin(), renderOrderCache.end(), [](TreeNode* a, TreeNode* b) {
             if (a->globalZIndex != b->globalZIndex) {
                 return a->globalZIndex < b->globalZIndex;
             }
+
+            auto isAncestor = [](TreeNode* ancestor, TreeNode* descendant) {
+                return ancestor != descendant
+                    && ancestor->paintPreorderIndex < descendant->paintPreorderIndex
+                    && descendant->paintPostorderIndex < ancestor->paintPostorderIndex;
+            };
+
+            if (isAncestor(a, b)) {
+                return true;
+            }
+            if (isAncestor(b, a)) {
+                return false;
+            }
+
             return a->id < b->id;
         });
         renderOrderDirty = false;
@@ -568,6 +595,7 @@ namespace tree {
                 if (!childLayout.outOfFlow) {
                     childConstraints.cursor = childLayout.siblingCursor;
                     childConstraints.edgeIntent = childLayout.edgeIntent;
+                    childConstraints.prevInlineHeight = childLayout.prevInlineHeight;
                 
                     maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
                     maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);

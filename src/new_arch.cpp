@@ -72,7 +72,9 @@ namespace layout {
                         float startingX = ctx.constraints.origin.x;
                         float startingY = ctx.constraints.cursor.y;
 
-                        if (ctx.constraints.edgeIntent.edgeDisplayMode == Display::Block) {
+                        if (ctx.constraints.edgeIntent.edgeDisplayMode == Display::Inline) {
+                            startingY += ctx.constraints.prevInlineHeight;
+                        }else if (ctx.constraints.edgeIntent.edgeDisplayMode == Display::Block) {
                             if (ctx.constraints.edgeIntent.collapsable && !ctx.layoutInput.marginTop.isAuto()) {
                                 startingY += std::max(ctx.constraints.edgeIntent.intent, ctx.margins.top);
                             } else {
@@ -699,6 +701,7 @@ namespace layout {
 
         lr.atomOffsets = atomOffsets;
         lr.consumedHeight = totalHeight;
+        lr.prevInlineHeight = totalHeight;
 
         lr.siblingCursor = newCursor;
 
