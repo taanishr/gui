@@ -33,8 +33,7 @@ namespace Inspector {
                 )
             )
         }
-    {
-    }
+    {}
 
     void Inspector::observe(const Event& event) {
         lastEventType = event.type;
