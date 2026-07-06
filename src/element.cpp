@@ -55,6 +55,113 @@ namespace tree {
         collect(root);
         return nodes;
     }
+
+    bool isWhitespace(char32_t ch) {
+        return ch == U' ' ||
+               ch == U'\t' ||
+               ch == U'\r' ||
+               ch == U'\f' ||
+               ch == U'\v';
+    }
+
+    void appendTextLineFragments(
+        const std::u32string& text,
+        const std::vector<Atom>& atoms,
+        ResolvedMargins margins,
+        float availableWidth,
+        std::vector<LineFragment>& fragments,
+        std::vector<LineBox>& lineBoxes,
+        LineBox& currentLineBox,
+        size_t& currentLineBoxIndex,
+        bool& lastFragmentHasBreakOpportunity
+    ) {
+        float runningWidth = margins.left;
+        size_t runningAtomCount = 0;
+        size_t idx = 0;
+
+        while (idx < text.size() && idx < atoms.size()) {
+            char32_t ch = text[idx];
+            const auto& atom = atoms[idx];
+
+            if (atom.placeOnNewLine || ch == U'\n') {
+                runningWidth += atom.width + margins.right;
+                runningAtomCount++;
+
+                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+
+                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+                    lineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                }
+
+                frag.lineBoxIndex = currentLineBoxIndex;
+                frag.fragmentIndex = currentLineBox.fragmentCount;
+                fragments.push_back(frag);
+                currentLineBox.pushFragment(frag);
+
+                lineBoxes.push_back(currentLineBox);
+                currentLineBox = {};
+                currentLineBoxIndex++;
+                lastFragmentHasBreakOpportunity = false;
+
+                runningWidth = 0.0;
+                runningAtomCount = 0;
+                idx++;
+                continue;
+            }
+
+            if (!isWhitespace(ch)) {
+                runningWidth += atom.width;
+                runningAtomCount++;
+                idx++;
+                continue;
+            }
+
+            while (idx < text.size() && idx < atoms.size() && isWhitespace(text[idx])) {
+                runningWidth += atoms[idx].width;
+                runningAtomCount++;
+                idx++;
+            }
+
+            runningWidth += margins.right;
+
+            LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+
+            if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+                lineBoxes.push_back(currentLineBox);
+                currentLineBox = {};
+                currentLineBoxIndex++;
+            }
+
+            frag.lineBoxIndex = currentLineBoxIndex;
+            frag.fragmentIndex = currentLineBox.fragmentCount;
+            fragments.push_back(frag);
+            currentLineBox.pushFragment(frag);
+            lastFragmentHasBreakOpportunity = true;
+
+            runningWidth = 0.0;
+            runningAtomCount = 0;
+        }
+
+        if (runningAtomCount > 0) {
+            runningWidth += margins.right;
+
+            LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+
+            if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+                lineBoxes.push_back(currentLineBox);
+                currentLineBox = {};
+                currentLineBoxIndex++;
+            }
+
+            frag.lineBoxIndex = currentLineBoxIndex;
+            frag.fragmentIndex = currentLineBox.fragmentCount;
+            fragments.push_back(frag);
+            currentLineBox.pushFragment(frag);
+            lastFragmentHasBreakOpportunity = false;
+        }
+    }
     
 
     void precomputeMargins(TreeNode* node, Constraints& constraints, std::unordered_map<ChainID, CollapsedChain>& collapsedChainMap) {
@@ -157,59 +264,17 @@ namespace tree {
             auto margins = node->preLayout->resolvedMargins;
             auto text = *textResp;
             auto& atoms = node->atomized->atoms;
-
-            float runningWidth = margins.left;
-            size_t runningAtomCount = 0;
-            size_t idx = 0;
-
-            while (idx < text.size() && idx < atoms.size()) {
-                if (text[idx] != ' ') {
-                    runningWidth += atoms[idx].width;
-                    runningAtomCount++;
-                    idx++;
-                    continue;
-                }
-
-                while (idx < text.size() && text[idx] == ' ') {
-                    runningWidth += atoms[idx].width;
-                    runningAtomCount++;
-                    idx++;
-                }
-
-                runningWidth += margins.right;
-
-                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
-
-                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > maxWidth) {
-                    lineBoxes.push_back(currentLineBox);
-                    currentLineBox = {};
-                    currentLineBoxIndex++;
-                }
-
-                frag.lineBoxIndex = currentLineBoxIndex;
-                frag.fragmentIndex = currentLineBox.fragmentCount;
-                fragments.push_back(frag);
-                currentLineBox.pushFragment(frag);
-                lastFragmentHasBreakOpportunity = true;
-                runningWidth = 0.0;
-                runningAtomCount = 0;
-            }
-
-            if (runningAtomCount > 0) {
-                runningWidth += margins.right;
-                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
-
-                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > maxWidth) {
-                    lineBoxes.push_back(currentLineBox);
-                    currentLineBox = {};
-                    currentLineBoxIndex++;
-                }
-
-                frag.lineBoxIndex = currentLineBoxIndex;
-                frag.fragmentIndex = currentLineBox.fragmentCount;
-                fragments.push_back(frag);
-                currentLineBox.pushFragment(frag);
-            }
+            appendTextLineFragments(
+                text,
+                atoms,
+                margins,
+                maxWidth,
+                fragments,
+                lineBoxes,
+                currentLineBox,
+                currentLineBoxIndex,
+                lastFragmentHasBreakOpportunity
+            );
         }
 
         if (currentLineBox.fragmentCount > 0)
@@ -220,11 +285,11 @@ namespace tree {
 
     std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints) {
         bool prevInline = false;
-        bool lastFragmentHasBreakOpportunity = false;
         std::vector<LineBox> childrenLineBoxes;
         std::vector<std::vector<LineFragment>> childrenLineFragments;
         LineBox currentLineBox {};
         size_t currentLineBoxIndex = 0;
+        bool lastFragmentHasBreakOpportunity = false;
 
 
         for (uint64_t i = 0; i < node->children.size(); ++i) {
@@ -236,15 +301,9 @@ namespace tree {
 
             if (textResp.has_value()) {
                 auto margins = child->preLayout->resolvedMargins;
-                auto marginLeft = margins.left;
-                auto marginRight = margins.right;
                 auto text = *textResp;
 
-                float runningWidth = 0.0;
-                size_t runningAtomCount = 0;
-
                 auto& atoms = child->atomized->atoms;
-                size_t idx = 0;
 
                 if (i > 0 && !prevInline && currentLineBox.fragmentCount > 0) {
                     childrenLineBoxes.push_back(currentLineBox);
@@ -252,73 +311,17 @@ namespace tree {
                     currentLineBoxIndex++;
                 }
 
-                runningWidth += marginLeft;
-
-                while (idx < text.size() && idx < atoms.size()) {
-                    char32_t ch = text[idx];
-
-                    if (ch != ' ') {
-                        runningWidth += atoms[idx].width;
-                        runningAtomCount++;
-                        idx++;
-                        
-                        continue;
-                    }else {
-                        while (idx < text.size() && text[idx] == ' ') {
-                            runningWidth += atoms[idx].width;
-                            runningAtomCount++;
-                            idx++;
-                        }
-
-                        runningWidth += marginRight;
-
-                        LineFragment lineFragment {
-                            .width = runningWidth,
-                            .atomCount = runningAtomCount,
-                        };
-
-                        if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.availableWidth) {
-                            childrenLineBoxes.push_back(currentLineBox);
-                            currentLineBox = {};
-                            currentLineBoxIndex++;
-                        }
-
-                        lineFragment.lineBoxIndex = currentLineBoxIndex;
-                        lineFragment.fragmentIndex = currentLineBox.fragmentCount;
-
-                        childLineFragments.push_back(lineFragment);
-                        currentLineBox.pushFragment(lineFragment);
-                        lastFragmentHasBreakOpportunity = true;
-
-                        runningWidth = 0.0;
-                        runningAtomCount = 0;
-                    }
-                }
-
-                if (runningAtomCount > 0) {                        
-                    runningWidth += marginRight;
-
-                    LineFragment lineFragment {
-                        .width = runningWidth,
-                        .atomCount = runningAtomCount,
-                    };
-
-                    if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > childConstraints.availableWidth) {
-                        childrenLineBoxes.push_back(currentLineBox);
-                        currentLineBox = {};
-                        currentLineBoxIndex++;
-                    }
-
-                    lineFragment.lineBoxIndex = currentLineBoxIndex;
-                    lineFragment.fragmentIndex = currentLineBox.fragmentCount;
-
-                    childLineFragments.push_back(lineFragment);
-                    currentLineBox.pushFragment(lineFragment);
-                    lastFragmentHasBreakOpportunity = false;
-
-                    runningWidth = 0.0;
-                    runningAtomCount = 0;
-                }
+                appendTextLineFragments(
+                    text,
+                    atoms,
+                    margins,
+                    childConstraints.availableWidth,
+                    childLineFragments,
+                    childrenLineBoxes,
+                    currentLineBox,
+                    currentLineBoxIndex,
+                    lastFragmentHasBreakOpportunity
+                );
 
                 prevInline = true;
             }else {
