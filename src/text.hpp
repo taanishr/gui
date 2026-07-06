@@ -259,28 +259,35 @@ namespace elements {
             for (size_t i = 0; i < desc.text.size(); ++i) {
                 uint32_t codepoint = desc.text[i];
                 Atom atom;
+                float fontSize = 0.0;
+
+                if (desc.fontSize.unit == Unit::Pt) {
+                    fontSize = desc.fontSize.resolveOr(0.0);
+                }
 
                 if (codepoint == U'\n') {
-                    metadata.push_back(0); 
-                    metadata.push_back(0); 
+                    int metadataIndex = metadata.size();
+                    metadata.push_back(0);
+                    metadata.push_back(0);
+
+                    Quad emptyQuad {
+                        .topLeft = {0.0f, 0.0f},
+                        .bottomRight = {0.0f, 0.0f}
+                    };
+                    auto atomPts = makeAtomPoints(emptyQuad, metadataIndex, i);
+                    allAtomPoints.insert(allAtomPoints.end(), atomPts.begin(), atomPts.end());
                     
                     atom.atomBufferHandle = glyphBuffer.handle();
-                    atom.length = 0;
-                    atom.offset = 0;
+                    atom.length = sizeof(TextPoint) * 6;
+                    atom.offset = (allAtomPoints.size() - 6) * sizeof(TextPoint);
                     atom.width = 0;
-                    atom.height = 0;
+                    atom.height = fontSize;
                     atom.placeOnNewLine = true;
                     
                     atoms.push_back(atom);
                     continue;
                 }else if (codepoint){
                     atom.canPlaceOnNewLine = true;
-                }
-
-                float fontSize = 0.0;
-
-                if (desc.fontSize.unit == Unit::Pt) {
-                    fontSize = desc.fontSize.resolveOr(0.0);
                 }
 
                 GlyphQuery glyphQuery { codepoint, desc.font };
