@@ -574,8 +574,8 @@ namespace elements {
             return self();
         }
 
-        Derived& lineHeight(Size size) requires HasLineHeight<typename E::DescriptorType> {
-            descriptor().lineHeight = size;
+        Derived& lineHeight(float multiplier) requires HasLineHeight<typename E::DescriptorType> {
+            descriptor().lineHeight = multiplier;
             markDirty(textDirtyBits());
             return self();
         }
