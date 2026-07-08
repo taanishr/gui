@@ -38,6 +38,7 @@ struct Glyph {
     int numContours;
     std::vector<size_t> contourSizes;
     FT_Glyph_Metrics metrics;
+    float lineHeight{};
 };
 
 Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender);

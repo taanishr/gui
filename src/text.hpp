@@ -80,6 +80,7 @@ namespace elements {
         std::string font;
         simd_float4 color;
         Size fontSize;
+        std::optional<Size> lineHeight;
     };
 
     struct TextUniforms {
@@ -255,15 +256,19 @@ namespace elements {
             std::vector<int> metadata;
             allAtomPoints.reserve(desc.text.size() * 6);
 
-            
+            float fontSize = 0.0;
+
+            if (desc.fontSize.unit == Unit::Pt) {
+                fontSize = desc.fontSize.resolveOr(0.0);
+            }
+
+            float scale = fontSize / BASE_PIXEL_HEIGHT;
+            float defaultLineHeight = glyphCache.retrieve(desc.font, U' ').lineHeight / FT_PIXEL_CF * scale;
+            float resolvedLineHeight = desc.lineHeight.has_value() ? desc.lineHeight->resolveOr(defaultLineHeight) : defaultLineHeight;
+
             for (size_t i = 0; i < desc.text.size(); ++i) {
                 uint32_t codepoint = desc.text[i];
                 Atom atom;
-                float fontSize = 0.0;
-
-                if (desc.fontSize.unit == Unit::Pt) {
-                    fontSize = desc.fontSize.resolveOr(0.0);
-                }
 
                 if (codepoint == U'\n') {
                     int metadataIndex = metadata.size();
@@ -281,7 +286,7 @@ namespace elements {
                     atom.length = sizeof(TextPoint) * 6;
                     atom.offset = (allAtomPoints.size() - 6) * sizeof(TextPoint);
                     atom.width = 0;
-                    atom.height = fontSize;
+                    atom.height = resolvedLineHeight;
                     atom.placeOnNewLine = true;
                     
                     atoms.push_back(atom);
@@ -336,9 +341,8 @@ namespace elements {
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
-                float scale = fontSize / BASE_PIXEL_HEIGHT;
                 atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
-                atom.height = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF * scale;
+                atom.height = resolvedLineHeight;
 
                 atoms.push_back(atom);
             }

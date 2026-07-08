@@ -32,6 +32,8 @@ bool GlyphQuery::operator==(const GlyphQuery& other) const {
         && fontName == other.fontName;
 }
 
+
+
 std::size_t GlyphQueryHash::operator()(const GlyphQuery& queryKey) const
 {
     std::size_t hv = 0;
@@ -111,12 +113,14 @@ const Glyph& GlyphCache::retrieve(const FontName& font, uint32_t codepoint)
         if (codepoint != ' ') {
             auto glyph = processContours(fontFace);
             glyph.metrics = fontFace->glyph->metrics;
+            glyph.lineHeight = fontFace->size->metrics.height;
             cache[query] = glyph;
         }else {
             Glyph glyph;
             glyph.numContours = 0;
             glyph.contourSizes = {};
             glyph.metrics = fontFace->glyph->metrics;
+            glyph.lineHeight = fontFace->size->metrics.height;
             glyph.points = {};
             glyph.quad = {
                 .topLeft = {0,0},
@@ -128,5 +132,3 @@ const Glyph& GlyphCache::retrieve(const FontName& font, uint32_t codepoint)
         return cache[query];
     }
 }
-
-

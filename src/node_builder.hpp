@@ -48,6 +48,9 @@ namespace elements {
     template<typename T>
     concept HasFontSize = requires { std::declval<T&>().fontSize; };
 
+    template<typename T>
+    concept HasLineHeight = requires { std::declval<T&>().lineHeight; };
+
     template <typename Derived, ElementType E, typename P>
         requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
     struct NodeMutation {
@@ -567,6 +570,12 @@ namespace elements {
 
         Derived& fontSize(Size size) requires HasFontSize<typename E::DescriptorType> {
             descriptor().fontSize = size;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        Derived& lineHeight(Size size) requires HasLineHeight<typename E::DescriptorType> {
+            descriptor().lineHeight = size;
             markDirty(textDirtyBits());
             return self();
         }
