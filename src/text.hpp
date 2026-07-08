@@ -80,7 +80,7 @@ namespace elements {
         std::string font;
         simd_float4 color;
         Size fontSize;
-        std::optional<Size> lineHeight;
+        std::optional<float> lineHeight;
     };
 
     struct TextUniforms {
@@ -264,7 +264,7 @@ namespace elements {
 
             float scale = fontSize / BASE_PIXEL_HEIGHT;
             float defaultLineHeight = glyphCache.retrieve(desc.font, U' ').lineHeight / FT_PIXEL_CF * scale;
-            float resolvedLineHeight = desc.lineHeight.has_value() ? desc.lineHeight->resolveOr(defaultLineHeight) : defaultLineHeight;
+            float resolvedLineHeight = defaultLineHeight * desc.lineHeight.value_or(1.0f);
 
             for (size_t i = 0; i < desc.text.size(); ++i) {
                 uint32_t codepoint = desc.text[i];
@@ -341,8 +341,9 @@ namespace elements {
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
+                float glyphHeight = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF * scale;
                 atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
-                atom.height = resolvedLineHeight;
+                atom.height = std::max(glyphHeight, resolvedLineHeight);
 
                 atoms.push_back(atom);
             }
