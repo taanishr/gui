@@ -667,10 +667,16 @@ namespace layout {
 
             for (size_t i = 0; i < fragment.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
                 auto& atom = atomized.atoms[atomIndex];
+                float usedLineHeight = atom.lineHeight > 0.0f
+                    ? atom.lineHeight
+                    : atom.height;
 
-                atomOffsets.push_back(newCursor);
+                atomOffsets.push_back(newCursor + simd_float2{
+                    0.0f,
+                    (usedLineHeight - atom.height) / 2.0f
+                });
                 newCursor.x += atom.width;
-                lineHeight = std::max(lineHeight, atom.height);
+                lineHeight = std::max(lineHeight, usedLineHeight);
                 currentTotalWidth += atom.width;
             }
 

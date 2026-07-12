@@ -254,6 +254,18 @@ namespace style {
         Scroll
     };
 
+    enum class WhiteSpace {
+        Normal,
+        NoWrap,
+        Pre,
+        PreWrap
+    };
+
+    enum class WordBreak {
+        Normal,
+        BreakAll
+    };
+
     struct ClipUniform {
         simd_float2 rectCenter{};
         simd_float2 halfExtent{};

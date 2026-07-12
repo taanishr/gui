@@ -34,6 +34,8 @@ namespace elements {
     using style::SharedDescriptor;
     using style::Size;
     using style::Unit;
+    using style::WhiteSpace;
+    using style::WordBreak;
 
     struct TextPoint {
         simd_float2 point;
@@ -69,6 +71,8 @@ namespace elements {
                         if (f.name == "font")     return std::any{this->font};
                         if (f.name == "fontSize") return std::any{this->fontSize};
                         if (f.name == "color")    return std::any{this->color};
+                        if (f.name == "whiteSpace") return std::any{this->whiteSpace};
+                        if (f.name == "wordBreak")  return std::any{this->wordBreak};
                         return std::any{};
                     }
                 }, *payloadPtr);
@@ -81,6 +85,8 @@ namespace elements {
         simd_float4 color;
         Size fontSize;
         std::optional<float> lineHeight;
+        WhiteSpace whiteSpace{WhiteSpace::Normal};
+        WordBreak wordBreak{WordBreak::Normal};
     };
 
     struct TextUniforms {
@@ -265,12 +271,21 @@ namespace elements {
             float scale = fontSize / BASE_PIXEL_HEIGHT;
             float defaultLineHeight = glyphCache.retrieve(desc.font, U' ').lineHeight / FT_PIXEL_CF * scale;
             float resolvedLineHeight = defaultLineHeight * desc.lineHeight.value_or(1.0f);
+            bool collapseWhitespace =
+                desc.whiteSpace == WhiteSpace::Normal ||
+                desc.whiteSpace == WhiteSpace::NoWrap;
+            bool preserveLineFeeds =
+                desc.whiteSpace == WhiteSpace::Pre ||
+                desc.whiteSpace == WhiteSpace::PreWrap;
+            bool previousWasWhitespace = false;
 
             for (size_t i = 0; i < desc.text.size(); ++i) {
                 uint32_t codepoint = desc.text[i];
                 Atom atom;
+                bool sourceWhitespace = isTextWhitespace(codepoint);
+                bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
 
-                if (codepoint == U'\n') {
+                if (preserveLineFeeds && sourceLineFeed) {
                     int metadataIndex = metadata.size();
                     metadata.push_back(0);
                     metadata.push_back(0);
@@ -286,16 +301,19 @@ namespace elements {
                     atom.length = sizeof(TextPoint) * 6;
                     atom.offset = (allAtomPoints.size() - 6) * sizeof(TextPoint);
                     atom.width = 0;
-                    atom.height = resolvedLineHeight;
-                    atom.placeOnNewLine = true;
+                    atom.height = defaultLineHeight;
+                    atom.lineHeight = resolvedLineHeight;
+                    atom.placeOnNewLine = !(codepoint == U'\n' && i > 0 && desc.text[i - 1] == U'\r');
                     
                     atoms.push_back(atom);
+                    previousWasWhitespace = false;
                     continue;
                 }else if (codepoint){
                     atom.canPlaceOnNewLine = true;
                 }
 
-                GlyphQuery glyphQuery { codepoint, desc.font };
+                uint32_t renderedCodepoint = collapseWhitespace && sourceWhitespace ? U' ' : codepoint;
+                GlyphQuery glyphQuery { renderedCodepoint, desc.font };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;
@@ -341,11 +359,17 @@ namespace elements {
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = i * sizeof(TextPoint) * 6;
-                float glyphHeight = (glyph.quad.bottomRight.y - glyph.quad.topLeft.y) / FT_PIXEL_CF * scale;
-                atom.width = (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
-                atom.height = std::max(glyphHeight, resolvedLineHeight);
+                float glyphWidth = sourceWhitespace
+                    ? glyph.metrics.horiAdvance / FT_PIXEL_CF * scale
+                    : (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
+                atom.width = collapseWhitespace && sourceWhitespace && previousWasWhitespace
+                    ? 0.0f
+                    : glyphWidth;
+                atom.height = defaultLineHeight;
+                atom.lineHeight = resolvedLineHeight;
 
                 atoms.push_back(atom);
+                previousWasWhitespace = sourceWhitespace;
             }
 
             if (!allAtomPoints.empty()) {

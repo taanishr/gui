@@ -31,6 +31,8 @@ namespace elements {
     using style::Overflow;
     using style::Position;
     using style::Size;
+    using style::WhiteSpace;
+    using style::WordBreak;
     using tree::RenderTree;
     using tree::DirtyBits;
     using tree::TreeNode;
@@ -50,6 +52,12 @@ namespace elements {
 
     template<typename T>
     concept HasLineHeight = requires { std::declval<T&>().lineHeight; };
+
+    template<typename T>
+    concept HasWhiteSpace = requires { std::declval<T&>().whiteSpace; };
+
+    template<typename T>
+    concept HasWordBreak = requires { std::declval<T&>().wordBreak; };
 
     template <typename Derived, ElementType E, typename P>
         requires ProcessorType<P, typename E::StorageType, typename E::DescriptorType, typename E::UniformsType>
@@ -576,6 +584,18 @@ namespace elements {
 
         Derived& lineHeight(float multiplier) requires HasLineHeight<typename E::DescriptorType> {
             descriptor().lineHeight = multiplier;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        Derived& whiteSpace(WhiteSpace value) requires HasWhiteSpace<typename E::DescriptorType> {
+            descriptor().whiteSpace = value;
+            markDirty(textDirtyBits());
+            return self();
+        }
+
+        Derived& wordBreak(WordBreak value) requires HasWordBreak<typename E::DescriptorType> {
+            descriptor().wordBreak = value;
             markDirty(textDirtyBits());
             return self();
         }
