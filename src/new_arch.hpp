@@ -286,17 +286,17 @@ namespace style {
         };
 
         Mode mode{Mode::Clip};
-        std::u32string ending{};
+        std::string ending{};
 
         static TextOverflow clip() {
             return {};
         }
 
         static TextOverflow ellipsis() {
-            return {.mode = Mode::Ellipsis, .ending = U"\u2026"};
+            return {.mode = Mode::Ellipsis, .ending = "\xE2\x80\xA6"};
         }
 
-        static TextOverflow custom(std::u32string ending) {
+        static TextOverflow custom(std::string ending) {
             return {.mode = Mode::Custom, .ending = std::move(ending)};
         }
 

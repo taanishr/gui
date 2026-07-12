@@ -28,19 +28,19 @@ namespace Inspector {
         void observe(const Event& event);
 
         simd_float2 getMouseState();
-        std::u32string nodeIdLabel();
-        std::u32string nodeTypeLabel();
-        std::u32string hitStackLabel();
-        std::u32string nodeStyleLabel();
-        std::u32string nodePositionLabel();
-        std::u32string nodeWidthLabel();
-        std::u32string nodeHeightLabel();
-        std::u32string nodeLocalBoxLabel();
-        std::u32string nodeScrollLabel();
-        std::u32string nodeZIndexLabel();
-        std::u32string nodePathLabel();
-        std::u32string mouseXLabel();
-        std::u32string mouseYLabel();
+        std::string nodeIdLabel();
+        std::string nodeTypeLabel();
+        std::string hitStackLabel();
+        std::string nodeStyleLabel();
+        std::string nodePositionLabel();
+        std::string nodeWidthLabel();
+        std::string nodeHeightLabel();
+        std::string nodeLocalBoxLabel();
+        std::string nodeScrollLabel();
+        std::string nodeZIndexLabel();
+        std::string nodePathLabel();
+        std::string mouseXLabel();
+        std::string mouseYLabel();
         NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> visualizer();
 
         std::optional<EventType> lastEventType;
@@ -81,6 +81,6 @@ namespace Inspector {
         std::optional<float> htNodeScrollX;
         std::optional<float> htNodeScrollY;
         std::optional<uint64_t> htNodeZIndex;
-        std::optional<std::u32string> htNodePath;
+        std::optional<std::string> htNodePath;
     };
 };

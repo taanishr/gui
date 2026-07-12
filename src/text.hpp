@@ -17,6 +17,8 @@
 #include <print>
 #include "new_arch.hpp"
 #include "overloaded.hpp"
+#include "utf8.hpp"
+#include "textShaper.hpp"
 #include <any>
 #include <vector>
 
@@ -40,6 +42,7 @@ namespace elements {
 
     struct TextPoint {
         simd_float2 point;
+        simd_float2 shapingOffset;
         int metadataIndex;
         int id;
     };
@@ -54,7 +57,7 @@ struct std::formatter<elements::TextPoint> : std::formatter<float>
 {
     auto format(const elements::TextPoint& v, format_context& ctx) const
     {
-        return std::format_to(ctx.out(), "(x: {}, y: {}, mi: {} id: {})", v.point.x, v.point.y, v.metadataIndex, v.id);
+            return std::format_to(ctx.out(), "(x: {}, y: {}, ox: {}, oy: {}, mi: {} id: {})", v.point.x, v.point.y, v.shapingOffset.x, v.shapingOffset.y, v.metadataIndex, v.id);
     }
 };
 
@@ -81,7 +84,7 @@ namespace elements {
             return std::any{};
         }
 
-        std::u32string text;
+        std::string text;
         std::string font;
         simd_float4 color;
         Size fontSize;
@@ -115,6 +118,7 @@ namespace elements {
         FrameBufferedBuffer<int> metadataBuffer;
         FrameBufferedBuffer<ClipUniform> clipsBuffer;
         size_t sourceMetadataCount{};
+        ShapedRun shapedRun;
     };
 
     template <typename S = TextStorage>
@@ -142,6 +146,8 @@ namespace elements {
                 {
                     return desc.request(payload);
                 }
+                case RequestTarget::TextShaping:
+                    return static_cast<const ShapedRun*>(&fragment.fragmentStorage.shapedRun);
                 default: {
                     return std::any{};
                 }
@@ -181,12 +187,16 @@ namespace elements {
             vertexDescriptor->attributes()->object(0)->setBufferIndex(0);
         
             vertexDescriptor->attributes()->object(1)->setFormat(MTL::VertexFormat::VertexFormatInt);
-            vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2));
+            vertexDescriptor->attributes()->object(1)->setOffset(sizeof(simd_float2) * 2);
             vertexDescriptor->attributes()->object(1)->setBufferIndex(0);
         
             vertexDescriptor->attributes()->object(2)->setFormat(MTL::VertexFormat::VertexFormatInt);
-            vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2) + sizeof(int));
+            vertexDescriptor->attributes()->object(2)->setOffset(sizeof(simd_float2) * 2 + sizeof(int));
             vertexDescriptor->attributes()->object(2)->setBufferIndex(0);
+
+            vertexDescriptor->attributes()->object(3)->setFormat(MTL::VertexFormat::VertexFormatFloat2);
+            vertexDescriptor->attributes()->object(3)->setOffset(sizeof(simd_float2));
+            vertexDescriptor->attributes()->object(3)->setBufferIndex(0);
     
         
             vertexDescriptor->layouts()->object(0)->setStride(sizeof(TextPoint));
@@ -249,19 +259,19 @@ namespace elements {
             return measured;
         }
         
-        std::array<TextPoint, 6> makeAtomPoints(const Quad& quad, int metadataIndex, int id) {
+        std::array<TextPoint, 6> makeAtomPoints(const Quad& quad, int metadataIndex, int id, simd_float2 shapingOffset = {}) {
             return std::array<TextPoint,6>{
-                TextPoint{ .point = quad.topLeft, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .metadataIndex = metadataIndex, .id = id },
-                TextPoint{ .point = quad.bottomRight, .metadataIndex = metadataIndex, .id = id }
+                TextPoint{ .point = quad.topLeft, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.topLeft.x,    quad.bottomRight.y }, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = simd_float2{ quad.bottomRight.x, quad.topLeft.y }, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
+                TextPoint{ .point = quad.bottomRight, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id }
             };
         }
         
-        void appendTextAtoms(
-            std::u32string_view text,
+        ShapedRun appendTextAtoms(
+            std::string_view text,
             const TextDescriptor& desc,
             bool collapseWhitespace,
             bool preserveLineFeeds,
@@ -275,12 +285,25 @@ namespace elements {
             }
 
             float scale = fontSize / BASE_PIXEL_HEIGHT;
-            float defaultLineHeight = glyphCache.retrieve(desc.font, U' ').lineHeight / FT_PIXEL_CF * scale;
+            float defaultLineHeight = glyphCache.lineHeight(desc.font) / FT_PIXEL_CF * scale;
             float resolvedLineHeight = defaultLineHeight * desc.lineHeight.value_or(1.0f);
             bool previousWasWhitespace = false;
 
-            for (size_t i = 0; i < text.size(); ++i) {
-                uint32_t codepoint = text[i];
+            std::string renderedText{text};
+            auto codepoints = utf8::codePoints(text);
+            if (collapseWhitespace) {
+                for (const auto& codepoint : codepoints) {
+                    if (isTextWhitespace(codepoint.value)) {
+                        renderedText[codepoint.byteOffset] = ' ';
+                    }
+                }
+            }
+
+            auto shapedRun = textShaper.shape(renderedText, desc.font);
+            for (size_t glyphIndex = 0; glyphIndex < shapedRun.glyphs.size(); ++glyphIndex) {
+                const auto& shapedGlyph = shapedRun.glyphs[glyphIndex];
+                const auto source = utf8::at(text, shapedGlyph.byteOffset);
+                uint32_t codepoint = source.value;
                 Atom atom;
                 bool sourceWhitespace = isTextWhitespace(codepoint);
                 bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
@@ -303,17 +326,18 @@ namespace elements {
                     atom.width = 0;
                     atom.height = defaultLineHeight;
                     atom.lineHeight = resolvedLineHeight;
-                    atom.placeOnNewLine = !(codepoint == U'\n' && i > 0 && text[i - 1] == U'\r');
+                    bool followsCarriageReturn = source.byteOffset > 0 &&
+                        text[source.byteOffset - 1] == '\r';
+                    atom.placeOnNewLine = !(codepoint == U'\n' && followsCarriageReturn);
                     
                     atoms.push_back(atom);
                     previousWasWhitespace = false;
                     continue;
-                }else if (codepoint){
+                } else if (codepoint) {
                     atom.canPlaceOnNewLine = true;
                 }
 
-                uint32_t renderedCodepoint = collapseWhitespace && sourceWhitespace ? U' ' : codepoint;
-                GlyphQuery glyphQuery { renderedCodepoint, desc.font };
+                GlyphQuery glyphQuery { shapedGlyph.glyphId, desc.font };
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;
@@ -353,15 +377,17 @@ namespace elements {
                     metadata.push_back(contourSize);
                 }
 
-                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size());
+                simd_float2 shapingOffset{
+                    shapedGlyph.xOffset,
+                    -shapedGlyph.yOffset
+                };
+                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size(), shapingOffset);
                 points.insert(points.end(), atomPts.begin(), atomPts.end());
 
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
                 atom.offset = (points.size() - 6) * sizeof(TextPoint);
-                float glyphWidth = sourceWhitespace
-                    ? glyph.metrics.horiAdvance / FT_PIXEL_CF * scale
-                    : (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
+                float glyphWidth = shapedGlyph.xAdvance / FT_PIXEL_CF * scale;
                 atom.width = collapseWhitespace && sourceWhitespace && previousWasWhitespace
                     ? 0.0f
                     : glyphWidth;
@@ -371,6 +397,7 @@ namespace elements {
                 atoms.push_back(atom);
                 previousWasWhitespace = sourceWhitespace;
             }
+            return shapedRun;
         }
 
         Atomized atomize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured&) {
@@ -386,7 +413,7 @@ namespace elements {
                 desc.whiteSpace == WhiteSpace::Pre ||
                 desc.whiteSpace == WhiteSpace::PreWrap;
 
-            appendTextAtoms(
+            fragment.fragmentStorage.shapedRun = appendTextAtoms(
                 desc.text,
                 desc,
                 collapseWhitespace,
@@ -662,6 +689,7 @@ namespace elements {
         // shared glyph cache wrapper?
         // retrivial methods, stores buffer with all glyphs/ligatures, standardizes everything, etc... Turn this into a struct later
         GlyphCache glyphCache;
+        TextShaper textShaper;
         size_t lastGlyphsBufferOffset;
         std::unordered_map<GlyphQuery, size_t, GlyphQueryHash> glyphBufferOffsets;
         DrawableBuffer glyphBuffer;

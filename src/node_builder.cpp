@@ -39,7 +39,7 @@ namespace elements {
         return builder;
     }
 
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::u32string& text,
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text,
                  Size fontSize, simd_float4 color,
                  const std::string& font)
     {
@@ -53,7 +53,6 @@ namespace elements {
         desc.font = font;
 
         auto currTree = TreeStack::getCurrentTree();
-
         auto builder = NodeBuilder(ctx, *currTree, std::move(elem), proc);
         builder.display(Display::Inline);
         return builder;
