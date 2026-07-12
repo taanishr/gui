@@ -13,6 +13,7 @@
 #include "printers.hpp"
 #include "metal_imports.hpp"
 #include <vector>
+#include <cstdint>
 
 constexpr float BASE_PIXEL_HEIGHT = 256.0f;
 
@@ -20,6 +21,11 @@ enum class Segment {
     Line,
     Conic,
     Cubic
+};
+
+enum class CurveType : uint32_t {
+    Quadratic = 0,
+    Cubic = 1,
 };
 
 struct Quad {
@@ -34,6 +40,7 @@ struct Contour {
 
 struct Glyph {
     Quad quad;
+    CurveType curveType{CurveType::Quadratic};
     std::vector<simd_float2> points;
     int numContours;
     std::vector<size_t> contourSizes;
@@ -41,5 +48,12 @@ struct Glyph {
     float lineHeight{};
 };
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender);
+Contour processContour(
+    FT_Vector* rawPoints,
+    unsigned char* tags,
+    int start,
+    int end,
+    float ascender,
+    CurveType curveType
+);
 Glyph processContours(FT_Face glyphMeta);

@@ -15,18 +15,54 @@ simd_float2 getMidpoint(simd_float2 pointA, simd_float2 pointB) {
     return simd_float2{(pointA.x+pointB.x)/2,(pointA.y+pointB.y)/2};
 }
 
+simd_float2 getPoint(FT_Vector point, float ascender) {
+    return {
+        static_cast<float>(point.x),
+        -static_cast<float>(point.y) + ascender
+    };
+}
 
-Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int end, float ascender) {
+
+Contour processContour(
+    FT_Vector* rawPoints,
+    unsigned char* tags,
+    int start,
+    int end,
+    float ascender,
+    CurveType curveType
+) {
     Quad quad {.topLeft = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, .bottomRight = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()}};
-    
+
     std::vector<simd_float2> points {};
     std::vector<simd_float2> pointsBuffer {};
 
+    int firstTag = FT_CURVE_TAG(tags[start]);
+    int lastTag = FT_CURVE_TAG(tags[end]);
+    int firstPointToProcess = start;
+    int lastPointToProcess = end;
+    simd_float2 contourStartPoint;
+
+    if (firstTag == FT_CURVE_TAG_CONIC) {
+        auto firstPoint = getPoint(rawPoints[start], ascender);
+        auto lastPoint = getPoint(rawPoints[end], ascender);
+        if (lastTag == FT_CURVE_TAG_ON) {
+            contourStartPoint = lastPoint;
+            lastPointToProcess = end - 1;
+        } else {
+            contourStartPoint = getMidpoint(firstPoint, lastPoint);
+        }
+    } else {
+        contourStartPoint = getPoint(rawPoints[start], ascender);
+        firstPointToProcess = start + 1;
+    }
+
+    pointsBuffer.push_back(contourStartPoint);
+
     Segment currentSegmentType = Segment::Line;
-    
+
     for (int p = start; p <= end; ++p) {
-        simd_float2 currentPoint {(float)rawPoints[p].x, -(float)rawPoints[p].y + ascender};
-        
+        auto currentPoint = getPoint(rawPoints[p], ascender);
+
         // quad handling
         if (currentPoint.x < quad.topLeft.x)
             quad.topLeft.x = currentPoint.x;
@@ -40,8 +76,13 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
         if (currentPoint.y > quad.bottomRight.y)
             quad.bottomRight.y = currentPoint.y;
 
+    }
+
+    for (int p = firstPointToProcess; p <= lastPointToProcess; ++p) {
+        auto currentPoint = getPoint(rawPoints[p], ascender);
+
         // contour handling
-        switch (tags[p]) {
+        switch (FT_CURVE_TAG(tags[p])) {
             case FT_CURVE_TAG_CONIC:
                 if (currentSegmentType == Segment::Conic) {
                     auto prevPoint = pointsBuffer.back();
@@ -56,7 +97,8 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
                 currentSegmentType = Segment::Conic;
                 break;
             case FT_CURVE_TAG_CUBIC: // for open type
-                // handle in future
+                pointsBuffer.push_back(currentPoint);
+                currentSegmentType = Segment::Cubic;
                 break;
             default:
                 if (currentSegmentType != Segment::Line) {
@@ -68,8 +110,13 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
                 }else {
                     if (pointsBuffer.size() == 1) {
                         auto lastPoint = pointsBuffer.back();
-                        auto midPoint = getMidpoint(lastPoint, currentPoint);
-                        pointsBuffer.push_back(midPoint);
+                        if (curveType == CurveType::Cubic) {
+                            auto delta = currentPoint - lastPoint;
+                            pointsBuffer.push_back(lastPoint + delta / 3.0f);
+                            pointsBuffer.push_back(lastPoint + 2.0f * delta / 3.0f);
+                        } else {
+                            pointsBuffer.push_back(getMidpoint(lastPoint, currentPoint));
+                        }
                         pointsBuffer.push_back(currentPoint);
                         points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
                         pointsBuffer.clear();
@@ -81,18 +128,33 @@ Contour processContour(FT_Vector* rawPoints, unsigned char* tags, int start, int
     }
 
     
-    if (pointsBuffer.size() == 2) {
-        pointsBuffer.push_back(points[0]);
-        points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
-        pointsBuffer.clear();
-    }else if (pointsBuffer.size() == 1) {
-        auto firstPoint = points[0];
-        auto lastPoint = pointsBuffer.back();
-        auto midPoint = getMidpoint(lastPoint, firstPoint);
-        pointsBuffer.push_back(midPoint);
-        pointsBuffer.push_back(firstPoint);
-        points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
-        pointsBuffer.clear();
+    switch (currentSegmentType) {
+        case Segment::Conic:
+            if (pointsBuffer.size() == 2) {
+                pointsBuffer.push_back(contourStartPoint);
+                points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
+            }
+            break;
+        case Segment::Cubic:
+            if (pointsBuffer.size() == 3) {
+                pointsBuffer.push_back(contourStartPoint);
+                points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
+            }
+            break;
+        case Segment::Line:
+            if (pointsBuffer.size() == 1) {
+                auto lastPoint = pointsBuffer.back();
+                if (curveType == CurveType::Cubic) {
+                    auto delta = contourStartPoint - lastPoint;
+                    pointsBuffer.push_back(lastPoint + delta / 3.0f);
+                    pointsBuffer.push_back(lastPoint + 2.0f * delta / 3.0f);
+                } else {
+                    pointsBuffer.push_back(getMidpoint(lastPoint, contourStartPoint));
+                }
+                pointsBuffer.push_back(contourStartPoint);
+                points.insert(points.end(), pointsBuffer.begin(), pointsBuffer.end());
+            }
+            break;
     }
 
     return {.quad = quad, .points = points};
@@ -119,8 +181,35 @@ Glyph processContours(FT_Face face)
 
     float ascender = face->size->metrics.ascender;
 
+    CurveType curveType = CurveType::Quadratic;
+    for (int p = 0; p < outline.n_points; ++p) {
+        if (FT_CURVE_TAG(tags[p]) == FT_CURVE_TAG_CUBIC) {
+            curveType = CurveType::Cubic;
+            break;
+        }
+    }
+
     for (int c = 0; c < numContours; ++c) {
-        Contour contour = processContour(rawPoints, tags, contourStart, contours[c], ascender);
+        Contour contour = processContour(
+            rawPoints,
+            tags,
+            contourStart,
+            contours[c],
+            ascender,
+            curveType
+        );
+
+        const size_t pointStride = curveType == CurveType::Cubic ? 4 : 3;
+        if (contour.points.size() % pointStride != 0) {
+            std::println(
+                "invalid glyph contour: glyph={}, contour={}, curveType={}, points={}, stride={}",
+                face->glyph->glyph_index,
+                c,
+                static_cast<uint32_t>(curveType),
+                contour.points.size(),
+                pointStride
+            );
+        }
 
         // handle quad
         if (contour.quad.topLeft.x < quad.topLeft.x)
@@ -147,6 +236,11 @@ Glyph processContours(FT_Face face)
         contourStart = contours[c] + 1;
     }
 
-    return {.quad = quad, .points = points, .numContours = numContours, .contourSizes = contourSizes};
+    return {
+        .quad = quad,
+        .curveType = curveType,
+        .points = points,
+        .numContours = numContours,
+        .contourSizes = contourSizes
+    };
 }
-

@@ -1317,6 +1317,7 @@ auto index() -> void {
 
     // Existing dark music player test.
     // Dark music player — scrollable playlist (left) + nested scrollable lyrics (right)
+    /*
     div(S::percent(1.0), S::percent(1.0), simd_float4{0.09,0.09,0.11,1.0})
         .display(gui::Display::Flex)
         .flexDirection(gui::FlexDirection::Col)
@@ -1690,6 +1691,70 @@ auto index() -> void {
                     text("a promise too fragile to keep.").fontSize(S::pt(15)).color(simd_float4{0.18,0.72,0.56,1.0})
                 )
             )
+        )
+    );
+    */
+
+    const std::string Devanagari = "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc";
+    const std::string GeezaPro = "/System/Library/Fonts/GeezaPro.ttc";
+    const auto background = simd_float4{0.07f, 0.08f, 0.10f, 1.0f};
+    const auto panel = simd_float4{0.12f, 0.13f, 0.16f, 1.0f};
+    const auto heading = simd_float4{0.45f, 0.80f, 1.0f, 1.0f};
+    const auto body = simd_float4{0.92f, 0.93f, 0.96f, 1.0f};
+    const auto note = simd_float4{0.58f, 0.62f, 0.70f, 1.0f};
+
+    div(S::percent(1.0), S::percent(1.0), background)
+        .display(gui::Display::Flex)
+        .flexDirection(gui::FlexDirection::Col)
+        .flexGap(S::px(16))
+        .padding(S::px(28))
+        .overflow(gui::Overflow::Scroll)
+    (
+        text("HarfBuzz shaping coverage").font(ArialBold).fontSize(S::pt(24)).color(body),
+        text("Kerning, ligatures, combining marks, and contextual script shaping")
+            .fontSize(S::pt(13)).color(note),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("4. Kerning").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("AVATAR   To Wa Yo VA").font(Arial).fontSize(S::pt(34)).color(body),
+            text("Look for tighter AV, To, Wa, and Yo pairs.").fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("5. Ligatures").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("office   affinity   ffi   fi   fl").font(Helvetica).fontSize(S::pt(34)).color(body),
+            text("Helvetica should substitute fi/fl glyphs; ‘office’ should contain an fi ligature.")
+                .fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("6a. Combining marks").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("decomposed:  cafe\xCC\x81   A\xCC\x8A   n\xCC\x83").font(Arial).fontSize(S::pt(34)).color(body),
+            text("composed:    café   Å   ñ").font(Arial).fontSize(S::pt(34)).color(body),
+            text("The two rows should have equivalent accent placement.").fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("6b. Arabic contextual shaping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("السلام عليكم").font(GeezaPro).fontSize(S::pt(40)).color(body),
+            text("Letters should join contextually; lam-alef should form a ligature.").fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("6c. Devanagari reordering and conjuncts").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
+            text("The conjunct and pre-base vowel marks should be shaped and positioned.")
+                .fontSize(S::pt(12)).color(note)
         )
     );
 

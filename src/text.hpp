@@ -147,7 +147,7 @@ namespace elements {
                     return desc.request(payload);
                 }
                 case RequestTarget::TextShaping:
-                    return static_cast<const ShapedRun*>(&fragment.fragmentStorage.shapedRun);
+                    return &fragment.fragmentStorage.shapedRun;
                 default: {
                     return std::any{};
                 }
@@ -302,8 +302,7 @@ namespace elements {
             auto shapedRun = textShaper.shape(renderedText, desc.font);
             for (size_t glyphIndex = 0; glyphIndex < shapedRun.glyphs.size(); ++glyphIndex) {
                 const auto& shapedGlyph = shapedRun.glyphs[glyphIndex];
-                const auto source = utf8::at(text, shapedGlyph.byteOffset);
-                uint32_t codepoint = source.value;
+                uint32_t codepoint = utf8::at(text, shapedGlyph.byteOffset).value;
                 Atom atom;
                 bool sourceWhitespace = isTextWhitespace(codepoint);
                 bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
@@ -311,6 +310,7 @@ namespace elements {
                 if (preserveLineFeeds && sourceLineFeed) {
                     int metadataIndex = metadata.size();
                     metadata.push_back(0);
+                    metadata.push_back(static_cast<int>(CurveType::Quadratic));
                     metadata.push_back(0);
 
                     Quad emptyQuad {
@@ -326,8 +326,8 @@ namespace elements {
                     atom.width = 0;
                     atom.height = defaultLineHeight;
                     atom.lineHeight = resolvedLineHeight;
-                    bool followsCarriageReturn = source.byteOffset > 0 &&
-                        text[source.byteOffset - 1] == '\r';
+                    bool followsCarriageReturn = shapedGlyph.byteOffset > 0 &&
+                        text[shapedGlyph.byteOffset - 1] == '\r';
                     atom.placeOnNewLine = !(codepoint == U'\n' && followsCarriageReturn);
                     
                     atoms.push_back(atom);
@@ -338,6 +338,7 @@ namespace elements {
                 }
 
                 GlyphQuery glyphQuery { shapedGlyph.glyphId, desc.font };
+
                 auto glyph = glyphCache.retrieve(glyphQuery);
                 size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
                 size_t offset = 0;
@@ -372,6 +373,7 @@ namespace elements {
                 int metadataIndex = metadata.size();
 
                 metadata.push_back(offset);
+                metadata.push_back(static_cast<int>(glyph.curveType));
                 metadata.push_back(glyph.numContours);
                 for (auto& contourSize : glyph.contourSizes) {
                     metadata.push_back(contourSize);
@@ -382,6 +384,7 @@ namespace elements {
                     -shapedGlyph.yOffset
                 };
                 auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size(), shapingOffset);
+
                 points.insert(points.end(), atomPts.begin(), atomPts.end());
 
                 atom.atomBufferHandle = glyphBuffer.handle();
