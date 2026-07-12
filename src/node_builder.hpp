@@ -32,6 +32,7 @@ namespace elements {
     using style::Position;
     using style::Size;
     using style::TextOverflow;
+    using style::TextAlign;
     using style::WhiteSpace;
     using style::WordBreak;
     using tree::RenderTree;
@@ -296,6 +297,17 @@ namespace elements {
         Derived& textOverflow(TextOverflow textOverflow) {
             node->shared.textOverflow = std::move(textOverflow);
             markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        std::optional<TextAlign> textAlign() const {
+            return node->shared.textAlign;
+        }
+
+        Derived& textAlign(TextAlign textAlign) {
+            node->shared.textAlign = textAlign;
+            markDirty(DirtyBits::Layout | DirtyBits::PostLayout |
+                      DirtyBits::Place | DirtyBits::Finalize);
             return self();
         }
 

@@ -21,7 +21,7 @@ Goal: text should behave predictably enough to build real UI.
    - Support clipping and a configurable overflow ending.
 
 5. Add text alignment.
-   - `textAlign: Left | Center | Right`
+   - `textAlign: Start | Left | Center | Right`
 
 6. Improve text shaping coverage.
    - Introduce shaped glyph runs.

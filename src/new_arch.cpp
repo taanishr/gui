@@ -621,9 +621,21 @@ namespace layout {
 
             auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
             float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
-            float startingX = isLtr
-                                ? constraints.origin.x + offset
-                                : constraints.origin.x + constraints.availableWidth - lineBox.width + offset;
+            float lineOffset = 0.0f;
+            switch (constraints.inheritedProperties.textAlign) {
+                case TextAlign::Start:
+                    lineOffset = isLtr ? 0.0f : constraints.availableWidth - lineBox.width;
+                    break;
+                case TextAlign::Left:
+                    break;
+                case TextAlign::Center:
+                    lineOffset = (constraints.availableWidth - lineBox.width) / 2.0f;
+                    break;
+                case TextAlign::Right:
+                    lineOffset = constraints.availableWidth - lineBox.width;
+                    break;
+            }
+            float startingX = constraints.origin.x + lineOffset + offset;
 
             newCursor.x = startingX;
             
@@ -748,9 +760,10 @@ namespace layout {
         LayoutResult lr;
 
         if (layoutInput.direction.has_value()) {
-            constraints.inheritedProperties = {
-                .direction = *layoutInput.direction
-            };
+            constraints.inheritedProperties.direction = *layoutInput.direction;
+        }
+        if (layoutInput.textAlign.has_value()) {
+            constraints.inheritedProperties.textAlign = *layoutInput.textAlign;
         }
         
         
