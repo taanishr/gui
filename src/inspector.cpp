@@ -69,7 +69,7 @@ namespace Inspector {
                 .cornerRadius(style::Size::px(12.0))
                 .overflow(style::Overflow::Scroll)
             (
-                text(U"Inspector").fontSize(style::Size::pt(24.0)).font(ArialBold),
+                text("Inspector").fontSize(style::Size::pt(24.0)).font(ArialBold),
                 div()
                     .display(style::Display::Flex)
                     .flexDirection(FlexDirection::Col)
@@ -79,7 +79,7 @@ namespace Inspector {
                         .display(style::Display::Flex)
                         .flexDirection(FlexDirection::Col)
                     (
-                        text(U"Mouse").fontSize(style::Size::pt(12.0)).font(ArialBold),
+                        text("Mouse").fontSize(style::Size::pt(12.0)).font(ArialBold),
                         div().display(style::Display::Flex).flexGap(style::Size::px(12.0))
                         (
                             mouseXText,
@@ -90,7 +90,7 @@ namespace Inspector {
                         .display(style::Display::Flex)
                         .flexDirection(FlexDirection::Col)
                     (
-                        text(U"Node").fontSize(style::Size::pt(12.0)).font(ArialBold),
+                        text("Node").fontSize(style::Size::pt(12.0)).font(ArialBold),
                         hitStackText,
                         nodeIDText,
                         nodeTypeText,
@@ -109,14 +109,14 @@ namespace Inspector {
                         .display(style::Display::Flex)
                         .flexDirection(FlexDirection::Col)
                     (
-                        text(U"Controls").fontSize(style::Size::pt(12.0)).font(ArialBold),
-                        text(U"Shift+Up/Down cycle nodes").fontSize(style::Size::pt(12.0)).font(Menlo)
+                        text("Controls").fontSize(style::Size::pt(12.0)).font(ArialBold),
+                        text("Shift+Up/Down cycle nodes").fontSize(style::Size::pt(12.0)).font(Menlo)
                     ),
                     div()
                         .display(style::Display::Flex)
                         .flexDirection(FlexDirection::Col)
                     (
-                        text(U"Path").fontSize(style::Size::pt(12.0)).font(ArialBold),
+                        text("Path").fontSize(style::Size::pt(12.0)).font(ArialBold),
                         nodePathText
                     )
                 )
@@ -238,7 +238,7 @@ namespace Inspector {
             }
             std::reverse(path.begin(), path.end());
 
-            std::u32string formattedPath;
+            std::string formattedPath;
             for (std::size_t i = 0; i < path.size(); ++i) {
                 auto* node = path[i];
                 auto line = std::format("{}#{}",
@@ -247,7 +247,7 @@ namespace Inspector {
                 );
                 formattedPath.append(line.begin(), line.end());
                 if (i + 1 < path.size()) {
-                    formattedPath.append(U" > ");
+                    formattedPath.append(" > ");
                 }
             }
             htNodePath = formattedPath;
@@ -281,78 +281,78 @@ namespace Inspector {
         return simd_float2{0.0,0.0};
     }
 
-    std::u32string Inspector::nodeIdLabel() {
+    std::string Inspector::nodeIdLabel() {
         auto cnid = htNodeID.has_value() ? std::format("currentNodeId: {}", *htNodeID) : std::format("currentNodeId: None");
-        return std::u32string(cnid.begin(), cnid.end());
+        return cnid;
     }
 
-    std::u32string Inspector::nodeTypeLabel() {
+    std::string Inspector::nodeTypeLabel() {
         auto type = htNodeElementType.has_value() ? std::format("type: {}", *htNodeElementType) : std::format("type: None");
-        return std::u32string(type.begin(), type.end());
+        return type;
     }
 
-    std::u32string Inspector::hitStackLabel() {
+    std::string Inspector::hitStackLabel() {
         auto hit = hitNodeCount > 0 ? std::format("hit: {} / {}", selectedHitIndex + 1, hitNodeCount) : std::format("hit: None");
-        return std::u32string(hit.begin(), hit.end());
+        return hit;
     }
 
-    std::u32string Inspector::nodeStyleLabel() {
+    std::string Inspector::nodeStyleLabel() {
         auto style = htNodeDisplay.has_value() && htNodePosition.has_value() && htNodeOverflow.has_value()
             ? std::format("display: {} posMode: {} overflow: {}", *htNodeDisplay, *htNodePosition, *htNodeOverflow)
             : std::format("style: None");
-        return std::u32string(style.begin(), style.end());
+        return style;
     }
 
-    std::u32string Inspector::nodePositionLabel() {
+    std::string Inspector::nodePositionLabel() {
         auto position = htNodeX.has_value() && htNodeY.has_value()
             ? std::format("global: {}, {}", *htNodeX, *htNodeY)
             : std::format("global: None");
-        return std::u32string(position.begin(), position.end());
+        return position;
     }
 
-    std::u32string Inspector::nodeWidthLabel() {
+    std::string Inspector::nodeWidthLabel() {
         auto width = htNodeW.has_value() ? std::format("w: {}", *htNodeW) : std::format("w: None");
-        return std::u32string(width.begin(), width.end());
+        return width;
     }
 
-    std::u32string Inspector::nodeHeightLabel() {
+    std::string Inspector::nodeHeightLabel() {
         auto height = htNodeH.has_value() ? std::format("h: {}", *htNodeH) : std::format("h: None");
-        return std::u32string(height.begin(), height.end());
+        return height;
     }
 
-    std::u32string Inspector::nodeLocalBoxLabel() {
+    std::string Inspector::nodeLocalBoxLabel() {
         auto box = htNodeLocalX.has_value() && htNodeLocalY.has_value() && htNodeLocalW.has_value() && htNodeLocalH.has_value()
             ? std::format("local: {}, {} {}x{}", *htNodeLocalX, *htNodeLocalY, *htNodeLocalW, *htNodeLocalH)
             : std::format("local: None");
-        return std::u32string(box.begin(), box.end());
+        return box;
     }
 
-    std::u32string Inspector::nodeScrollLabel() {
+    std::string Inspector::nodeScrollLabel() {
         auto scroll = htNodeScrollX.has_value() && htNodeScrollY.has_value()
             ? std::format("scroll: {}, {}", *htNodeScrollX, *htNodeScrollY)
             : std::format("scroll: None");
-        return std::u32string(scroll.begin(), scroll.end());
+        return scroll;
     }
 
-    std::u32string Inspector::nodeZIndexLabel() {
+    std::string Inspector::nodeZIndexLabel() {
         auto zIndex = htNodeZIndex.has_value() ? std::format("zIndex: {}", *htNodeZIndex) : std::format("zIndex: None");
-        return std::u32string(zIndex.begin(), zIndex.end());
+        return zIndex;
     }
 
-    std::u32string Inspector::nodePathLabel() {
-        return htNodePath.value_or(U"path: None");
+    std::string Inspector::nodePathLabel() {
+        return htNodePath.value_or("path: None");
     }
 
-    std::u32string Inspector::mouseXLabel() {
+    std::string Inspector::mouseXLabel() {
         auto [mouseX, mouseY] = getMouseState();
         auto mx = std::format("x: {}", float(mouseX));
-        return std::u32string(mx.begin(), mx.end());
+        return mx;
     }
 
-    std::u32string Inspector::mouseYLabel() {
+    std::string Inspector::mouseYLabel() {
         auto [mouseX, mouseY] = getMouseState();
         auto my = std::format("y: {}", float(mouseY));
-        return std::u32string(my.begin(), my.end());
+        return my;
     }
 
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> Inspector::visualizer() {

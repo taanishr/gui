@@ -19,6 +19,7 @@ struct TextVertexIn {
     float2 position [[attribute(0)]];
     int metadataIndex [[attribute(1)]];
     int atom_id [[attribute(2)]];
+    float2 shapingOffset [[attribute(3)]];
 };
 
 
@@ -40,7 +41,7 @@ vertex TextVertexOut vertex_text(
 
     float scale = uniforms->fontSize/BASE_PIXEL_HEIGHT;
 
-    float2 adjustedPos = (in.position * scale)/64.0f + offsets[in.atom_id];
+    float2 adjustedPos = ((in.position + in.shapingOffset) * scale)/64.0f + offsets[in.atom_id];
     float2 ndcPos = toNDC(adjustedPos, frameInfo->width, frameInfo->height);
     out.position = float4(ndcPos, 0.0, 1.0);
     out.worldPosition = float4(in.position, 0.0, 1.0);

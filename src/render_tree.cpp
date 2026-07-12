@@ -125,8 +125,8 @@ namespace tree {
         hash_combine(hash, constraints.lineFragments.size());
         hash_combine(hash, constraints.lineBoxes.size());
         hash_combine(hash, static_cast<int>(constraints.textOverflow->mode));
-        for (char32_t codepoint : constraints.textOverflow->ending) {
-            hash_combine(hash, codepoint);
+        for (unsigned char byte : constraints.textOverflow->ending) {
+            hash_combine(hash, byte);
         }
 
         for (auto& clip : constraints.clipUniforms) {

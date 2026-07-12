@@ -569,18 +569,12 @@ namespace elements {
             return self();
         }
 
-        const std::u32string& text() const requires HasText<typename E::DescriptorType> {
+        const std::string& text() const requires HasText<typename E::DescriptorType> {
             return descriptor().text;
         }
 
-        Derived& text(const std::u32string& text) requires HasText<typename E::DescriptorType> {
-            descriptor().text = text;
-            markDirty(textDirtyBits());
-            return self();
-        }
-
         Derived& text(const std::string& text) requires HasText<typename E::DescriptorType> {
-            descriptor().text.assign(text.begin(), text.end());
+            descriptor().text = text;
             markDirty(textDirtyBits());
             return self();
         }
@@ -723,8 +717,8 @@ namespace elements {
 
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div();
     NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> div(Size width, Size height, simd_float4 color);
-    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::u32string& text, 
-                 Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1}, 
+    NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> text(const std::string& text,
+                 Size fontSize = Size::pt(24.0f), simd_float4 color = {1, 1, 1, 1},
                  const std::string& font = Arial);
     NodeBuilder<Image<ImageStorage>, ImageProcessor<ImageStorage, ImageUniforms>> image(const std::string& path,
                     Size width = Size::px(0), Size height = Size::px(0));

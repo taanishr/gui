@@ -2,6 +2,8 @@
 #include "fragment_types.hpp"
 #include "sizing.hpp"
 #include "new_arch.hpp"
+#include "utf8.hpp"
+#include "textShaper.hpp"
 #include <algorithm>
 #include <any>
 #include <cstdint>
@@ -34,11 +36,11 @@ namespace tree {
     using style::WordBreak;
 
     // Element-specific requests still use the request system
-    std::optional<std::u32string> getText(TreeNode* node) {
+    std::optional<std::string> getText(TreeNode* node) {
         std::any request{DescriptorPayload{GetField{.name = "text"}}};
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
-            return std::any_cast<std::u32string>(resp);
+            return std::any_cast<std::string>(resp);
         }
         return std::nullopt;
     }
@@ -60,6 +62,15 @@ namespace tree {
         }
         return std::nullopt;
     }
+
+    const ShapedRun* getShapedRun(TreeNode* node) {
+        std::any request;
+        auto response = node->element->request(RequestTarget::TextShaping, request);
+        if (response.has_value()) {
+            return std::any_cast<const ShapedRun*>(response);
+        }
+        return nullptr;
+    }
     
 
     uint64_t TreeNode::nextId = 0;
@@ -78,7 +89,8 @@ namespace tree {
     }
 
     void appendTextLineFragments(
-        const std::u32string& text,
+        const std::string& text,
+        const ShapedRun& shapedRun,
         const std::vector<Atom>& atoms,
         WhiteSpace whiteSpace,
         WordBreak wordBreak,
@@ -104,13 +116,27 @@ namespace tree {
         size_t runningAtomCount = 0;
         size_t idx = 0;
 
-        while (idx < text.size() && idx < atoms.size()) {
-            char32_t ch = text[idx];
-            const auto& atom = atoms[idx];
+        auto clusterWidth = [&](const ShapedCluster& cluster) {
+            float width = 0.0f;
+            for (size_t i = 0; i < cluster.glyphCount; ++i) {
+                width += atoms[cluster.glyphStart + i].width;
+            }
+            return width;
+        };
 
-            if (preserveLineFeeds && atom.placeOnNewLine) {
-                runningWidth += atom.width + margins.right;
-                runningAtomCount++;
+        auto clusterCodepoint = [&](const ShapedCluster& cluster) {
+            return utf8::at(text, cluster.byteOffset).value;
+        };
+
+        while (idx < shapedRun.clusters.size()) {
+            const auto& cluster = shapedRun.clusters[idx];
+            char32_t ch = clusterCodepoint(cluster);
+            const auto& firstAtom = atoms[cluster.glyphStart];
+            float width = clusterWidth(cluster);
+
+            if (preserveLineFeeds && firstAtom.placeOnNewLine) {
+                runningWidth += width + margins.right;
+                runningAtomCount += cluster.glyphCount;
 
                 LineFragment frag{
                     .width = runningWidth,
@@ -137,12 +163,14 @@ namespace tree {
                 runningWidth = 0.0;
                 runningAtomCount = 0;
                 idx++;
-                runningAtomStart = idx;
+                runningAtomStart = idx < shapedRun.clusters.size()
+                    ? shapedRun.clusters[idx].glyphStart
+                    : atoms.size();
                 continue;
             }
 
             if (breakInsideWords && !isTextWhitespace(ch)) {
-                float prospectiveWidth = currentLineBox.width + runningWidth + atom.width;
+                float prospectiveWidth = currentLineBox.width + runningWidth + width;
 
                 if (prospectiveWidth > availableWidth &&
                     (currentLineBox.fragmentCount > 0 || runningAtomCount > 0)) {
@@ -165,25 +193,27 @@ namespace tree {
                     lastFragmentHasBreakOpportunity = false;
                     runningWidth = hadPendingAtoms ? 0.0f : margins.left;
                     runningAtomCount = 0;
-                    runningAtomStart = idx;
+                    runningAtomStart = cluster.glyphStart;
                 }
 
-                runningWidth += atom.width;
-                runningAtomCount++;
+                runningWidth += width;
+                runningAtomCount += cluster.glyphCount;
                 idx++;
                 continue;
             }
 
             if (!isTextWhitespace(ch)) {
-                runningWidth += atom.width;
-                runningAtomCount++;
+                runningWidth += width;
+                runningAtomCount += cluster.glyphCount;
                 idx++;
                 continue;
             }
 
-            while (idx < text.size() && idx < atoms.size() && isTextWhitespace(text[idx])) {
-                runningWidth += atoms[idx].width;
-                runningAtomCount++;
+            while (idx < shapedRun.clusters.size() &&
+                   isTextWhitespace(clusterCodepoint(shapedRun.clusters[idx]))) {
+                const auto& whitespace = shapedRun.clusters[idx];
+                runningWidth += clusterWidth(whitespace);
+                runningAtomCount += whitespace.glyphCount;
                 idx++;
             }
 
@@ -209,7 +239,9 @@ namespace tree {
 
             runningWidth = 0.0;
             runningAtomCount = 0;
-            runningAtomStart = idx;
+            runningAtomStart = idx < shapedRun.clusters.size()
+                ? shapedRun.clusters[idx].glyphStart
+                : atoms.size();
         }
 
         if (runningAtomCount > 0) {
@@ -333,11 +365,14 @@ namespace tree {
 
         auto textResp = getText(node);
         if (textResp.has_value()) {
+            auto shapedRun = getShapedRun(node);
+            if (!shapedRun) return {fragments, lineBoxes};
             auto margins = node->preLayout->resolvedMargins;
             auto text = *textResp;
             auto& atoms = node->atomized->atoms;
             appendTextLineFragments(
                 text,
+                *shapedRun,
                 atoms,
                 getWhiteSpace(node).value_or(WhiteSpace::Normal),
                 getWordBreak(node).value_or(WordBreak::Normal),
@@ -374,6 +409,11 @@ namespace tree {
             auto textResp = getText(child.get());
 
             if (textResp.has_value()) {
+                auto shapedRun = getShapedRun(child.get());
+                if (!shapedRun) {
+                    childrenLineFragments.push_back({});
+                    continue;
+                }
                 auto margins = child->preLayout->resolvedMargins;
                 auto text = *textResp;
 
@@ -387,6 +427,7 @@ namespace tree {
 
                 appendTextLineFragments(
                     text,
+                    *shapedRun,
                     atoms,
                     getWhiteSpace(child.get()).value_or(WhiteSpace::Normal),
                     getWordBreak(child.get()).value_or(WordBreak::Normal),

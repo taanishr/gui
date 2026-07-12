@@ -38,6 +38,7 @@ namespace elements {
 
     enum class RequestTarget {
         Descriptor,
+        TextShaping,
     };
 
     template<typename E>

@@ -18,10 +18,12 @@ SDK_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/D
 METAL_CPP="/Users/treja/metal-cpp"
 METAL_CPP_EXT="/Users/treja/metal-cpp-extensions"
 FREETYPE_INC="/opt/homebrew/opt/freetype/include/freetype2"
+HARFBUZZ_INC="/opt/homebrew/opt/harfbuzz/include/harfbuzz"
 RESVG_INC="/opt/homebrew/opt/resvg/include/resvg"
 LIB_RESVG="/opt/homebrew/opt/resvg/lib"
 
-LIB_FREETYPE="/opt/homebrew/Cellar/freetype/2.13.3/lib/libfreetype.a"
+LIB_FREETYPE="/opt/homebrew/opt/freetype/lib/libfreetype.dylib"
+LIB_HARFBUZZ="/opt/homebrew/opt/harfbuzz/lib/libharfbuzz.dylib"
 LIB_MTK_EXT="$APPLE_EXT_BUILD/MTK-Extensions"
 LIB_APPKIT_EXT="$APPLE_EXT_BUILD/AppKit-Extensions"
 
@@ -35,6 +37,7 @@ CXXFLAGS=(
     -I"$METAL_CPP"
     -I"$METAL_CPP_EXT"
     -I"$FREETYPE_INC"
+    -I"$HARFBUZZ_INC"
     -I"$RESVG_INC"
     -O0 -g
 )
@@ -168,7 +171,11 @@ build_cpp() {
     fi
 
     local llvm_prefix
-    llvm_prefix="$(brew --prefix llvm)"
+    if [[ -x /opt/homebrew/opt/llvm/bin/clang++ ]]; then
+        llvm_prefix=/opt/homebrew/opt/llvm
+    else
+        llvm_prefix="$(brew --prefix llvm)"
+    fi
 
     local objs=()
     local srcs_to_compile=()
@@ -234,11 +241,13 @@ build_cpp() {
             -fno-objc-arc \
             -stdlib=libc++ \
             "${objs[@]}" \
-            "$LIB_MTK_EXT" "$LIB_APPKIT_EXT" "$LIB_FREETYPE" \
+            "$LIB_MTK_EXT" "$LIB_APPKIT_EXT" "$LIB_FREETYPE" "$LIB_HARFBUZZ" \
             -L"$llvm_prefix/lib/c++" \
             -Wl,-rpath,"$llvm_prefix/lib/c++" \
             -L"$LIB_RESVG" -lresvg \
             -Wl,-rpath,"$LIB_RESVG" \
+            -Wl,-rpath,/opt/homebrew/opt/freetype/lib \
+            -Wl,-rpath,/opt/homebrew/opt/harfbuzz/lib \
             -L/opt/homebrew/lib -lpng -lbz2 -lz \
             -framework Metal -framework MetalKit -framework Foundation \
             -framework QuartzCore -framework AppKit -framework Cocoa \

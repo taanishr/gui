@@ -14,7 +14,8 @@
 		A576DD862E565DC000B8CA82 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD852E565DC000B8CA82 /* QuartzCore.framework */; };
 		A576DD882E565DC500B8CA82 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD872E565DC500B8CA82 /* MetalKit.framework */; };
 		A576DD8A2E565DCB00B8CA82 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD892E565DCB00B8CA82 /* Metal.framework */; };
-		A576DD8E2E565EB200B8CA82 /* libfreetype.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD8D2E565EB200B8CA82 /* libfreetype.a */; };
+		A576DD8E2E565EB200B8CA82 /* libfreetype.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD8D2E565EB200B8CA82 /* libfreetype.dylib */; };
+		A70000012F00000100000001 /* libharfbuzz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = A70000022F00000100000001 /* libharfbuzz.dylib */; };
 		A5C706782F20924B0093BA5C /* AppKit-Extensions in Frameworks */ = {isa = PBXBuildFile; fileRef = A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */; };
 /* End PBXBuildFile section */
 
@@ -40,7 +41,8 @@
 		A576DD872E565DC500B8CA82 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		A576DD892E565DCB00B8CA82 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "AppKit-Extensions"; path = "build/apple-extensions/AppKit-Extensions"; sourceTree = "<group>"; };
-		A576DD8D2E565EB200B8CA82 /* libfreetype.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfreetype.a; path = ../../../../../opt/homebrew/Cellar/freetype/2.13.3/lib/libfreetype.a; sourceTree = "<group>"; };
+		A576DD8D2E565EB200B8CA82 /* libfreetype.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfreetype.dylib; path = /opt/homebrew/opt/freetype/lib/libfreetype.dylib; sourceTree = "<absolute>"; };
+		A70000022F00000100000001 /* libharfbuzz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libharfbuzz.dylib; path = /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.dylib; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -56,9 +58,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A70000012F00000100000001 /* libharfbuzz.dylib in Frameworks */,
 				A5485A002E61648B00CBA95F /* MTK-Extensions in Frameworks */,
 				A5C706782F20924B0093BA5C /* AppKit-Extensions in Frameworks */,
-				A576DD8E2E565EB200B8CA82 /* libfreetype.a in Frameworks */,
+				A576DD8E2E565EB200B8CA82 /* libfreetype.dylib in Frameworks */,
 				A576DD842E565DBA00B8CA82 /* AppKit.framework in Frameworks */,
 				A576DD802E565DA900B8CA82 /* Foundation.framework in Frameworks */,
 				A576DD822E565DB200B8CA82 /* Cocoa.framework in Frameworks */,
@@ -74,6 +77,7 @@
 		A576DD6B2E5655F400B8CA82 = {
 			isa = PBXGroup;
 			children = (
+				A70000022F00000100000001 /* libharfbuzz.dylib */,
 				A576DD762E5655F400B8CA82 /* src */,
 				A576DD7E2E565DA900B8CA82 /* Frameworks */,
 				A576DD752E5655F400B8CA82 /* Products */,
@@ -92,7 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				A54858BC2E60DE9000CBA95F /* MTK-Extensions */,
-				A576DD8D2E565EB200B8CA82 /* libfreetype.a */,
+				A576DD8D2E565EB200B8CA82 /* libfreetype.dylib */,
 				A576DD8B2E565E6700B8CA82 /* AppKit-Extensions */,
 				A576DD892E565DCB00B8CA82 /* Metal.framework */,
 				A576DD872E565DC500B8CA82 /* MetalKit.framework */,
@@ -248,7 +252,10 @@
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
-				SYSTEM_HEADER_SEARCH_PATHS = /opt/homebrew/opt/freetype/include/freetype2;
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					/opt/homebrew/opt/freetype/include/freetype2,
+					/opt/homebrew/opt/harfbuzz/include/harfbuzz,
+				);
 			};
 			name = Debug;
 		};
@@ -312,7 +319,10 @@
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
-				SYSTEM_HEADER_SEARCH_PATHS = /opt/homebrew/opt/freetype/include/freetype2;
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					/opt/homebrew/opt/freetype/include/freetype2,
+					/opt/homebrew/opt/harfbuzz/include/harfbuzz,
+				);
 			};
 			name = Release;
 		};
@@ -323,7 +333,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+					/opt/homebrew/opt/freetype/lib,
+					/opt/homebrew/opt/harfbuzz/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -338,7 +349,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/opt/homebrew/Cellar/freetype/2.13.3/lib,
+					/opt/homebrew/opt/freetype/lib,
+					/opt/homebrew/opt/harfbuzz/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 6.0;
