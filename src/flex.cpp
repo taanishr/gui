@@ -227,7 +227,11 @@ namespace layout {
         for (auto& line : flex.lines) naturalCross += line.maxCrossSize;
         if (flex.lines.size() > 1) naturalCross += resolvedGap * (flex.lines.size() - 1);
         auto explicitCross = flex.axis.isRow ? measured.explicitHeight : measured.explicitWidth;
-        float availableCross = explicitCross.has_value()
+        bool fillsAvailableWidth =
+            !flex.axis.isRow &&
+            parentConstraints.widthResolution == AxisResolution::Final &&
+            !parentConstraints.shrinkToFit;
+        float availableCross = explicitCross.has_value() || fillsAvailableWidth
             ? (flex.axis.isRow ? parentAvailableHeight : parentAvailableWidth)
             : naturalCross;
 

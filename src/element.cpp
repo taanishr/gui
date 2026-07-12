@@ -100,6 +100,7 @@ namespace tree {
             allowSoftWrap && wordBreak == WordBreak::BreakAll;
 
         float runningWidth = margins.left;
+        size_t runningAtomStart = 0;
         size_t runningAtomCount = 0;
         size_t idx = 0;
 
@@ -111,7 +112,11 @@ namespace tree {
                 runningWidth += atom.width + margins.right;
                 runningAtomCount++;
 
-                LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+                LineFragment frag{
+                    .width = runningWidth,
+                    .atomStart = runningAtomStart,
+                    .atomCount = runningAtomCount
+                };
 
                 if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                     lineBoxes.push_back(currentLineBox);
@@ -132,6 +137,7 @@ namespace tree {
                 runningWidth = 0.0;
                 runningAtomCount = 0;
                 idx++;
+                runningAtomStart = idx;
                 continue;
             }
 
@@ -144,6 +150,7 @@ namespace tree {
                     if (runningAtomCount > 0) {
                         LineFragment frag{
                             .width = runningWidth,
+                            .atomStart = runningAtomStart,
                             .atomCount = runningAtomCount,
                             .lineBoxIndex = currentLineBoxIndex,
                             .fragmentIndex = currentLineBox.fragmentCount
@@ -158,6 +165,7 @@ namespace tree {
                     lastFragmentHasBreakOpportunity = false;
                     runningWidth = hadPendingAtoms ? 0.0f : margins.left;
                     runningAtomCount = 0;
+                    runningAtomStart = idx;
                 }
 
                 runningWidth += atom.width;
@@ -181,7 +189,11 @@ namespace tree {
 
             runningWidth += margins.right;
 
-            LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+            LineFragment frag{
+                .width = runningWidth,
+                .atomStart = runningAtomStart,
+                .atomCount = runningAtomCount
+            };
 
             if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                 lineBoxes.push_back(currentLineBox);
@@ -197,12 +209,17 @@ namespace tree {
 
             runningWidth = 0.0;
             runningAtomCount = 0;
+            runningAtomStart = idx;
         }
 
         if (runningAtomCount > 0) {
             runningWidth += margins.right;
 
-            LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
+            LineFragment frag{
+                .width = runningWidth,
+                .atomStart = runningAtomStart,
+                .atomCount = runningAtomCount
+            };
 
             if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                 lineBoxes.push_back(currentLineBox);

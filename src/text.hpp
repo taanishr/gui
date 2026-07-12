@@ -23,6 +23,7 @@
 namespace elements {
     using layout::Atomized;
     using layout::Constraints;
+    using layout::Direction;
     using layout::Finalized;
     using layout::LayoutResult;
     using layout::Measured;
@@ -99,6 +100,7 @@ namespace elements {
     struct TextStorage {
         TextStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6 * sizeof(TextPoint) * 4, MaxOutstandingFrameCount},
+            drawablePointsBuffer{ctx.allocator, 6 * sizeof(TextPoint) * 4, MaxOutstandingFrameCount},
             placementsBuffer{ctx.allocator, sizeof(simd_float2) * 4, MaxOutstandingFrameCount},
             uniformsBuffer{ctx.allocator, sizeof(TextUniforms), MaxOutstandingFrameCount},
             metadataBuffer{ctx.allocator,sizeof(int) * 16, MaxOutstandingFrameCount },
@@ -106,11 +108,13 @@ namespace elements {
         {}
 
         FrameBufferedBuffer<TextPoint> atomsBuffer;
+        FrameBufferedBuffer<TextPoint> drawablePointsBuffer;
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<TextUniforms> uniformsBuffer;
 
         FrameBufferedBuffer<int> metadataBuffer;
         FrameBufferedBuffer<ClipUniform> clipsBuffer;
+        size_t sourceMetadataCount{};
     };
 
     template <typename S = TextStorage>
@@ -256,14 +260,16 @@ namespace elements {
             };
         }
         
-        Atomized atomize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured&) {
-            std::vector<Atom> atoms;
-            std::vector<TextPoint> allAtomPoints;
-            std::vector<int> metadata;
-            allAtomPoints.reserve(desc.text.size() * 6);
-
+        void appendTextAtoms(
+            std::u32string_view text,
+            const TextDescriptor& desc,
+            bool collapseWhitespace,
+            bool preserveLineFeeds,
+            std::vector<Atom>& atoms,
+            std::vector<TextPoint>& points,
+            std::vector<int>& metadata
+        ) {
             float fontSize = 0.0;
-
             if (desc.fontSize.unit == Unit::Pt) {
                 fontSize = desc.fontSize.resolveOr(0.0);
             }
@@ -271,16 +277,10 @@ namespace elements {
             float scale = fontSize / BASE_PIXEL_HEIGHT;
             float defaultLineHeight = glyphCache.retrieve(desc.font, U' ').lineHeight / FT_PIXEL_CF * scale;
             float resolvedLineHeight = defaultLineHeight * desc.lineHeight.value_or(1.0f);
-            bool collapseWhitespace =
-                desc.whiteSpace == WhiteSpace::Normal ||
-                desc.whiteSpace == WhiteSpace::NoWrap;
-            bool preserveLineFeeds =
-                desc.whiteSpace == WhiteSpace::Pre ||
-                desc.whiteSpace == WhiteSpace::PreWrap;
             bool previousWasWhitespace = false;
 
-            for (size_t i = 0; i < desc.text.size(); ++i) {
-                uint32_t codepoint = desc.text[i];
+            for (size_t i = 0; i < text.size(); ++i) {
+                uint32_t codepoint = text[i];
                 Atom atom;
                 bool sourceWhitespace = isTextWhitespace(codepoint);
                 bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
@@ -294,16 +294,16 @@ namespace elements {
                         .topLeft = {0.0f, 0.0f},
                         .bottomRight = {0.0f, 0.0f}
                     };
-                    auto atomPts = makeAtomPoints(emptyQuad, metadataIndex, i);
-                    allAtomPoints.insert(allAtomPoints.end(), atomPts.begin(), atomPts.end());
+                    auto atomPts = makeAtomPoints(emptyQuad, metadataIndex, atoms.size());
+                    points.insert(points.end(), atomPts.begin(), atomPts.end());
                     
                     atom.atomBufferHandle = glyphBuffer.handle();
                     atom.length = sizeof(TextPoint) * 6;
-                    atom.offset = (allAtomPoints.size() - 6) * sizeof(TextPoint);
+                    atom.offset = (points.size() - 6) * sizeof(TextPoint);
                     atom.width = 0;
                     atom.height = defaultLineHeight;
                     atom.lineHeight = resolvedLineHeight;
-                    atom.placeOnNewLine = !(codepoint == U'\n' && i > 0 && desc.text[i - 1] == U'\r');
+                    atom.placeOnNewLine = !(codepoint == U'\n' && i > 0 && text[i - 1] == U'\r');
                     
                     atoms.push_back(atom);
                     previousWasWhitespace = false;
@@ -353,12 +353,12 @@ namespace elements {
                     metadata.push_back(contourSize);
                 }
 
-                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, i);
-                allAtomPoints.insert(allAtomPoints.end(), atomPts.begin(), atomPts.end());
+                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size());
+                points.insert(points.end(), atomPts.begin(), atomPts.end());
 
                 atom.atomBufferHandle = glyphBuffer.handle();
                 atom.length = sizeof(TextPoint) * 6;
-                atom.offset = i * sizeof(TextPoint) * 6;
+                atom.offset = (points.size() - 6) * sizeof(TextPoint);
                 float glyphWidth = sourceWhitespace
                     ? glyph.metrics.horiAdvance / FT_PIXEL_CF * scale
                     : (glyph.quad.bottomRight.x - glyph.quad.topLeft.x) / FT_PIXEL_CF * scale;
@@ -371,6 +371,30 @@ namespace elements {
                 atoms.push_back(atom);
                 previousWasWhitespace = sourceWhitespace;
             }
+        }
+
+        Atomized atomize(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured&) {
+            std::vector<Atom> atoms;
+            std::vector<TextPoint> allAtomPoints;
+            std::vector<int> metadata;
+            allAtomPoints.reserve(desc.text.size() * 6);
+
+            bool collapseWhitespace =
+                desc.whiteSpace == WhiteSpace::Normal ||
+                desc.whiteSpace == WhiteSpace::NoWrap;
+            bool preserveLineFeeds =
+                desc.whiteSpace == WhiteSpace::Pre ||
+                desc.whiteSpace == WhiteSpace::PreWrap;
+
+            appendTextAtoms(
+                desc.text,
+                desc,
+                collapseWhitespace,
+                preserveLineFeeds,
+                atoms,
+                allAtomPoints,
+                metadata
+            );
 
             if (!allAtomPoints.empty()) {
                 size_t neededAtomsBytes = allAtomPoints.size() * sizeof(TextPoint);
@@ -384,23 +408,171 @@ namespace elements {
                 fragment.fragmentStorage.metadataBuffer.write(ctx.frameIndex, metadata.data(), neededMetaBytes);
             }
 
-            return Atomized{ .id = fragment.id, .atoms = atoms };
+            fragment.fragmentStorage.sourceMetadataCount = metadata.size();
+
+            return Atomized{ .id = fragment.id, .atoms = std::move(atoms) };
         }
 
         LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized) {
             auto li = toLayoutInput(shared, measured);
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
+            lr.lineFragments = constraints.lineFragments;
+            lr.lineBoxes = constraints.lineBoxes;
             return lr;
         }
 
-        Atomized postLayout(Fragment<S>& fragment, Constraints&, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+        Atomized postLayout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& layout) {
+            atomized.usesDrawableAtoms = false;
+            if (!constraints.textOverflow->drawsEnding()) return atomized;
+
+            const auto& overflowClip = constraints.clipUniforms.back();
+            float visibleLeft = overflowClip.rectCenter.x - overflowClip.halfExtent.x;
+            float visibleRight = overflowClip.rectCenter.x + overflowClip.halfExtent.x;
+            bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
+
+            atomized.drawableAtoms.clear();
+            layout.drawableAtomOffsets.clear();
+
+            auto sourcePoints = reinterpret_cast<TextPoint*>(
+                fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex)->contents()
+            );
+            auto sourceMetadata = reinterpret_cast<int*>(
+                fragment.fragmentStorage.metadataBuffer.getBuffer(ctx.frameIndex)->contents()
+            );
+            std::vector<TextPoint> drawablePoints;
+            std::vector<int> drawableMetadata(
+                sourceMetadata,
+                sourceMetadata + fragment.fragmentStorage.sourceMetadataCount
+            );
+
+            bool endingAdded = false;
+            for (const auto& lineFragment : layout.lineFragments) {
+                auto firstAtom = atomized.atoms.begin() + lineFragment.atomStart;
+                auto firstOffset = layout.atomOffsets.begin() + lineFragment.atomStart;
+                float fragmentLeft = firstOffset->x;
+                float fragmentRight = fragmentLeft + lineFragment.width;
+                atomized.usesDrawableAtoms = atomized.usesDrawableAtoms ||
+                    (isLtr ? fragmentRight > visibleRight : fragmentLeft < visibleLeft);
+                if (endingAdded && isLtr) continue;
+                if (isLtr ? fragmentLeft >= visibleRight : fragmentRight <= visibleLeft) continue;
+
+                size_t visibleStart = 0;
+                size_t visibleCount = lineFragment.atomCount;
+                float endingWidth = 0.0f;
+                std::vector<Atom> endingAtoms;
+                std::vector<TextPoint> endingPoints;
+                std::vector<int> endingMetadata;
+
+                appendTextAtoms(
+                    constraints.textOverflow->ending,
+                    desc,
+                    true,
+                    false,
+                    endingAtoms,
+                    endingPoints,
+                    endingMetadata
+                );
+                for (const Atom& atom : endingAtoms) endingWidth += atom.width;
+
+                if (!endingAdded && (isLtr
+                        ? fragmentRight + endingWidth > visibleRight
+                        : fragmentLeft - endingWidth < visibleLeft)) {
+                    visibleCount = 0;
+                    if (isLtr) {
+                        while (visibleCount < lineFragment.atomCount &&
+                               firstOffset[visibleCount].x + firstAtom[visibleCount].width <=
+                                   visibleRight - endingWidth) {
+                            visibleCount++;
+                        }
+                    } else {
+                        visibleStart = lineFragment.atomCount;
+                        while (visibleStart > 0 &&
+                               firstOffset[visibleStart - 1].x >= visibleLeft + endingWidth) {
+                            visibleStart--;
+                            visibleCount++;
+                        }
+                    }
+
+                    if (visibleCount == 0) {
+                        visibleCount = std::min<size_t>(1, lineFragment.atomCount);
+                        visibleStart = isLtr ? 0 : lineFragment.atomCount - visibleCount;
+                        endingAtoms.clear();
+                        endingPoints.clear();
+                        endingMetadata.clear();
+                    }
+                }
+
+                atomized.drawableAtoms.insert(
+                    atomized.drawableAtoms.end(),
+                    firstAtom + visibleStart,
+                    firstAtom + visibleStart + visibleCount
+                );
+                layout.drawableAtomOffsets.insert(
+                    layout.drawableAtomOffsets.end(),
+                    firstOffset + visibleStart,
+                    firstOffset + visibleStart + visibleCount
+                );
+                drawablePoints.insert(
+                    drawablePoints.end(),
+                    sourcePoints + (lineFragment.atomStart + visibleStart) * 6,
+                    sourcePoints + (lineFragment.atomStart + visibleStart + visibleCount) * 6
+                );
+
+                if (endingAtoms.empty() || visibleCount == lineFragment.atomCount) continue;
+
+                size_t metadataOffset = drawableMetadata.size();
+                for (auto& point : endingPoints) point.metadataIndex += metadataOffset;
+                drawableMetadata.insert(
+                    drawableMetadata.end(),
+                    endingMetadata.begin(),
+                    endingMetadata.end()
+                );
+                atomized.drawableAtoms.insert(
+                    atomized.drawableAtoms.end(),
+                    endingAtoms.begin(),
+                    endingAtoms.end()
+                );
+                drawablePoints.insert(
+                    drawablePoints.end(),
+                    endingPoints.begin(),
+                    endingPoints.end()
+                );
+
+                float endingX = isLtr
+                    ? firstOffset[visibleCount - 1].x + firstAtom[visibleCount - 1].width
+                    : firstOffset[visibleStart].x - endingWidth;
+                float endingY = firstOffset[visibleStart].y;
+                for (const Atom& atom : endingAtoms) {
+                    layout.drawableAtomOffsets.push_back(simd_float2{endingX, endingY});
+                    endingX += atom.width;
+                }
+
+                endingAdded = true;
+            }
+
+            for (size_t pointIndex = 0; pointIndex < drawablePoints.size(); ++pointIndex) {
+                drawablePoints[pointIndex].id = pointIndex / 6;
+            }
+            fragment.fragmentStorage.drawablePointsBuffer.write(
+                ctx.frameIndex,
+                drawablePoints.data(),
+                drawablePoints.size() * sizeof(TextPoint)
+            );
+            fragment.fragmentStorage.metadataBuffer.write(
+                ctx.frameIndex,
+                drawableMetadata.data(),
+                drawableMetadata.size() * sizeof(int)
+            );
+
             return atomized;
         };
 
         Placed place(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized, LayoutResult& lr) {
             std::vector<AtomPlacement> placements;
             
-            auto offsets = lr.atomOffsets;
+            const auto& offsets = atomized.usesDrawableAtoms
+                ? lr.drawableAtomOffsets
+                : lr.atomOffsets;
 
 
             size_t bufferLen = offsets.size() * sizeof(simd_float2);
@@ -451,7 +623,9 @@ namespace elements {
             encoder->setRenderPipelineState(pipeline);
 
             auto frameInfoBuf = ctx.frameInfoBuffer.get();
-            auto atomBuf = fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
+            auto atomBuf = finalized.atomized.usesDrawableAtoms
+                ? fragment.fragmentStorage.drawablePointsBuffer.getBuffer(ctx.frameIndex)
+                : fragment.fragmentStorage.atomsBuffer.getBuffer(ctx.frameIndex);
             auto placementBuf = fragment.fragmentStorage.placementsBuffer.getBuffer(ctx.frameIndex);
             auto metaBuf = fragment.fragmentStorage.metadataBuffer.getBuffer(ctx.frameIndex);
             auto uniformsBuf = fragment.fragmentStorage.uniformsBuffer.getBuffer(ctx.frameIndex);
@@ -468,7 +642,9 @@ namespace elements {
             encoder->setFragmentBuffer(uniformsBuf, 0, 2);
             encoder->setFragmentBuffer(clipsBuf, 0, 3);
 
-            const auto& atoms = finalized.atomized.atoms;
+            const auto& atoms = finalized.atomized.usesDrawableAtoms
+                ? finalized.atomized.drawableAtoms
+                : finalized.atomized.atoms;
             encoder->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), atoms.size()*6);
 
         }

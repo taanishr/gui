@@ -19,6 +19,8 @@
 #include "AppKit_Extensions.hpp"
 #include <any>
 #include <unordered_map>
+#include <string>
+#include <utility>
 #include <vector>
 
 class Renderer;
@@ -42,6 +44,8 @@ namespace layout {
     struct Atomized {
         FragmentID id;
         std::vector<Atom> atoms;
+        std::vector<Atom> drawableAtoms;
+        bool usesDrawableAtoms{};
     };
 
     struct Placed {
@@ -51,6 +55,7 @@ namespace layout {
 
     struct LineFragment {
         float width{};
+        size_t atomStart{};
         size_t atomCount{};
         size_t lineBoxIndex{};
         size_t fragmentIndex{};  // index within lineBox.fragmentOffsets
@@ -266,6 +271,33 @@ namespace style {
         BreakAll
     };
 
+    struct TextOverflow {
+        enum class Mode {
+            Clip,
+            Ellipsis,
+            Custom
+        };
+
+        Mode mode{Mode::Clip};
+        std::u32string ending{};
+
+        static TextOverflow clip() {
+            return {};
+        }
+
+        static TextOverflow ellipsis() {
+            return {.mode = Mode::Ellipsis, .ending = U"\u2026"};
+        }
+
+        static TextOverflow custom(std::u32string ending) {
+            return {.mode = Mode::Custom, .ending = std::move(ending)};
+        }
+
+        bool drawsEnding() const {
+            return mode != Mode::Clip && !ending.empty();
+        }
+    };
+
     struct ClipUniform {
         simd_float2 rectCenter{};
         simd_float2 halfExtent{};
@@ -317,6 +349,7 @@ namespace style {
         simd_float4 borderColor{0,0,0,1};
 
         Overflow overflow {Overflow::Visible};
+        TextOverflow textOverflow{};
     };
 }
 
@@ -332,6 +365,7 @@ namespace layout {
     using style::Position;
     using style::SharedDescriptor;
     using style::Size;
+    using style::TextOverflow;
 
     struct EdgeIntent {
         Display edgeDisplayMode{Display::Block};
@@ -385,6 +419,7 @@ namespace layout {
         ResolvedMargins resolvedMargins {};
         float prevInlineHeight{};
         std::vector<ClipUniform> clipUniforms {};
+        std::optional<TextOverflow> textOverflow{};
 
         bool shrinkToFit{false};
         AxisResolution widthResolution{AxisResolution::Final};
@@ -500,6 +535,9 @@ namespace layout {
     struct LayoutResult {
         std::vector<simd_float2> atomOffsets;
         std::vector<simd_float2> localAtomOffsets;
+        std::vector<simd_float2> drawableAtomOffsets;
+        std::vector<LineFragment> lineFragments;
+        std::vector<LineBox> lineBoxes;
 
         LayoutBox computedBox;
         LayoutBox localComputedBox;

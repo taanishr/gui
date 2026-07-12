@@ -31,6 +31,7 @@ namespace elements {
     using style::Overflow;
     using style::Position;
     using style::Size;
+    using style::TextOverflow;
     using style::WhiteSpace;
     using style::WordBreak;
     using tree::RenderTree;
@@ -284,6 +285,16 @@ namespace elements {
 
         Derived& overflow(Overflow overflow) {
             node->shared.overflow = overflow;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        const TextOverflow& textOverflow() const {
+            return node->shared.textOverflow;
+        }
+
+        Derived& textOverflow(TextOverflow textOverflow) {
+            node->shared.textOverflow = std::move(textOverflow);
             markDirty(layoutDirtyBits());
             return self();
         }
