@@ -612,7 +612,6 @@ namespace layout {
         float minX = newCursor.x;
         float minY = newCursor.y;
 
-        size_t atomIndex = 0;
         bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
         size_t prevLineBoxIndex = -1;
 
@@ -665,6 +664,7 @@ namespace layout {
             }
 
 
+            size_t atomIndex = fragment.atomStart;
             for (size_t i = 0; i < fragment.atomCount && atomIndex < atomized.atoms.size(); ++i, ++atomIndex) {
                 auto& atom = atomized.atoms[atomIndex];
                 float usedLineHeight = atom.lineHeight > 0.0f

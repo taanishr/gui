@@ -19,6 +19,7 @@ namespace gui {
     using style::AlignContent;
     using style::FlexWrap;
     using style::Overflow;
+    using style::TextOverflow;
     using style::WhiteSpace;
     using style::WordBreak;
 

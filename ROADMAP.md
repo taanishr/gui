@@ -18,8 +18,7 @@ Goal: text should behave predictably enough to build real UI.
    - `wordBreak: Normal | BreakAll`
 
 4. Add text overflow.
-   - `textOverflow: Clip | Ellipsis`
-   - `maxLines(...)`
+   - Support clipping and a configurable overflow ending.
 
 5. Add text alignment.
    - `textAlign: Left | Center | Right`
@@ -32,6 +31,10 @@ Goal: text should behave predictably enough to build real UI.
    - Add ligatures.
    - Add complex script shaping.
    - Add bidirectional text handling.
+
+### Text Backlog
+
+- Consider multi-line clamping if a concrete UI use case requires it.
 
 ## 2. Optimization
 

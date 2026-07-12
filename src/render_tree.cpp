@@ -1,5 +1,6 @@
 #include "render_tree.hpp"
 #include "hash_combine.hpp"
+#include "new_arch.hpp"
 #include <algorithm>
 #include <print>
 
@@ -121,6 +122,10 @@ namespace tree {
         hash_combine(hash, constraints.shrinkToFit);
         hash_combine(hash, constraints.lineFragments.size());
         hash_combine(hash, constraints.lineBoxes.size());
+        hash_combine(hash, static_cast<int>(constraints.textOverflow->mode));
+        for (char32_t codepoint : constraints.textOverflow->ending) {
+            hash_combine(hash, codepoint);
+        }
 
         for (auto& clip : constraints.clipUniforms) {
             hash_combine(hash, clip.rectCenter.x);
@@ -133,6 +138,7 @@ namespace tree {
 
         for (auto& fragment : constraints.lineFragments) {
             hash_combine(hash, fragment.width);
+            hash_combine(hash, fragment.atomStart);
             hash_combine(hash, fragment.atomCount);
             hash_combine(hash, fragment.lineBoxIndex);
             hash_combine(hash, fragment.fragmentIndex);
@@ -555,6 +561,10 @@ namespace tree {
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         auto childConstraints = layout.childConstraints;
+        childConstraints.textOverflow = constraints.textOverflow;
+        if (node->shared.overflow != Overflow::Visible) {
+            childConstraints.textOverflow = node->shared.textOverflow;
+        }
         float parentAvailableWidth  = childConstraints.availableWidth;
         float parentAvailableHeight = childConstraints.availableHeight;
         float originX         = childConstraints.origin.x;
@@ -696,6 +706,10 @@ namespace tree {
 
             layout = node->element->layout(constraints, node->shared, retryMeasured, atomized);
             childConstraints = layout.childConstraints;
+            childConstraints.textOverflow = constraints.textOverflow;
+            if (node->shared.overflow != Overflow::Visible) {
+                childConstraints.textOverflow = node->shared.textOverflow;
+            }
             parentAvailableWidth  = childConstraints.availableWidth;
             parentAvailableHeight = childConstraints.availableHeight;
 
@@ -849,7 +863,9 @@ namespace tree {
         };
 
         if (node->shared.overflow == Overflow::Scroll) {
-            currContentOrigin.x -= node->scrollOffset.x;
+            currContentOrigin.x += constraints.inheritedProperties.direction == layout::Direction::rtl
+                ? node->scrollOffset.x
+                : -node->scrollOffset.x;
             currContentOrigin.y -= node->scrollOffset.y;
         }
 
@@ -859,6 +875,10 @@ namespace tree {
         }
 
         auto childConstraints = constraints;
+        childConstraints.availableWidth = layout.childConstraints.availableWidth;
+        if (node->shared.overflow != Overflow::Visible) {
+            childConstraints.textOverflow = node->shared.textOverflow;
+        }
         if (node->shared.overflow != Overflow::Visible) {
             float cornerRadius = node->shared.cornerRadius.resolveOr(
                 std::min(layout.computedBox.width, layout.computedBox.height)
@@ -891,7 +911,14 @@ namespace tree {
             includeChildOverflow = [&](TreeNode* child) {
                 if (!child->layout.has_value() || child->layout->outOfFlow) return;
                 auto& childBox = child->layout->computedBox;
-                contentSize.x = std::max(contentSize.x, childBox.x + childBox.width - currContentOrigin.x);
+                if (constraints.inheritedProperties.direction == layout::Direction::rtl) {
+                    contentSize.x = std::max(
+                        contentSize.x,
+                        currContentOrigin.x + node->scrollViewportSize.x - childBox.x
+                    );
+                } else {
+                    contentSize.x = std::max(contentSize.x, childBox.x + childBox.width - currContentOrigin.x);
+                }
                 contentSize.y = std::max(contentSize.y, childBox.y + childBox.height - currContentOrigin.y);
 
                 if (child->shared.overflow != Overflow::Visible) return;

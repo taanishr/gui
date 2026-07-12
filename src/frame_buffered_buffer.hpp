@@ -15,7 +15,7 @@ struct FrameBufferedBuffer {
         }
     }
 
-    void write(uint64_t frameIndex, T* data, size_t length, size_t offset = 0) {
+    void write(uint64_t frameIndex, const T* data, size_t length, size_t offset = 0) {
         auto writingIndex = frameIndex % numFrames;
         auto& buffer = buffers[writingIndex];
         auto rawBuffer = buffer.get();
