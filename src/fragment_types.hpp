@@ -27,6 +27,7 @@ struct Atom {
         length{0},
         width{0},
         height{0},
+        lineHeight{0},
         placeOnNewLine{false},
         canPlaceOnNewLine{false}
     {}
@@ -37,6 +38,7 @@ struct Atom {
     
     float width;
     float height;
+    float lineHeight;
 
     bool canPlaceOnNewLine;
     bool placeOnNewLine;
@@ -54,4 +56,3 @@ struct Uniforms {
     BufferHandle uniformsBufferHandle;
     T uniforms;
 };
-

@@ -20,6 +20,7 @@ namespace tree {
     using elements::DescriptorPayload;
     using elements::GetField;
     using elements::RequestTarget;
+    using elements::isTextWhitespace;
     using layout::Constraints;
     using layout::LayoutEngine;
     using layout::LayoutInput;
@@ -29,6 +30,8 @@ namespace tree {
     using style::Display;
     using style::Position;
     using style::Size;
+    using style::WhiteSpace;
+    using style::WordBreak;
 
     // Element-specific requests still use the request system
     std::optional<std::u32string> getText(TreeNode* node) {
@@ -36,6 +39,24 @@ namespace tree {
         auto resp = node->element->request(RequestTarget::Descriptor, request);
         if (resp.has_value()) {
             return std::any_cast<std::u32string>(resp);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<WhiteSpace> getWhiteSpace(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "whiteSpace"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<WhiteSpace>(resp);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<WordBreak> getWordBreak(TreeNode* node) {
+        std::any request{DescriptorPayload{GetField{.name = "wordBreak"}}};
+        auto resp = node->element->request(RequestTarget::Descriptor, request);
+        if (resp.has_value()) {
+            return std::any_cast<WordBreak>(resp);
         }
         return std::nullopt;
     }
@@ -56,17 +77,11 @@ namespace tree {
         return nodes;
     }
 
-    bool isWhitespace(char32_t ch) {
-        return ch == U' ' ||
-               ch == U'\t' ||
-               ch == U'\r' ||
-               ch == U'\f' ||
-               ch == U'\v';
-    }
-
     void appendTextLineFragments(
         const std::u32string& text,
         const std::vector<Atom>& atoms,
+        WhiteSpace whiteSpace,
+        WordBreak wordBreak,
         ResolvedMargins margins,
         float availableWidth,
         std::vector<LineFragment>& fragments,
@@ -75,6 +90,15 @@ namespace tree {
         size_t& currentLineBoxIndex,
         bool& lastFragmentHasBreakOpportunity
     ) {
+        const bool preserveLineFeeds =
+            whiteSpace == WhiteSpace::Pre ||
+            whiteSpace == WhiteSpace::PreWrap;
+        const bool allowSoftWrap =
+            whiteSpace == WhiteSpace::Normal ||
+            whiteSpace == WhiteSpace::PreWrap;
+        const bool breakInsideWords =
+            allowSoftWrap && wordBreak == WordBreak::BreakAll;
+
         float runningWidth = margins.left;
         size_t runningAtomCount = 0;
         size_t idx = 0;
@@ -83,13 +107,13 @@ namespace tree {
             char32_t ch = text[idx];
             const auto& atom = atoms[idx];
 
-            if (atom.placeOnNewLine || ch == U'\n') {
+            if (preserveLineFeeds && atom.placeOnNewLine) {
                 runningWidth += atom.width + margins.right;
                 runningAtomCount++;
 
                 LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
 
-                if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+                if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                     lineBoxes.push_back(currentLineBox);
                     currentLineBox = {};
                     currentLineBoxIndex++;
@@ -111,14 +135,45 @@ namespace tree {
                 continue;
             }
 
-            if (!isWhitespace(ch)) {
+            if (breakInsideWords && !isTextWhitespace(ch)) {
+                float prospectiveWidth = currentLineBox.width + runningWidth + atom.width;
+
+                if (prospectiveWidth > availableWidth &&
+                    (currentLineBox.fragmentCount > 0 || runningAtomCount > 0)) {
+                    bool hadPendingAtoms = runningAtomCount > 0;
+                    if (runningAtomCount > 0) {
+                        LineFragment frag{
+                            .width = runningWidth,
+                            .atomCount = runningAtomCount,
+                            .lineBoxIndex = currentLineBoxIndex,
+                            .fragmentIndex = currentLineBox.fragmentCount
+                        };
+                        fragments.push_back(frag);
+                        currentLineBox.pushFragment(frag);
+                    }
+
+                    lineBoxes.push_back(currentLineBox);
+                    currentLineBox = {};
+                    currentLineBoxIndex++;
+                    lastFragmentHasBreakOpportunity = false;
+                    runningWidth = hadPendingAtoms ? 0.0f : margins.left;
+                    runningAtomCount = 0;
+                }
+
                 runningWidth += atom.width;
                 runningAtomCount++;
                 idx++;
                 continue;
             }
 
-            while (idx < text.size() && idx < atoms.size() && isWhitespace(text[idx])) {
+            if (!isTextWhitespace(ch)) {
+                runningWidth += atom.width;
+                runningAtomCount++;
+                idx++;
+                continue;
+            }
+
+            while (idx < text.size() && idx < atoms.size() && isTextWhitespace(text[idx])) {
                 runningWidth += atoms[idx].width;
                 runningAtomCount++;
                 idx++;
@@ -128,7 +183,7 @@ namespace tree {
 
             LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
 
-            if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+            if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                 lineBoxes.push_back(currentLineBox);
                 currentLineBox = {};
                 currentLineBoxIndex++;
@@ -149,7 +204,7 @@ namespace tree {
 
             LineFragment frag{.width = runningWidth, .atomCount = runningAtomCount};
 
-            if (lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+            if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
                 lineBoxes.push_back(currentLineBox);
                 currentLineBox = {};
                 currentLineBoxIndex++;
@@ -267,6 +322,8 @@ namespace tree {
             appendTextLineFragments(
                 text,
                 atoms,
+                getWhiteSpace(node).value_or(WhiteSpace::Normal),
+                getWordBreak(node).value_or(WordBreak::Normal),
                 margins,
                 maxWidth,
                 fragments,
@@ -314,6 +371,8 @@ namespace tree {
                 appendTextLineFragments(
                     text,
                     atoms,
+                    getWhiteSpace(child.get()).value_or(WhiteSpace::Normal),
+                    getWordBreak(child.get()).value_or(WordBreak::Normal),
                     margins,
                     childConstraints.availableWidth,
                     childLineFragments,

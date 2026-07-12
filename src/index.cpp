@@ -1315,6 +1315,7 @@ auto index() -> void {
 
     using S = gui::Size;
 
+    /* Existing dark music player test.
     // Dark music player — scrollable playlist (left) + nested scrollable lyrics (right)
     div(S::percent(1.0), S::percent(1.0), simd_float4{0.09,0.09,0.11,1.0})
         .display(gui::Display::Flex)
@@ -1688,6 +1689,69 @@ auto index() -> void {
                     text(U"Reverie, reverie —").fontSize(S::pt(15)).color(simd_float4{0.18,0.72,0.56,1.0}),
                     text(U"a promise too fragile to keep.").fontSize(S::pt(15)).color(simd_float4{0.18,0.72,0.56,1.0})
                 )
+            )
+        )
+    );
+    */
+
+    const auto sample = UR"(Alpha   beta gamma delta epsilon zeta
+Second   line with Supercalifragilisticexpialidocious tail)";
+    const auto breakAllSample = U"BreakAll: Supercalifragilisticexpialidocious0123456789";
+    const auto panelColor = simd_float4{0.94f, 0.95f, 0.97f, 1.0f};
+    const auto textColor = simd_float4{0.08f, 0.09f, 0.11f, 1.0f};
+    const auto labelColor = simd_float4{0.32f, 0.35f, 0.40f, 1.0f};
+
+    div(S::percent(1.0), S::percent(1.0), simd_float4{1.0f, 1.0f, 1.0f, 1.0f})
+        .display(gui::Display::Flex)
+        .flexDirection(gui::FlexDirection::Col)
+        .flexGap(S::px(12))
+        .padding(S::px(24))
+        .overflow(gui::Overflow::Scroll)
+    (
+        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+        (
+            text(U"Normal").fontSize(S::pt(12)).color(labelColor),
+            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+            (
+                text(sample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+                    .whiteSpace(gui::WhiteSpace::Normal)
+            )
+        ),
+        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+        (
+            text(U"NoWrap").fontSize(S::pt(12)).color(labelColor),
+            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+            (
+                text(sample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+                    .whiteSpace(gui::WhiteSpace::NoWrap)
+            )
+        ),
+        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+        (
+            text(U"Pre").fontSize(S::pt(12)).color(labelColor),
+            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+            (
+                text(sample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+                    .whiteSpace(gui::WhiteSpace::Pre)
+            )
+        ),
+        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+        (
+            text(U"PreWrap").fontSize(S::pt(12)).color(labelColor),
+            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+            (
+                text(sample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+                    .whiteSpace(gui::WhiteSpace::PreWrap)
+            )
+        ),
+        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+        (
+            text(U"Normal + BreakAll").fontSize(S::pt(12)).color(labelColor),
+            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+            (
+                text(breakAllSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+                    .whiteSpace(gui::WhiteSpace::Normal)
+                    .wordBreak(gui::WordBreak::BreakAll)
             )
         )
     );

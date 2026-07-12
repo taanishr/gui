@@ -29,6 +29,13 @@ namespace elements {
     using runtime::UIContext;
     using style::SharedDescriptor;
 
+    constexpr bool isTextWhitespace(char32_t codepoint) noexcept {
+        return codepoint == U' '  ||
+               codepoint == U'\t' ||
+               codepoint == U'\r' ||
+               codepoint == U'\n';
+    }
+
     enum class RequestTarget {
         Descriptor,
     };
