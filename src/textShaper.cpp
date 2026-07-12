@@ -1,8 +1,14 @@
 #include "textShaper.hpp"
 #include "glyphs.hpp"
+#include "utf8.hpp"
 #include <hb-ft.h>
 #include <hb.h>
 #include <algorithm>
+#include <memory>
+
+char32_t ShapedCluster::codepoint() const {
+    return utf8::at(text, 0).value;
+}
 
 TextShaper::TextShaper() {
     FT_Init_FreeType(&ft);
@@ -37,20 +43,21 @@ ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) 
     std::lock_guard lock(mutex);
     auto& font = getFont(fontName);
 
-    hb_buffer_t* buffer = hb_buffer_create();
+    using HarfBuzzBuffer = std::unique_ptr<hb_buffer_t, decltype(&hb_buffer_destroy)>;
+    HarfBuzzBuffer buffer{hb_buffer_create(), hb_buffer_destroy};
     hb_buffer_add_utf8(
-        buffer,
+        buffer.get(),
         text.data(),
         static_cast<int>(text.size()),
         0,
         static_cast<int>(text.size())
     );
-    hb_buffer_guess_segment_properties(buffer);
-    hb_shape(font.harfBuzzFont, buffer, nullptr, 0);
+    hb_buffer_guess_segment_properties(buffer.get());
+    hb_shape(font.harfBuzzFont, buffer.get(), nullptr, 0);
 
     unsigned int glyphCount = 0;
-    const auto* infos = hb_buffer_get_glyph_infos(buffer, &glyphCount);
-    const auto* positions = hb_buffer_get_glyph_positions(buffer, &glyphCount);
+    const auto* infos = hb_buffer_get_glyph_infos(buffer.get(), &glyphCount);
+    const auto* positions = hb_buffer_get_glyph_positions(buffer.get(), &glyphCount);
 
     ShapedRun result;
     result.glyphs.reserve(glyphCount);
@@ -82,9 +89,11 @@ ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) 
                 nextByteOffset = std::min(nextByteOffset, size_t(glyph.byteOffset));
             }
         }
+        const auto byteLength = nextByteOffset - byteOffset;
         result.clusters.push_back({
             .byteOffset = byteOffset,
-            .byteLength = nextByteOffset - byteOffset,
+            .byteLength = byteLength,
+            .text = std::string{text.substr(byteOffset, byteLength)},
             .glyphStart = glyphStart,
             .glyphCount = glyphEnd - glyphStart,
             .advance = advance
@@ -92,6 +101,5 @@ ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) 
         glyphStart = glyphEnd;
     }
 
-    hb_buffer_destroy(buffer);
     return result;
 }

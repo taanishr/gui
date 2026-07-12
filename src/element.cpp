@@ -63,13 +63,10 @@ namespace tree {
         return std::nullopt;
     }
 
-    const ShapedRun* getShapedRun(TreeNode* node) {
+    ShapedRun* getShapedRun(TreeNode* node) {
         std::any request;
         auto response = node->element->request(RequestTarget::TextShaping, request);
-        if (response.has_value()) {
-            return std::any_cast<const ShapedRun*>(response);
-        }
-        return nullptr;
+        return std::any_cast<ShapedRun*>(response);
     }
     
 
@@ -116,23 +113,14 @@ namespace tree {
         size_t runningAtomCount = 0;
         size_t idx = 0;
 
-        auto clusterWidth = [&](const ShapedCluster& cluster) {
+        while (idx < shapedRun.clusters.size()) {
+            const auto& cluster = shapedRun.clusters[idx];
+            char32_t ch = cluster.codepoint();
+            const auto& firstAtom = atoms[cluster.glyphStart];
             float width = 0.0f;
             for (size_t i = 0; i < cluster.glyphCount; ++i) {
                 width += atoms[cluster.glyphStart + i].width;
             }
-            return width;
-        };
-
-        auto clusterCodepoint = [&](const ShapedCluster& cluster) {
-            return utf8::at(text, cluster.byteOffset).value;
-        };
-
-        while (idx < shapedRun.clusters.size()) {
-            const auto& cluster = shapedRun.clusters[idx];
-            char32_t ch = clusterCodepoint(cluster);
-            const auto& firstAtom = atoms[cluster.glyphStart];
-            float width = clusterWidth(cluster);
 
             if (preserveLineFeeds && firstAtom.placeOnNewLine) {
                 runningWidth += width + margins.right;
@@ -210,9 +198,11 @@ namespace tree {
             }
 
             while (idx < shapedRun.clusters.size() &&
-                   isTextWhitespace(clusterCodepoint(shapedRun.clusters[idx]))) {
+                   isTextWhitespace(shapedRun.clusters[idx].codepoint())) {
                 const auto& whitespace = shapedRun.clusters[idx];
-                runningWidth += clusterWidth(whitespace);
+                for (size_t i = 0; i < whitespace.glyphCount; ++i) {
+                    runningWidth += atoms[whitespace.glyphStart + i].width;
+                }
                 runningAtomCount += whitespace.glyphCount;
                 idx++;
             }
@@ -366,7 +356,6 @@ namespace tree {
         auto textResp = getText(node);
         if (textResp.has_value()) {
             auto shapedRun = getShapedRun(node);
-            if (!shapedRun) return {fragments, lineBoxes};
             auto margins = node->preLayout->resolvedMargins;
             auto text = *textResp;
             auto& atoms = node->atomized->atoms;
@@ -410,10 +399,6 @@ namespace tree {
 
             if (textResp.has_value()) {
                 auto shapedRun = getShapedRun(child.get());
-                if (!shapedRun) {
-                    childrenLineFragments.push_back({});
-                    continue;
-                }
                 auto margins = child->preLayout->resolvedMargins;
                 auto text = *textResp;
 

@@ -12,6 +12,11 @@ using namespace metal;
 
 constant constexpr float BASE_PIXEL_HEIGHT = 256.0;
 
+enum class CurveType : uint {
+    Quadratic = 0,
+    Cubic = 1,
+};
+
 struct FrameInfo {
     float width;
     float height;

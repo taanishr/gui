@@ -21,9 +21,12 @@ struct ShapedGlyph {
 struct ShapedCluster {
     size_t byteOffset{};
     size_t byteLength{};
+    std::string text;
     size_t glyphStart{};
     size_t glyphCount{};
     float advance{};
+
+    char32_t codepoint() const;
 };
 
 struct ShapedRun {
