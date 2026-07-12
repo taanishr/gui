@@ -271,6 +271,13 @@ namespace style {
         BreakAll
     };
 
+    enum class TextAlign {
+        Start,
+        Left,
+        Center,
+        Right
+    };
+
     struct TextOverflow {
         enum class Mode {
             Clip,
@@ -350,6 +357,7 @@ namespace style {
 
         Overflow overflow {Overflow::Visible};
         TextOverflow textOverflow{};
+        std::optional<TextAlign> textAlign{};
     };
 }
 
@@ -366,6 +374,7 @@ namespace layout {
     using style::SharedDescriptor;
     using style::Size;
     using style::TextOverflow;
+    using style::TextAlign;
 
     struct EdgeIntent {
         Display edgeDisplayMode{Display::Block};
@@ -385,6 +394,7 @@ namespace layout {
 
     struct InheritedProperties {
         Direction direction{Direction::ltr};
+        TextAlign textAlign{TextAlign::Start};
     };
 
     struct ContainingBlock {
@@ -436,6 +446,7 @@ namespace layout {
         std::optional<Size> top, left, bottom, right;
 
         std::optional<Direction> direction; // overwrites inherited if specified
+        std::optional<TextAlign> textAlign;
 
         Size marginTop, marginRight, marginBottom, marginLeft;
 
@@ -460,6 +471,7 @@ namespace layout {
         li.left = s.left;
         li.bottom = s.bottom;
         li.right = s.right;
+        li.textAlign = s.textAlign;
         li.paddingTop = s.paddingTop.value_or(s.padding);
         li.paddingRight = s.paddingRight.value_or(s.padding);
         li.paddingBottom = s.paddingBottom.value_or(s.padding);

@@ -112,6 +112,8 @@ namespace tree {
         hash_combine(hash, constraints.cursor.y);
         hash_combine(hash, constraints.availableWidth);
         hash_combine(hash, constraints.availableHeight);
+        hash_combine(hash, static_cast<int>(constraints.inheritedProperties.direction));
+        hash_combine(hash, static_cast<int>(constraints.inheritedProperties.textAlign));
         hash_combine(hash, constraints.frameInfo.width);
         hash_combine(hash, constraints.frameInfo.height);
         hash_combine(hash, constraints.frameInfo.scale);
