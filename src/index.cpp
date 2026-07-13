@@ -1755,6 +1755,53 @@ auto index() -> void {
             text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
             text("The conjunct and pre-base vowel marks should be shaped and positioned.")
                 .fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("7a. Mixed LTR and RTL runs").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("Hello السلام").font(Arial).fontSize(S::pt(30)).color(body),
+            text("السلام Hello").font(Arial).fontSize(S::pt(30)).color(body),
+            text("Each Arabic run should remain joined while the two scripts retain their reading order.")
+                .fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("7b. Numbers and neutral punctuation").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            text("السلام 123 عليكم").font(Arial).fontSize(S::pt(30)).color(body),
+            text("Hello (السلام) 123").font(Arial).fontSize(S::pt(30)).color(body),
+            text("The digits should read 123 and the parentheses should enclose the Arabic word.")
+                .fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("7c. Bidi resolution across text siblings").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            div()
+            (
+                text("Hello ").font(Arial).fontSize(S::pt(30)).color(body),
+                text("السلام").font(GeezaPro).fontSize(S::pt(30)).color(body),
+                text(" 123").font(Arial).fontSize(S::pt(30)).color(body)
+            ),
+            text("This is three sibling Text nodes and should match a single mixed-direction sentence.")
+                .fontSize(S::pt(12)).color(note)
+        ),
+
+        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+        (
+            text("7d. Mixed-direction wrapping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+            div().width(S::px(260))
+            (
+                text("Hello السلام 123 عليكم from a narrow mixed-direction line")
+                    .font(Arial).fontSize(S::pt(24)).color(body)
+            ),
+            text("Every physical line should remain separate, joined, and non-overlapping.")
+                .fontSize(S::pt(12)).color(note)
         )
     );
 

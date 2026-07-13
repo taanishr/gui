@@ -593,7 +593,7 @@ namespace layout {
 
         ResolvedMargins margins = constraints.resolvedMargins;
 
-        std::vector<simd_float2> atomOffsets;
+        std::vector<simd_float2> atomOffsets(atomized.atoms.size());
 
         PositionResolutionContext pctx {
             .currentCursor = currentCursor,
@@ -615,11 +615,13 @@ namespace layout {
         bool isLtr = constraints.inheritedProperties.direction == Direction::ltr;
         size_t prevLineBoxIndex = -1;
 
+        auto lineFragments = constraints.inlineFormatting.lineFragments();
+        auto lineBoxes = constraints.inlineFormatting.lineBoxes();
         size_t fragmentIdx = 0;
-        for (auto it = constraints.lineFragments.begin(); it != constraints.lineFragments.end(); ++it, ++fragmentIdx) {
+        for (auto it = lineFragments.begin(); it != lineFragments.end(); ++it, ++fragmentIdx) {
             const LineFragment& fragment = *it;
 
-            auto& lineBox = constraints.lineBoxes[fragment.lineBoxIndex];
+            const auto& lineBox = lineBoxes[fragment.lineBoxIndex];
             float offset = lineBox.fragmentOffsets[fragment.fragmentIndex];
             float lineOffset = 0.0f;
             switch (constraints.inheritedProperties.textAlign) {
@@ -683,10 +685,10 @@ namespace layout {
                     ? atom.lineHeight
                     : atom.height;
 
-                atomOffsets.push_back(newCursor + simd_float2{
+                atomOffsets[atomIndex] = newCursor + simd_float2{
                     0.0f,
                     (usedLineHeight - atom.height) / 2.0f
-                });
+                };
                 newCursor.x += atom.width;
                 lineHeight = std::max(lineHeight, usedLineHeight);
                 currentTotalWidth += atom.width;

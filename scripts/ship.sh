@@ -19,6 +19,8 @@ METAL_CPP="/Users/treja/metal-cpp"
 METAL_CPP_EXT="/Users/treja/metal-cpp-extensions"
 FREETYPE_INC="/opt/homebrew/opt/freetype/include/freetype2"
 HARFBUZZ_INC="/opt/homebrew/opt/harfbuzz/include/harfbuzz"
+SHEENBIDI_DIR="$ROOT_DIR/vendor/SheenBidi"
+SHEENBIDI_INC="$SHEENBIDI_DIR/Headers"
 RESVG_INC="/opt/homebrew/opt/resvg/include/resvg"
 LIB_RESVG="/opt/homebrew/opt/resvg/lib"
 
@@ -38,6 +40,7 @@ CXXFLAGS=(
     -I"$METAL_CPP_EXT"
     -I"$FREETYPE_INC"
     -I"$HARFBUZZ_INC"
+    -I"$SHEENBIDI_INC"
     -I"$RESVG_INC"
     -O0 -g
 )
@@ -56,6 +59,7 @@ Commands:
   debug      Build, then run build/bin/gui under lldb
   extensions Build only the Swift AppKit/MTK extension static libraries
   xcode      Build the main gui.xcodeproj target with xcodebuild
+  test       Build and run focused unit tests
 EOF
     exit 1
 }
@@ -165,6 +169,12 @@ build_shaders() {
 build_cpp() {
     mkdir -p "$OBJ_DIR"
 
+    if [[ ! -f "$SHEENBIDI_DIR/Source/SheenBidi.c" ]]; then
+        echo "Missing vendor/SheenBidi."
+        echo "Run: git submodule update --init --recursive"
+        return 1
+    fi
+
     if [[ ! -f "$LIB_MTK_EXT" || ! -f "$LIB_APPKIT_EXT" ]]; then
         echo "Missing Swift extension libraries. Run: scripts/ship.sh extensions"
         return 1
@@ -183,6 +193,18 @@ build_cpp() {
     local build_flags_stamp="$BIN_OUT/.${BINARY_NAME}-build-flags"
     local build_flags="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI"
     local force_recompile=0
+
+    local sheen_src="$SHEENBIDI_DIR/Source/SheenBidi.c"
+    local sheen_obj="$OBJ_DIR/sheenbidi.o"
+    if needs_rebuild "$sheen_src" "$sheen_obj"; then
+        echo "  compile: vendor/SheenBidi/Source/SheenBidi.c"
+        "$llvm_prefix/bin/clang" \
+            -std=c11 -DSB_CONFIG_UNITY \
+            -I"$SHEENBIDI_INC" -I"$SHEENBIDI_DIR/Source" \
+            -c "$sheen_src" -o "$sheen_obj"
+        any_rebuilt=1
+    fi
+    objs+=("$sheen_obj")
 
     if [[ ! -f "$build_flags_stamp" || "$(< "$build_flags_stamp")" != "$build_flags" ]]; then
         force_recompile=1
@@ -277,6 +299,33 @@ build_xcode() {
         build
 }
 
+run_tests() {
+    local test_dir="$BUILD_DIR/tests"
+    local llvm_prefix=/opt/homebrew/opt/llvm
+    mkdir -p "$test_dir"
+
+    if [[ ! -f "$SHEENBIDI_DIR/Source/SheenBidi.c" ]]; then
+        echo "Missing vendor/SheenBidi."
+        echo "Run: git submodule update --init --recursive"
+        return 1
+    fi
+
+    "$llvm_prefix/bin/clang" \
+        -std=c11 -DSB_CONFIG_UNITY \
+        -I"$SHEENBIDI_INC" -I"$SHEENBIDI_DIR/Source" \
+        -c "$SHEENBIDI_DIR/Source/SheenBidi.c" \
+        -o "$test_dir/sheenbidi.o"
+
+    "$llvm_prefix/bin/clang++" \
+        -std=c++26 -I"$SRC_DIR" -I"$SHEENBIDI_INC" \
+        "$ROOT_DIR/tests/bidi.cpp" "$SRC_DIR/bidi.cpp" "$SRC_DIR/text_bidi.cpp" \
+        "$test_dir/sheenbidi.o" \
+        -o "$test_dir/bidi"
+
+    "$test_dir/bidi"
+    echo "Tests passed."
+}
+
 run_binary() {
     local bin="$BIN_OUT/$BINARY_NAME"
     [[ -x "$bin" ]] || { echo "Missing executable: $bin"; return 1; }
@@ -292,5 +341,6 @@ case "$1" in
     debug) build_extensions && build_shaders && build_cpp && lldb "$BIN_OUT/$BINARY_NAME" -o run ;;
     extensions) build_extensions ;;
     xcode) build_xcode ;;
+    test) run_tests ;;
     *) usage ;;
 esac

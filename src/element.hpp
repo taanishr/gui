@@ -383,6 +383,7 @@ namespace tree {
         std::optional<Atomized> atomized;
         std::optional<PreLayoutResult> preLayout;
         std::optional<LayoutResult> layout;
+        std::optional<bidi::TextBidiInput> textBidiInput;
         std::optional<Placed> placed;
         std::unordered_map<EventType, std::vector<EventHandler>> eventHandlers;
         std::any finalized;
@@ -400,13 +401,20 @@ namespace tree {
     };
 
     std::vector<TreeNode*> collectAllNodes(TreeNode* root);
+    std::optional<std::string> getText(TreeNode* node);
+    std::optional<style::WhiteSpace> getWhiteSpace(TreeNode* node);
+    Result<std::vector<std::optional<bidi::TextBidiInput>>>
+    prepareChildBidiInputs(
+        TreeNode* parent,
+        layout::Direction baseDirection
+    );
 
     void precomputeMargins(TreeNode* node, Constraints& constraints, std::unordered_map<ChainID, CollapsedChain>& collapsedChainMap);
     
     // full blown inline context
-    std::tuple<std::vector<std::vector<LineFragment>>, std::vector<LineBox>> buildInlineBoxes(TreeNode* node, Constraints& childConstraints);
+    std::shared_ptr<layout::InlineFormattingContext> buildInlineBoxes(TreeNode* node, Constraints& childConstraints);
 
     // inline context calculated for a single child, independently of other siblings
-    std::pair<std::vector<LineFragment>, std::vector<LineBox>> buildIsolatedInlineBoxes(TreeNode* node, float maxWidth);
+    layout::InlineFormattingInput buildIsolatedInlineBoxes(TreeNode* node, float maxWidth);
 
 }

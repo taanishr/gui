@@ -280,9 +280,7 @@ namespace layout {
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
-        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childAvailableWidth);
-        childConstraints.lineFragments = frags;
-        childConstraints.lineBoxes = boxes;
+        childConstraints.inlineFormatting = buildIsolatedInlineBoxes(child, childAvailableWidth);
         childConstraints.availableWidth = childAvailableWidth;
         childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
     }
@@ -427,9 +425,7 @@ namespace layout {
             float itemW = applyMinMax(cellW, childAsPtr->shared.minWidth, childAsPtr->shared.maxWidth, cellW);
             float itemH = applyMinMax(cellH, childAsPtr->shared.minHeight, childAsPtr->shared.maxHeight, cellH);
 
-            auto&& [frags, boxes] = buildIsolatedInlineBoxes(childAsPtr, itemW);
-            childConstraints.lineFragments = frags;
-            childConstraints.lineBoxes = boxes;
+            childConstraints.inlineFormatting = buildIsolatedInlineBoxes(childAsPtr, itemW);
             childConstraints.availableWidth = itemW;
             childConstraints.availableHeight = itemH;
             childConstraints.origin = {cellX, cellY};
