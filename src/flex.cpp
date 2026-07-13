@@ -57,9 +57,7 @@ namespace layout {
     }
 
     void FlexResolver::prepareChildConstraints(TreeNode* child) {
-        auto&& [frags, boxes] = buildIsolatedInlineBoxes(child, childAvailableWidth);
-        childConstraints.lineFragments = frags;
-        childConstraints.lineBoxes = boxes;
+        childConstraints.inlineFormatting = buildIsolatedInlineBoxes(child, childAvailableWidth);
         childConstraints.availableWidth = childAvailableWidth;
         childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
     }

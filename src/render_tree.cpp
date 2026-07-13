@@ -122,8 +122,21 @@ namespace tree {
         hash_combine(hash, constraints.absoluteContainingBlock.width);
         hash_combine(hash, constraints.absoluteContainingBlock.height);
         hash_combine(hash, constraints.shrinkToFit);
-        hash_combine(hash, constraints.lineFragments.size());
-        hash_combine(hash, constraints.lineBoxes.size());
+        auto lineFragments = constraints.inlineFormatting.lineFragments();
+        auto lineBoxes = constraints.inlineFormatting.lineBoxes();
+        hash_combine(hash, lineFragments.size());
+        hash_combine(hash, lineBoxes.size());
+        hash_combine(hash, constraints.textBidiInput.has_value());
+        if (constraints.textBidiInput.has_value()) {
+            const auto& bidi = *constraints.textBidiInput;
+            hash_combine(hash, bidi.paragraphByteStart);
+            hash_combine(hash, bidi.byteLength);
+            for (const auto& run : bidi.runs) {
+                hash_combine(hash, run.byteStart);
+                hash_combine(hash, run.byteLength);
+                hash_combine(hash, run.level);
+            }
+        }
         hash_combine(hash, static_cast<int>(constraints.textOverflow->mode));
         for (unsigned char byte : constraints.textOverflow->ending) {
             hash_combine(hash, byte);
@@ -138,14 +151,14 @@ namespace tree {
             hash_combine(hash, clip.cornerRadius.y);
         }
 
-        for (auto& fragment : constraints.lineFragments) {
+        for (auto& fragment : lineFragments) {
             hash_combine(hash, fragment.width);
             hash_combine(hash, fragment.atomStart);
             hash_combine(hash, fragment.atomCount);
             hash_combine(hash, fragment.lineBoxIndex);
             hash_combine(hash, fragment.fragmentIndex);
         }
-        for (auto& lineBox : constraints.lineBoxes) {
+        for (auto& lineBox : lineBoxes) {
             hash_combine(hash, lineBox.fragmentCount);
             hash_combine(hash, lineBox.width);
             hash_combine(hash, lineBox.currentFragmentOffset);
@@ -267,7 +280,7 @@ namespace tree {
             measurePhase(root, rootConstraints);
         }
         if (subtreeHasDirty(root, DirtyBits::Atomize) || !root->atomized.has_value()) {
-            atomizePhase(root, rootConstraints);
+            if (!atomizePhase(root, rootConstraints)) return;
         }
     
         // Layout pass
@@ -359,8 +372,12 @@ namespace tree {
 
 
     // consider safer way of accessing cache?
-    void RenderTree::atomizePhase(TreeNode* node, Constraints& constraints) {
+    Result<void> RenderTree::atomizePhase(
+        TreeNode* node,
+        Constraints& constraints
+    ) {
         assert(node->measured.has_value());
+        node->textBidiInput = constraints.textBidiInput;
 
         auto key = makeConstraintsKey(constraints);
         bool recompute = shouldRecompute(node, DirtyBits::Atomize, key);
@@ -376,9 +393,18 @@ namespace tree {
             debugCounters.atomize.skipped++;
         }
 
-        for (auto& child : node->children) {
-            atomizePhase(child.get(), constraints);
+        Constraints childConstraints = constraints;
+        auto childBidiInputs = prepareChildBidiInputs(
+            node,
+            childConstraints.inheritedProperties.direction
+        );
+        if (!childBidiInputs) return std::unexpected{childBidiInputs.error()};
+        for (size_t i = 0; i < node->children.size(); ++i) {
+            childConstraints.textBidiInput = std::move((*childBidiInputs)[i]);
+            auto result = atomizePhase(node->children[i].get(), childConstraints);
+            if (!result) return result;
         }
+        return {};
     }
 
     void buildCollapsedChains(
@@ -590,15 +616,17 @@ namespace tree {
 
         auto display = node->getDisplay();
         bool isNormalFlow = display != Display::Flex && display != Display::Grid;
-        auto&& [childrenLineFragments, childrenLineBoxes] = buildInlineBoxes(node, childConstraints);
-        childConstraints.lineBoxes = childrenLineBoxes;
+        auto inlineFormatting = buildInlineBoxes(node, childConstraints);
 
         auto normalPass = [&](){
             for (uint64_t i = 0; i < node->children.size(); ++i) {
                 auto& child = node->children[i];
                 auto childAsPtr = child.get();
 
-                childConstraints.lineFragments = childrenLineFragments[i];
+                childConstraints.inlineFormatting = {
+                    .context = inlineFormatting,
+                    .fragments = inlineFormatting->childFragments[i]
+                };
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
                 layoutPhase(childAsPtr, frameInfo, childConstraints);
                 auto childLayout = *childAsPtr->layout;
@@ -730,10 +758,7 @@ namespace tree {
             minY = maxY = originY;
             minX = maxX = originX;
 
-            auto [retryChildrenLineFragments, retryChildrenLineBoxes] = buildInlineBoxes(node, childConstraints);
-            childrenLineFragments = retryChildrenLineFragments;
-            childrenLineBoxes = retryChildrenLineBoxes;
-            childConstraints.lineBoxes = childrenLineBoxes;
+            inlineFormatting = buildInlineBoxes(node, childConstraints);
 
             if (display == Display::Flex) {
                 flexPass();

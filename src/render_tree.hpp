@@ -34,7 +34,10 @@ namespace tree {
         
 
         void measurePhase(TreeNode* node, Constraints& constraints);
-        void atomizePhase(TreeNode* node, Constraints& constraints);
+        Result<void> atomizePhase(
+            TreeNode* node,
+            Constraints& constraints
+        );
 
         void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 

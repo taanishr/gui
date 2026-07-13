@@ -29,10 +29,21 @@ struct ShapedCluster {
     char32_t codepoint() const;
 };
 
+struct ShapedSubRun {
+    size_t byteStart{};
+    size_t byteLength{};
+    size_t glyphStart{};
+    size_t glyphCount{};
+    uint8_t bidiLevel{};
+};
+
 struct ShapedRun {
     std::vector<ShapedGlyph> glyphs;
     std::vector<ShapedCluster> clusters;
+    std::vector<ShapedSubRun> runs;
 };
+
+enum class TextDirection { Ltr, Rtl };
 
 struct hb_font_t;
 
@@ -44,7 +55,14 @@ public:
     TextShaper(const TextShaper&) = delete;
     TextShaper& operator=(const TextShaper&) = delete;
 
-    ShapedRun shape(std::string_view text, const std::string& font);
+    ShapedRun shape(
+        std::string_view text,
+        size_t byteStart,
+        size_t byteLength,
+        const std::string& font,
+        TextDirection direction,
+        uint32_t scriptTag
+    );
 
 private:
     struct Font {

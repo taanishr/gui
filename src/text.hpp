@@ -258,7 +258,7 @@ namespace elements {
 
             return measured;
         }
-        
+
         std::array<TextPoint, 6> makeAtomPoints(const Quad& quad, int metadataIndex, int id, simd_float2 shapingOffset = {}) {
             return std::array<TextPoint,6>{
                 TextPoint{ .point = quad.topLeft, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id },
@@ -269,7 +269,7 @@ namespace elements {
                 TextPoint{ .point = quad.bottomRight, .shapingOffset = shapingOffset, .metadataIndex = metadataIndex, .id = id }
             };
         }
-        
+
         ShapedRun appendTextAtoms(
             std::string_view text,
             const TextDescriptor& desc,
@@ -277,7 +277,8 @@ namespace elements {
             bool preserveLineFeeds,
             std::vector<Atom>& atoms,
             std::vector<TextPoint>& points,
-            std::vector<int>& metadata
+            std::vector<int>& metadata,
+            std::span<const bidi::TextShapingRun> bidiRuns
         ) {
             float fontSize = 0.0;
             if (desc.fontSize.unit == Unit::Pt) {
@@ -287,119 +288,147 @@ namespace elements {
             float scale = fontSize / BASE_PIXEL_HEIGHT;
             float defaultLineHeight = glyphCache.lineHeight(desc.font) / FT_PIXEL_CF * scale;
             float resolvedLineHeight = defaultLineHeight * desc.lineHeight.value_or(1.0f);
-            bool previousWasWhitespace = false;
 
             std::string renderedText{text};
             auto codepoints = utf8::codePoints(text);
-            if (collapseWhitespace) {
-                for (const auto& codepoint : codepoints) {
-                    if (isTextWhitespace(codepoint.value)) {
-                        renderedText[codepoint.byteOffset] = ' ';
-                    }
+            std::vector<uint8_t> collapsedWhitespace(text.size(), false);
+            bool previousLogicalCodepointWasWhitespace = false;
+            for (const auto& codepoint : codepoints) {
+                const bool whitespace = isTextWhitespace(codepoint.value);
+                collapsedWhitespace[codepoint.byteOffset] =
+                    collapseWhitespace &&
+                    whitespace &&
+                    previousLogicalCodepointWasWhitespace;
+
+                if (collapseWhitespace && whitespace) {
+                    renderedText[codepoint.byteOffset] = ' ';
                 }
+
+                previousLogicalCodepointWasWhitespace = whitespace;
             }
 
-            auto shapedRun = textShaper.shape(renderedText, desc.font);
-            for (size_t glyphIndex = 0; glyphIndex < shapedRun.glyphs.size(); ++glyphIndex) {
-                const auto& shapedGlyph = shapedRun.glyphs[glyphIndex];
-                uint32_t codepoint = utf8::at(text, shapedGlyph.byteOffset).value;
-                Atom atom;
-                bool sourceWhitespace = isTextWhitespace(codepoint);
-                bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
+            ShapedRun shapedRun;
+            for (const auto& run : bidiRuns) {
+                auto sourceRun = textShaper.shape(
+                    renderedText,
+                    run.byteStart,
+                    run.byteLength,
+                    desc.font,
+                    run.isRtl() ? TextDirection::Rtl : TextDirection::Ltr,
+                    run.scriptTag
+                );
 
-                if (preserveLineFeeds && sourceLineFeed) {
+                const size_t atomBase = atoms.size();
+                for (auto cluster : sourceRun.clusters) {
+                    cluster.glyphStart += atomBase;
+                    shapedRun.clusters.push_back(std::move(cluster));
+                }
+
+                shapedRun.runs.push_back({
+                    .byteStart = run.byteStart,
+                    .byteLength = run.byteLength,
+                    .glyphStart = atomBase,
+                    .glyphCount = sourceRun.glyphs.size(),
+                    .bidiLevel = run.level
+                });
+
+                for (const auto& shapedGlyph : sourceRun.glyphs) {
+                    uint32_t codepoint = utf8::at(text, shapedGlyph.byteOffset).value;
+                    Atom atom;
+                    bool sourceLineFeed = codepoint == U'\r' || codepoint == U'\n';
+
+                    if (preserveLineFeeds && sourceLineFeed) {
+                        int metadataIndex = metadata.size();
+                        metadata.push_back(0);
+                        metadata.push_back(static_cast<int>(CurveType::Quadratic));
+                        metadata.push_back(0);
+
+                        Quad emptyQuad {
+                            .topLeft = {0.0f, 0.0f},
+                            .bottomRight = {0.0f, 0.0f}
+                        };
+                        auto atomPts = makeAtomPoints(emptyQuad, metadataIndex, atoms.size());
+                        points.insert(points.end(), atomPts.begin(), atomPts.end());
+
+                        atom.atomBufferHandle = glyphBuffer.handle();
+                        atom.length = sizeof(TextPoint) * 6;
+                        atom.offset = (points.size() - 6) * sizeof(TextPoint);
+                        atom.width = 0;
+                        atom.height = defaultLineHeight;
+                        atom.lineHeight = resolvedLineHeight;
+                        bool followsCarriageReturn = shapedGlyph.byteOffset > 0 &&
+                            text[shapedGlyph.byteOffset - 1] == '\r';
+                        atom.placeOnNewLine = !(codepoint == U'\n' && followsCarriageReturn);
+
+                        atoms.push_back(atom);
+                        continue;
+                    } else if (codepoint) {
+                        atom.canPlaceOnNewLine = true;
+                    }
+
+                    GlyphQuery glyphQuery { shapedGlyph.glyphId, desc.font };
+
+                    auto glyph = glyphCache.retrieve(glyphQuery);
+                    size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
+                    size_t offset = 0;
+
+                    // highly unoptimized coarse lock, for now
+                    {
+                        std::lock_guard<std::mutex> lock(glyphBufferMutex);
+                        auto offset_it = glyphBufferOffsets.find(glyphQuery);
+                        if (offset_it == glyphBufferOffsets.end()) {
+                            auto rawGlyphBuffer = glyphBuffer.get();
+                            size_t requiredSize = lastGlyphsBufferOffset + pointsLenBytes;
+
+                            if (requiredSize > rawGlyphBuffer->length()) {
+                                ctx.allocator.resize(glyphBuffer, requiredSize);
+                                rawGlyphBuffer = glyphBuffer.get();
+                            }
+
+                            auto copyStart =
+                                reinterpret_cast<std::byte*>(rawGlyphBuffer->contents()) + lastGlyphsBufferOffset;
+
+                            std::memcpy(copyStart, glyph.points.data(), pointsLenBytes);
+
+                            glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset / sizeof(simd_float2);
+                            offset_it = glyphBufferOffsets.find(glyphQuery);
+                            lastGlyphsBufferOffset += pointsLenBytes;
+                        }
+
+                        offset = offset_it->second;
+                    }
+
                     int metadataIndex = metadata.size();
-                    metadata.push_back(0);
-                    metadata.push_back(static_cast<int>(CurveType::Quadratic));
-                    metadata.push_back(0);
 
-                    Quad emptyQuad {
-                        .topLeft = {0.0f, 0.0f},
-                        .bottomRight = {0.0f, 0.0f}
+                    metadata.push_back(offset);
+                    metadata.push_back(static_cast<int>(glyph.curveType));
+                    metadata.push_back(glyph.numContours);
+                    for (auto& contourSize : glyph.contourSizes) {
+                        metadata.push_back(contourSize);
+                    }
+
+                    simd_float2 shapingOffset{
+                        shapedGlyph.xOffset,
+                        -shapedGlyph.yOffset
                     };
-                    auto atomPts = makeAtomPoints(emptyQuad, metadataIndex, atoms.size());
+                    auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size(), shapingOffset);
+
                     points.insert(points.end(), atomPts.begin(), atomPts.end());
-                    
+
                     atom.atomBufferHandle = glyphBuffer.handle();
                     atom.length = sizeof(TextPoint) * 6;
                     atom.offset = (points.size() - 6) * sizeof(TextPoint);
-                    atom.width = 0;
+                    float glyphWidth = shapedGlyph.xAdvance / FT_PIXEL_CF * scale;
+                    atom.width = collapsedWhitespace[shapedGlyph.byteOffset]
+                        ? 0.0f
+                        : glyphWidth;
                     atom.height = defaultLineHeight;
                     atom.lineHeight = resolvedLineHeight;
-                    bool followsCarriageReturn = shapedGlyph.byteOffset > 0 &&
-                        text[shapedGlyph.byteOffset - 1] == '\r';
-                    atom.placeOnNewLine = !(codepoint == U'\n' && followsCarriageReturn);
-                    
+
                     atoms.push_back(atom);
-                    previousWasWhitespace = false;
-                    continue;
-                } else if (codepoint) {
-                    atom.canPlaceOnNewLine = true;
                 }
-
-                GlyphQuery glyphQuery { shapedGlyph.glyphId, desc.font };
-
-                auto glyph = glyphCache.retrieve(glyphQuery);
-                size_t pointsLenBytes = glyph.points.size() * sizeof(simd_float2);
-                size_t offset = 0;
-                
-
-                // highly unoptimized coarse lock, for now
-                {
-                    std::lock_guard<std::mutex> lock(glyphBufferMutex);
-                    auto offset_it = glyphBufferOffsets.find(glyphQuery);
-                    if (offset_it == glyphBufferOffsets.end()) {
-                        auto rawGlyphBuffer = glyphBuffer.get();
-                        size_t requiredSize = lastGlyphsBufferOffset + pointsLenBytes;
-
-                        if (requiredSize > rawGlyphBuffer->length()) {
-                            ctx.allocator.resize(glyphBuffer, requiredSize);
-                            rawGlyphBuffer = glyphBuffer.get();
-                        }
-
-                        auto copyStart =
-                            reinterpret_cast<std::byte*>(rawGlyphBuffer->contents()) + lastGlyphsBufferOffset;
-
-                        std::memcpy(copyStart, glyph.points.data(), pointsLenBytes);
-
-                        glyphBufferOffsets[glyphQuery] = lastGlyphsBufferOffset / sizeof(simd_float2);
-                        offset_it = glyphBufferOffsets.find(glyphQuery);
-                        lastGlyphsBufferOffset += pointsLenBytes;
-                    }
-
-                    offset = offset_it->second;
-                }
-
-                int metadataIndex = metadata.size();
-
-                metadata.push_back(offset);
-                metadata.push_back(static_cast<int>(glyph.curveType));
-                metadata.push_back(glyph.numContours);
-                for (auto& contourSize : glyph.contourSizes) {
-                    metadata.push_back(contourSize);
-                }
-
-                simd_float2 shapingOffset{
-                    shapedGlyph.xOffset,
-                    -shapedGlyph.yOffset
-                };
-                auto atomPts = makeAtomPoints(glyph.quad, metadataIndex, atoms.size(), shapingOffset);
-
-                points.insert(points.end(), atomPts.begin(), atomPts.end());
-
-                atom.atomBufferHandle = glyphBuffer.handle();
-                atom.length = sizeof(TextPoint) * 6;
-                atom.offset = (points.size() - 6) * sizeof(TextPoint);
-                float glyphWidth = shapedGlyph.xAdvance / FT_PIXEL_CF * scale;
-                atom.width = collapseWhitespace && sourceWhitespace && previousWasWhitespace
-                    ? 0.0f
-                    : glyphWidth;
-                atom.height = defaultLineHeight;
-                atom.lineHeight = resolvedLineHeight;
-
-                atoms.push_back(atom);
-                previousWasWhitespace = sourceWhitespace;
             }
+            std::ranges::sort(shapedRun.clusters, {}, &ShapedCluster::byteOffset);
             return shapedRun;
         }
 
@@ -423,7 +452,8 @@ namespace elements {
                 preserveLineFeeds,
                 atoms,
                 allAtomPoints,
-                metadata
+                metadata,
+                constraints.textBidiInput.value().runs
             );
 
             if (!allAtomPoints.empty()) {
@@ -446,8 +476,7 @@ namespace elements {
         LayoutResult layout(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, TextDescriptor& desc, Measured& measured, Atomized& atomized) {
             auto li = toLayoutInput(shared, measured);
             auto lr = ctx.layoutEngine.resolve(constraints, li, atomized);
-            lr.lineFragments = constraints.lineFragments;
-            lr.lineBoxes = constraints.lineBoxes;
+            lr.inlineFormatting = constraints.inlineFormatting;
             return lr;
         }
 
@@ -476,7 +505,7 @@ namespace elements {
             );
 
             bool endingAdded = false;
-            for (const auto& lineFragment : layout.lineFragments) {
+            for (const auto& lineFragment : layout.inlineFormatting.lineFragments()) {
                 auto firstAtom = atomized.atoms.begin() + lineFragment.atomStart;
                 auto firstOffset = layout.atomOffsets.begin() + lineFragment.atomStart;
                 float fragmentLeft = firstOffset->x;
@@ -493,6 +522,18 @@ namespace elements {
                 std::vector<TextPoint> endingPoints;
                 std::vector<int> endingMetadata;
 
+                auto endingBidi = bidi::TextBidiContext::create(
+                    constraints.textOverflow->ending,
+                    constraints.inheritedProperties.direction == Direction::rtl
+                        ? bidi::BidiBaseDirection::Rtl
+                        : bidi::BidiBaseDirection::Ltr
+                );
+                std::vector<bidi::TextShapingRun> endingRuns;
+                if (endingBidi) {
+                    auto resolvedRuns = endingBidi->runs();
+                    endingRuns.assign(resolvedRuns.begin(), resolvedRuns.end());
+                }
+
                 appendTextAtoms(
                     constraints.textOverflow->ending,
                     desc,
@@ -500,7 +541,8 @@ namespace elements {
                     false,
                     endingAtoms,
                     endingPoints,
-                    endingMetadata
+                    endingMetadata,
+                    endingRuns
                 );
                 for (const Atom& atom : endingAtoms) endingWidth += atom.width;
 

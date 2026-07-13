@@ -39,7 +39,14 @@ TextShaper::Font& TextShaper::getFont(const std::string& fontName) {
     return inserted->second;
 }
 
-ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) {
+ShapedRun TextShaper::shape(
+    std::string_view text,
+    size_t byteStart,
+    size_t byteLength,
+    const std::string& fontName,
+    TextDirection direction,
+    uint32_t scriptTag
+) {
     std::lock_guard lock(mutex);
     auto& font = getFont(fontName);
 
@@ -49,10 +56,15 @@ ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) 
         buffer.get(),
         text.data(),
         static_cast<int>(text.size()),
-        0,
-        static_cast<int>(text.size())
+        static_cast<unsigned int>(byteStart),
+        static_cast<int>(byteLength)
     );
     hb_buffer_guess_segment_properties(buffer.get());
+    hb_buffer_set_direction(
+        buffer.get(),
+        direction == TextDirection::Rtl ? HB_DIRECTION_RTL : HB_DIRECTION_LTR
+    );
+    hb_buffer_set_script(buffer.get(), hb_script_from_iso15924_tag(scriptTag));
     hb_shape(font.harfBuzzFont, buffer.get(), nullptr, 0);
 
     unsigned int glyphCount = 0;
@@ -83,7 +95,7 @@ ShapedRun TextShaper::shape(std::string_view text, const std::string& fontName) 
             ++glyphEnd;
         }
 
-        size_t nextByteOffset = text.size();
+        size_t nextByteOffset = byteStart + byteLength;
         for (const auto& glyph : result.glyphs) {
             if (glyph.byteOffset > byteOffset) {
                 nextByteOffset = std::min(nextByteOffset, size_t(glyph.byteOffset));

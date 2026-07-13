@@ -11,10 +11,13 @@
 #include "metal_imports.hpp"
 #include "frame_info.hpp"
 #include "sizing.hpp"
+#include "text_bidi.hpp"
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <ranges>
+#include <span>
+#include <memory>
 #include <format>
 #include "AppKit_Extensions.hpp"
 #include <any>
@@ -57,17 +60,46 @@ namespace layout {
         float width{};
         size_t atomStart{};
         size_t atomCount{};
+        size_t textByteStart{};
+        size_t textByteLength{};
+        uint8_t bidiLevel{};
         size_t lineBoxIndex{};
         size_t fragmentIndex{};  // index within lineBox.fragmentOffsets
     };
 
     struct LineBox {
         size_t fragmentCount{}; // number of fragments
-        std::vector<int> fragmentOffsets{}; // relative x where fragment is placed in line box
+        std::vector<float> fragmentOffsets{}; // relative x where fragment is placed in line box
         float width{}; // width of line box (width of all fragments)
         float currentFragmentOffset{};
 
         void pushFragment(const LineFragment& fragment);
+    };
+
+    struct InlineFragmentRange {
+        size_t start{};
+        size_t count{};
+    };
+
+    struct InlineFormattingContext {
+        std::vector<LineFragment> fragments;
+        std::vector<LineBox> lineBoxes;
+        std::vector<InlineFragmentRange> childFragments;
+    };
+
+    struct InlineFormattingInput {
+        std::shared_ptr<const InlineFormattingContext> context;
+        InlineFragmentRange fragments;
+
+        std::span<const LineFragment> lineFragments() const {
+            if (!context || fragments.count == 0) return {};
+            return std::span{context->fragments}.subspan(fragments.start, fragments.count);
+        }
+
+        std::span<const LineBox> lineBoxes() const {
+            if (!context) return {};
+            return context->lineBoxes;
+        }
     };
 
     struct FinalizedBase {};
@@ -422,8 +454,8 @@ namespace layout {
 
         EdgeIntent edgeIntent{};
 
-        std::vector<LineFragment> lineFragments {};
-        std::vector<LineBox> lineBoxes {};
+        InlineFormattingInput inlineFormatting {};
+        std::optional<bidi::TextBidiInput> textBidiInput;
 
         ReplacedAttributes replacedAttributes {};
         ResolvedMargins resolvedMargins {};
@@ -548,8 +580,7 @@ namespace layout {
         std::vector<simd_float2> atomOffsets;
         std::vector<simd_float2> localAtomOffsets;
         std::vector<simd_float2> drawableAtomOffsets;
-        std::vector<LineFragment> lineFragments;
-        std::vector<LineBox> lineBoxes;
+        InlineFormattingInput inlineFormatting;
 
         LayoutBox computedBox;
         LayoutBox localComputedBox;
