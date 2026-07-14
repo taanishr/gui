@@ -35,6 +35,7 @@ Goal: text should behave predictably enough to build real UI.
 ### Text Backlog
 
 - Consider multi-line clamping if a concrete UI use case requires it.
+- Apply UAX #9 rule L1 after line wrapping so trailing whitespace uses the paragraph base level before visual fragment reordering.
 
 ## 2. Optimization
 
