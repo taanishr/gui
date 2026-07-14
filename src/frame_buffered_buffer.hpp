@@ -20,8 +20,8 @@ struct FrameBufferedBuffer {
         auto& buffer = buffers[writingIndex];
         auto rawBuffer = buffer.get();
 
-        if (length > rawBuffer->length()) {
-            allocator.resize(buffer, 2*length); // double length for now; maybe make a resize strat func later on
+        if (offset + length > rawBuffer->length()) {
+            allocator.resize(buffer, offset + length);
         }
 
         rawBuffer = buffer.get();

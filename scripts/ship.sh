@@ -12,6 +12,7 @@ OBJ_DIR="$BIN_OUT/obj"
 APPLE_EXT_BUILD="$BUILD_DIR/apple-extensions"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
 ENABLE_DEBUG_UI=0
+ENABLE_PROFILE=0
 
 XCODEBUILD="/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
 SDK_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
@@ -42,15 +43,15 @@ CXXFLAGS=(
     -I"$HARFBUZZ_INC"
     -I"$SHEENBIDI_INC"
     -I"$RESVG_INC"
-    -O0 -g
 )
 
 usage() {
     cat <<EOF
-Usage: scripts/ship.sh [--debug-ui] [build|run|buildrun|debug|extensions|xcode]
+Usage: scripts/ship.sh [--debug-ui] [--profile] [build|run|buildrun|debug|extensions|xcode]
 
 Options:
   --debug-ui  Enable the compile-time debug inspector UI
+  --profile   Build an optimized executable with debug symbols and frame pointers
 
 Commands:
   build       Build Swift extensions, Metal shaders, and C++ executable
@@ -70,6 +71,10 @@ while [[ $# -gt 0 ]]; do
             ENABLE_DEBUG_UI=1
             shift
             ;;
+        --profile)
+            ENABLE_PROFILE=1
+            shift
+            ;;
         --)
             shift
             break
@@ -83,11 +88,36 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ $ENABLE_PROFILE -eq 1 ]]; then
+    CXXFLAGS+=(-O2 -g -fno-omit-frame-pointer)
+    BINARY_NAME="gui-profile"
+    BUILD_MODE="profile"
+elif [[ ${1:-} == "debug" ]]; then
+    CXXFLAGS+=(-O0 -g)
+    BINARY_NAME="gui-debug"
+    OBJ_DIR="$BIN_OUT/obj-lldb"
+    BUILD_MODE="debug"
+else
+    CXXFLAGS+=(-O2 -g)
+    BUILD_MODE="optimized"
+fi
+
 if [[ $ENABLE_DEBUG_UI -eq 1 ]]; then
     CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=1)
-    OBJ_DIR="$BIN_OUT/obj-debug-ui"
+    if [[ $ENABLE_PROFILE -eq 1 ]]; then
+        OBJ_DIR="$BIN_OUT/obj-profile-debug-ui"
+        BINARY_NAME="gui-profile-debug-ui"
+    elif [[ ${1:-} == "debug" ]]; then
+        OBJ_DIR="$BIN_OUT/obj-lldb-debug-ui"
+        BINARY_NAME="gui-debug-ui"
+    else
+        OBJ_DIR="$BIN_OUT/obj-debug-ui"
+    fi
 else
     CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=0)
+    if [[ $ENABLE_PROFILE -eq 1 ]]; then
+        OBJ_DIR="$BIN_OUT/obj-profile"
+    fi
 fi
 
 needs_rebuild() {
@@ -191,7 +221,7 @@ build_cpp() {
     local srcs_to_compile=()
     local any_rebuilt=0
     local build_flags_stamp="$BIN_OUT/.${BINARY_NAME}-build-flags"
-    local build_flags="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI"
+    local build_flags="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI BUILD_MODE=$BUILD_MODE"
     local force_recompile=0
 
     local sheen_src="$SHEENBIDI_DIR/Source/SheenBidi.c"
