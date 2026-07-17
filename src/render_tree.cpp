@@ -2,17 +2,39 @@
 #include "hash_combine.hpp"
 #include "new_arch.hpp"
 #include <algorithm>
-#include <print>
 
 namespace tree {
     using layout::FlexLayout;
     using layout::FlexResolver;
     using layout::GridResolver;
+    using layout::LayoutOutput;
     using layout::MarginMetadata;
+    using layout::Measured;
     using layout::SizeResolutionContext;
     using layout::AxisResolution;
     using style::ClipUniform;
     using style::Unit;
+
+    void applyContentResolution(
+        std::optional<float>& explicitSize,
+        const std::optional<style::Size>& requestedSize,
+        AxisResolution resolution,
+        bool isText
+    ) {
+        if (resolution != AxisResolution::MinContent &&
+            resolution != AxisResolution::MaxContent) {
+            return;
+        }
+
+        if (isText) {
+            explicitSize = 0.0f;
+        } else if (!requestedSize.has_value() ||
+                   requestedSize->unit == Unit::Percent ||
+                   requestedSize->unit == Unit::Auto ||
+                   requestedSize->unit == Unit::Fr) {
+            explicitSize = std::nullopt;
+        }
+    }
 
     bool RenderTree::isFrameInfoChanged(const FrameInfo& frameInfo) const {
         return !lastFrameInfo.has_value()
@@ -122,6 +144,8 @@ namespace tree {
         hash_combine(hash, constraints.absoluteContainingBlock.width);
         hash_combine(hash, constraints.absoluteContainingBlock.height);
         hash_combine(hash, constraints.shrinkToFit);
+        hash_combine(hash, static_cast<int>(constraints.widthResolution));
+        hash_combine(hash, static_cast<int>(constraints.heightResolution));
         auto lineFragments = constraints.inlineFormatting.lineFragments();
         auto lineBoxes = constraints.inlineFormatting.lineBoxes();
         hash_combine(hash, lineFragments.size());
@@ -137,9 +161,12 @@ namespace tree {
                 hash_combine(hash, run.level);
             }
         }
-        hash_combine(hash, static_cast<int>(constraints.textOverflow->mode));
-        for (unsigned char byte : constraints.textOverflow->ending) {
-            hash_combine(hash, byte);
+        hash_combine(hash, constraints.textOverflow.has_value());
+        if (constraints.textOverflow.has_value()) {
+            hash_combine(hash, static_cast<int>(constraints.textOverflow->mode));
+            for (unsigned char byte : constraints.textOverflow->ending) {
+                hash_combine(hash, byte);
+            }
         }
 
         for (auto& clip : constraints.clipUniforms) {
@@ -183,11 +210,9 @@ namespace tree {
 
     const std::vector<TreeNode*>& RenderTree::sortedRenderOrder() {
         if (!renderOrderDirty && !renderOrderCache.empty()) {
-            debugCounters.renderOrderCacheHits++;
             return renderOrderCache;
         }
 
-        debugCounters.renderOrderCacheMisses++;
         renderOrderCache = collectAllNodes(getRoot());
 
         uint64_t paintOrderIndex = 0;
@@ -227,7 +252,6 @@ namespace tree {
 
     // I have a render cache, develop some sort of caching policy that makes these useful
     void RenderTree::update(const FrameInfo& frameInfo, uint64_t frameIndex) {
-        debugCounters = {};
         bool frameInfoChanged = isFrameInfoChanged(frameInfo);
         if (frameInfoChanged) {
             pendingFrameBufferWrites = MaxOutstandingFrameCount;
@@ -291,7 +315,7 @@ namespace tree {
         }
         // initial layout pass
         if (needsLayoutPass) {
-            layoutPhase(root, frameInfo, rootConstraints);
+            layoutPhase(root, frameInfo, rootConstraints, *root->measured);
             root->calculateGlobalZIndex(0);
         }
         sortedRenderOrder();
@@ -314,18 +338,6 @@ namespace tree {
             clearDirty(root);
         }
 
-        if (debugDirtyPhases) {
-            std::println(
-                "dirty phases: measure {}/{} atomize {}/{} layout {}/{} post {}/{} place {}/{} finalize {}/{} order hit/miss {}/{}",
-                debugCounters.measure.recomputed, debugCounters.measure.skipped,
-                debugCounters.atomize.recomputed, debugCounters.atomize.skipped,
-                debugCounters.layout.recomputed, debugCounters.layout.skipped,
-                debugCounters.postLayout.recomputed, debugCounters.postLayout.skipped,
-                debugCounters.place.recomputed, debugCounters.place.skipped,
-                debugCounters.finalize.recomputed, debugCounters.finalize.skipped,
-                debugCounters.renderOrderCacheHits, debugCounters.renderOrderCacheMisses
-            );
-        }
     }
 
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
@@ -346,9 +358,6 @@ namespace tree {
             node->measured = measured;
             node->constraintsKey = key;
             node->dirtySelf |= DirtyBits::Atomize | DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
-            debugCounters.measure.recomputed++;
-        } else {
-            debugCounters.measure.skipped++;
         }
         
         float paddingLeft = node->shared.paddingLeft.value_or(Size{}).resolveOr(constraints.availableWidth);
@@ -376,7 +385,6 @@ namespace tree {
         TreeNode* node,
         Constraints& constraints
     ) {
-        assert(node->measured.has_value());
         node->textBidiInput = constraints.textBidiInput;
 
         auto key = makeConstraintsKey(constraints);
@@ -388,9 +396,6 @@ namespace tree {
             node->atomized = atomized;
             node->constraintsKey = key;
             node->dirtySelf |= DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
-            debugCounters.atomize.recomputed++;
-        } else {
-            debugCounters.atomize.skipped++;
         }
 
         Constraints childConstraints = constraints;
@@ -533,17 +538,49 @@ namespace tree {
         precomputeMargins(node, constraints, collapsedChainMap);
     }
 
-    void RenderTree::layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        assert(node->measured.has_value());
-        assert(node->atomized.has_value());
-        assert(node->preLayout.has_value());
+    LayoutOutput RenderTree::layoutPhase(
+        TreeNode* node,
+        const FrameInfo& frameInfo,
+        Constraints constraints,
+        Measured measured
+    ) {
+        return layoutRecursive(node, frameInfo, std::move(constraints), measured, true);
+    }
 
+    LayoutOutput RenderTree::speculateLayout(
+        TreeNode* node,
+        const FrameInfo& frameInfo,
+        Constraints constraints,
+        Measured measured
+    ) {
+        return layoutRecursive(node, frameInfo, std::move(constraints), measured, false);
+    }
+
+    LayoutOutput RenderTree::layoutRecursive(
+        TreeNode* node,
+        const FrameInfo& frameInfo,
+        Constraints constraints,
+        Measured measured,
+        bool mutate
+    ) {
         auto key = makeConstraintsKey(constraints);
-        debugCounters.layout.recomputed++;
 
-        auto& measured = *node->measured;
         auto& atomized = *node->atomized;
         auto& prelayout = *node->preLayout;
+
+        bool isText = getText(node).has_value();
+        applyContentResolution(
+            measured.explicitWidth,
+            node->shared.width,
+            constraints.widthResolution,
+            isText
+        );
+        applyContentResolution(
+            measured.explicitHeight,
+            node->shared.height,
+            constraints.heightResolution,
+            isText
+        );
 
         constraints.resolvedMargins = prelayout.resolvedMargins;
 
@@ -578,10 +615,10 @@ namespace tree {
             auto newSize = resolveSize(sizeCtx);
             
             if (shouldResolvePercentWidth) {
-                node->measured->explicitWidth = newSize.width;
+                measured.explicitWidth = newSize.width;
             }
             if (shouldResolvePercentHeight) {
-                node->measured->explicitHeight = newSize.height;
+                measured.explicitHeight = newSize.height;
             }
         }
 
@@ -589,6 +626,14 @@ namespace tree {
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         auto childConstraints = layout.childConstraints;
+        if (constraints.widthResolution == AxisResolution::MinContent ||
+            constraints.widthResolution == AxisResolution::MaxContent) {
+            childConstraints.widthResolution = constraints.widthResolution;
+        }
+        if (constraints.heightResolution == AxisResolution::MinContent ||
+            constraints.heightResolution == AxisResolution::MaxContent) {
+            childConstraints.heightResolution = constraints.heightResolution;
+        }
         childConstraints.textOverflow = constraints.textOverflow;
         if (node->shared.overflow != Overflow::Visible) {
             childConstraints.textOverflow = node->shared.textOverflow;
@@ -628,8 +673,14 @@ namespace tree {
                     .fragments = inlineFormatting->childFragments[i]
                 };
                 childConstraints.inheritedProperties = constraints.inheritedProperties;
-                layoutPhase(childAsPtr, frameInfo, childConstraints);
-                auto childLayout = *childAsPtr->layout;
+                auto childOutput = layoutRecursive(
+                    childAsPtr,
+                    frameInfo,
+                    childConstraints,
+                    *childAsPtr->measured,
+                    mutate
+                );
+                auto& childLayout = childOutput.layout;
 
                 if (!childLayout.outOfFlow) {
                     childConstraints.cursor = childLayout.siblingCursor;
@@ -653,12 +704,14 @@ namespace tree {
             flexContext.axis.applyDirection(constraints.inheritedProperties.direction);
 
             FlexResolver fr {
-                *this, node, constraints, childConstraints, flexContext, frameInfo, parentAvailableWidth, parentAvailableHeight, minX, minY, maxX, maxY
+                *this, node, constraints, childConstraints, flexContext, frameInfo, measured,
+                mutate,
+                parentAvailableWidth, parentAvailableHeight, minX, minY, maxX, maxY
             };
 
-            fr.phaseAB();
-            fr.phaseC();
-            auto bounds = fr.phaseD();
+            fr.phaseA();
+            fr.phaseB();
+            auto bounds = fr.phaseC();
 
             maxX = bounds.maxX;
             maxY = bounds.maxY;
@@ -666,14 +719,15 @@ namespace tree {
 
         auto gridPass = [&]() {
             GridResolver gr {
-                *this, node, constraints, childConstraints, frameInfo, parentAvailableWidth, parentAvailableHeight, minX, minY, maxX, maxY
+                *this, node, constraints, childConstraints, frameInfo, measured,
+                mutate,
+                parentAvailableWidth, parentAvailableHeight, minX, minY, maxX, maxY
             };
 
             gr.phaseA();
             gr.phaseB();
-            gr.phaseC();
 
-            auto bounds = gr.phaseD();
+            auto bounds = gr.phaseC();
 
 
             maxX = bounds.maxX;
@@ -736,6 +790,14 @@ namespace tree {
 
             layout = node->element->layout(constraints, node->shared, retryMeasured, atomized);
             childConstraints = layout.childConstraints;
+            if (constraints.widthResolution == AxisResolution::MinContent ||
+                constraints.widthResolution == AxisResolution::MaxContent) {
+                childConstraints.widthResolution = constraints.widthResolution;
+            }
+            if (constraints.heightResolution == AxisResolution::MinContent ||
+                constraints.heightResolution == AxisResolution::MaxContent) {
+                childConstraints.heightResolution = constraints.heightResolution;
+            }
             childConstraints.textOverflow = constraints.textOverflow;
             if (node->shared.overflow != Overflow::Visible) {
                 childConstraints.textOverflow = node->shared.textOverflow;
@@ -795,24 +857,27 @@ namespace tree {
         // finalize layout of node
         layout.localComputedBox = layout.computedBox;
         layout.localAtomOffsets = layout.atomOffsets;
-        node->layout = layout;
-        node->constraintsKey = key;
-        node->dirtySelf |= DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+        LayoutOutput output {
+            .measured = measured,
+            .layout = std::move(layout)
+        };
+
+        if (mutate) {
+            node->layout = output.layout;
+            node->constraintsKey = key;
+            node->dirtySelf |= DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
+        }
+
+        return output;
     }
 
     void RenderTree::postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
                                       simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin) {
-        assert(node->measured.has_value());
-        assert(node->atomized.has_value());
-        assert(node->layout.has_value());
-
         auto key = makeConstraintsKey(constraints, parentGlobalOrigin, absBlockGlobalOrigin);
         bool recompute = shouldRecompute(node, DirtyBits::PostLayout, key);
         if (!recompute) {
-            debugCounters.postLayout.skipped++;
             return;
         }
-        debugCounters.postLayout.recomputed++;
 
         auto& layout = *node->layout;
         layout.computedBox = layout.localComputedBox;
@@ -965,10 +1030,6 @@ namespace tree {
     }
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
-        assert(node->measured.has_value());
-        assert(node->atomized.has_value());
-        assert(node->layout.has_value());
-
         auto key = makeConstraintsKey(constraints);
         bool recompute = shouldRecompute(node, DirtyBits::Place, key);
         if (recompute) {
@@ -980,9 +1041,6 @@ namespace tree {
             node->placed = placed;
             node->constraintsKey = key;
             node->dirtySelf |= DirtyBits::Finalize;
-            debugCounters.place.recomputed++;
-        } else {
-            debugCounters.place.skipped++;
         }
 
         for (auto& child : node->children) {
@@ -991,13 +1049,6 @@ namespace tree {
     }
 
     void RenderTree::finalizePhase(TreeNode* node, Constraints& constraints) {
-        // I thought runtime checks for private methods were stupid, but I also am not superhuman and LLMs can hallucinate,
-        // so debug asserts never hurt
-        assert(node->measured.has_value());
-        assert(node->atomized.has_value());
-        assert(node->layout.has_value());
-        assert(node->placed.has_value());
-
         auto key = makeConstraintsKey(constraints);
         bool recompute = shouldRecompute(node, DirtyBits::Finalize, key);
         if (recompute) {
@@ -1008,9 +1059,6 @@ namespace tree {
             auto finalized = node->element->finalize(constraints, node->shared, measured, atomized, layout, placed);
             node->finalized = finalized;
             node->constraintsKey = key;
-            debugCounters.finalize.recomputed++;
-        } else {
-            debugCounters.finalize.skipped++;
         }
 
         for (auto& child : node->children) {

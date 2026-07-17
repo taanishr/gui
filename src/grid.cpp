@@ -251,13 +251,14 @@ namespace layout {
 
     GridResolver::GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                                Constraints childConstraints, const FrameInfo& frameInfo,
+                               Measured measured, bool mutate,
                                float parentAvailableWidth, float parentAvailableHeight,
                                float minX, float minY, float maxX, float maxY)
         : tree{tree}, node{node}, parentConstraints{parentConstraints},
           childConstraints{std::move(childConstraints)},
           alignItems{node->getAlignItems()},
-          frameInfo{frameInfo},
-          childAvailableWidth{node->measured->explicitWidth.value_or(parentConstraints.availableWidth)},
+          frameInfo{frameInfo}, measured{measured}, mutate{mutate},
+          childAvailableWidth{measured.explicitWidth.value_or(parentConstraints.availableWidth)},
           parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
           minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
     {
@@ -270,17 +271,21 @@ namespace layout {
     }
 
     bool GridResolver::isXIndefinite(TreeNode* child) const {
-        return !node->measured->explicitWidth.has_value() &&
+        return !measured.explicitWidth.has_value() &&
             child->shared.width.has_value() && (child->shared.width->unit == Unit::Percent || child->shared.width->unit == Unit::Fr);
     }
 
     bool GridResolver::isYIndefinite(TreeNode* child) const {
-        return !node->measured->explicitHeight.has_value() &&
+        return !measured.explicitHeight.has_value() &&
             child->shared.height.has_value() && (child->shared.height->unit == Unit::Percent || child->shared.height->unit == Unit::Fr);
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
-        childConstraints.inlineFormatting = buildIsolatedInlineBoxes(child, childAvailableWidth);
+        childConstraints.inlineFormatting = buildIsolatedInlineBoxes(
+            child,
+            childAvailableWidth,
+            childConstraints.widthResolution
+        );
         childConstraints.availableWidth = childAvailableWidth;
         childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
     }
@@ -295,54 +300,31 @@ namespace layout {
             bool xIndef = isXIndefinite(childAsPtr);
             bool yIndef = isYIndefinite(childAsPtr);
 
-            std::optional<float> savedWidth, savedHeight;
-            if (xIndef) {
-                savedWidth = childAsPtr->measured->explicitWidth;
-                childAsPtr->measured->explicitWidth = std::nullopt;
-            }
-            if (yIndef) {
-                savedHeight = childAsPtr->measured->explicitHeight;
-                childAsPtr->measured->explicitHeight = std::nullopt;
-            }
+            Measured childMeasured = *childAsPtr->measured;
+            if (xIndef) childMeasured.explicitWidth = std::nullopt;
+            if (yIndef) childMeasured.explicitHeight = std::nullopt;
 
             prepareChildConstraints(childAsPtr);
             bool isIndef = xIndef || yIndef;
             bool savedShrink = childConstraints.shrinkToFit;
             if (isIndef) childConstraints.shrinkToFit = true;
 
-            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
-            auto& childLayout = *childAsPtr->layout;
+            auto childOutput = tree.speculateLayout(
+                childAsPtr,
+                frameInfo,
+                childConstraints,
+                childMeasured
+            );
+            auto& childLayout = childOutput.layout;
 
             maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
 
-            if (xIndef) childAsPtr->measured->explicitWidth = savedWidth;
-            if (yIndef) childAsPtr->measured->explicitHeight = savedHeight;
             childConstraints.shrinkToFit = savedShrink;
         }
     }
 
     void GridResolver::phaseB() {
-        if (!hasIndefiniteChild) return;
-
-        std::println("here in b!");
-
-        for (uint64_t i = 0; i < node->children.size(); ++i) {
-            auto childAsPtr = node->children[i].get();
-            bool xIndef = isXIndefinite(childAsPtr);
-            bool yIndef = isYIndefinite(childAsPtr);
-            if (!xIndef && !yIndef) continue;
-
-            if (xIndef) childAsPtr->measured->explicitWidth = maxIntrinsicX - minX;
-            if (yIndef) childAsPtr->measured->explicitHeight = maxIntrinsicY - minY;
-
-            prepareChildConstraints(childAsPtr);
-            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
-        }
-    }
-
-    void GridResolver::phaseC() {
-        auto& measured = *node->measured;
         auto& templateCols = node->getGridTemplateColumns();
         auto& templateRows = node->getGridTemplateRows();
         float availableWidth = measured.explicitWidth.value_or(parentConstraints.availableWidth);
@@ -358,13 +340,26 @@ namespace layout {
             auto childPos = childAsPtr->getPosition();
             if (childPos == Position::Absolute || childPos == Position::Fixed) continue;
 
-            if (!hasIndefiniteChild) {
-                prepareChildConstraints(childAsPtr);
-                childConstraints.shrinkToFit = true;
-                tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
+            Measured childMeasured = *childAsPtr->measured;
+            if (isXIndefinite(childAsPtr)) {
+                childMeasured.explicitWidth = maxIntrinsicX - minX;
+            }
+            if (isYIndefinite(childAsPtr)) {
+                childMeasured.explicitHeight = maxIntrinsicY - minY;
             }
 
-            auto& childLayout = *childAsPtr->layout;
+            prepareChildConstraints(childAsPtr);
+            if (!hasIndefiniteChild) {
+                childConstraints.shrinkToFit = true;
+            }
+
+            auto childOutput = tree.speculateLayout(
+                childAsPtr,
+                frameInfo,
+                childConstraints,
+                childMeasured
+            );
+            auto& childLayout = childOutput.layout;
             if (childLayout.outOfFlow) 
                 continue;
 
@@ -403,8 +398,7 @@ namespace layout {
             measured.explicitWidth.has_value(), measured.explicitHeight.has_value());
     }
 
-    GridResolver::Bounds GridResolver::phaseD() {
-        auto& measured = *node->measured;
+    GridResolver::Bounds GridResolver::phaseC() {
         float availableWidth = measured.explicitWidth.value_or(parentConstraints.availableWidth);
         float availableHeight = measured.explicitHeight.value_or(parentConstraints.availableHeight);
 
@@ -412,6 +406,7 @@ namespace layout {
             size_t i = inFlowIndices[pi];
             auto childAsPtr = node->children[i].get();
             auto& item = gridLayout.items[pi];
+            Measured childMeasured = *childAsPtr->measured;
 
             auto& colTracks = gridLayout.colTracks;
             auto& rowTracks = gridLayout.rowTracks;
@@ -425,7 +420,11 @@ namespace layout {
             float itemW = applyMinMax(cellW, childAsPtr->shared.minWidth, childAsPtr->shared.maxWidth, cellW);
             float itemH = applyMinMax(cellH, childAsPtr->shared.minHeight, childAsPtr->shared.maxHeight, cellH);
 
-            childConstraints.inlineFormatting = buildIsolatedInlineBoxes(childAsPtr, itemW);
+            childConstraints.inlineFormatting = buildIsolatedInlineBoxes(
+                childAsPtr,
+                itemW,
+                childConstraints.widthResolution
+            );
             childConstraints.availableWidth = itemW;
             childConstraints.availableHeight = itemH;
             childConstraints.origin = {cellX, cellY};
@@ -449,32 +448,52 @@ namespace layout {
             // stretch: override measured size if child has no explicit size
             if (effectiveAlign == AlignItems::Stretch) {
                 if (!childAsPtr->shared.width.has_value())
-                    childAsPtr->measured->explicitWidth = itemW;
+                    childMeasured.explicitWidth = itemW;
                 if (!childAsPtr->shared.height.has_value())
-                    childAsPtr->measured->explicitHeight = itemH;
+                    childMeasured.explicitHeight = itemH;
             } else {
                 childConstraints.shrinkToFit = true;
             }
 
-            tree.layoutPhase(childAsPtr, frameInfo, childConstraints);
-            auto& childLayout = *childAsPtr->layout;
+            auto childOutput = tree.speculateLayout(
+                childAsPtr,
+                frameInfo,
+                childConstraints,
+                childMeasured
+            );
 
-            // non-stretch alignment: offset within cell
+            float dx = 0.0f;
+            float dy = 0.0f;
             if (effectiveAlign == AlignItems::Center) {
-                float dx = (cellW - childLayout.computedBox.width) / 2.0f;
-                float dy = (cellH - childLayout.computedBox.height) / 2.0f;
-                childLayout.computedBox.x += dx;
-                childLayout.computedBox.y += dy;
-                childLayout.localComputedBox.x += dx;
-                childLayout.localComputedBox.y += dy;
+                dx = (cellW - childOutput.layout.computedBox.width) / 2.0f;
+                dy = (cellH - childOutput.layout.computedBox.height) / 2.0f;
             } else if (effectiveAlign == AlignItems::FlexEnd) {
-                float dx = cellW - childLayout.computedBox.width;
-                float dy = cellH - childLayout.computedBox.height;
-                childLayout.computedBox.x += dx;
-                childLayout.computedBox.y += dy;
-                childLayout.localComputedBox.x += dx;
-                childLayout.localComputedBox.y += dy;
+                dx = cellW - childOutput.layout.computedBox.width;
+                dy = cellH - childOutput.layout.computedBox.height;
             }
+
+            childConstraints.origin.x += dx;
+            childConstraints.origin.y += dy;
+            childConstraints.cursor.x += dx;
+            childConstraints.cursor.y += dy;
+
+            if (mutate) {
+                childOutput = tree.layoutPhase(
+                    childAsPtr,
+                    frameInfo,
+                    childConstraints,
+                    childMeasured
+                );
+            } else if (dx != 0.0f || dy != 0.0f) {
+                childOutput = tree.speculateLayout(
+                    childAsPtr,
+                    frameInfo,
+                    childConstraints,
+                    childMeasured
+                );
+            }
+
+            auto& childLayout = childOutput.layout;
 
             maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);

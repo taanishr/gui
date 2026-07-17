@@ -47,6 +47,10 @@ namespace layout {
             if (isRow) m.explicitWidth = v;
             else       m.explicitHeight = v;
         }
+        void clearMainExplicit(Measured& m) const {
+            if (isRow) m.explicitWidth = std::nullopt;
+            else       m.explicitHeight = std::nullopt;
+        }
         void setCrossExplicit(Measured& m, float v) const {
             if (isRow) m.explicitHeight = v;
             else       m.explicitWidth = v;
@@ -86,6 +90,9 @@ namespace layout {
             if (isRow) c.widthResolution = v;
             else       c.heightResolution = v;
         }
+        AxisResolution mainResolution(const Constraints& c) const {
+            return isRow ? c.widthResolution : c.heightResolution;
+        }
         AxisResolution crossResolution(const Constraints& c) const {
             return isRow ? c.heightResolution : c.widthResolution;
         }
@@ -115,6 +122,7 @@ namespace layout {
 
     struct FlexLine {
         std::vector<float> childSizes;
+        std::vector<float> hypotheticalMainSizes;
         std::vector<float> minMainSizes;
         std::vector<std::optional<float>> maxMainSizes;
         std::vector<float> shrinkScaled;
@@ -125,9 +133,10 @@ namespace layout {
         float growthScaledTotal{};
         float maxCrossSize{};
 
-        void addChild(float mainSize, float crossSize, float grow, float shrink,
+        void addChild(float mainSize, float hypotheticalMainSize, float crossSize, float grow, float shrink,
                       float minMainSize = 0.0f, std::optional<float> maxMainSize = std::nullopt) {
             childSizes.push_back(mainSize);
+            hypotheticalMainSizes.push_back(hypotheticalMainSize);
             minMainSizes.push_back(minMainSize);
             maxMainSizes.push_back(maxMainSize);
             totalSize += mainSize;
@@ -153,6 +162,18 @@ namespace layout {
 
         float totalWithGap(float gap) const {
             return totalSize + (count() > 1 ? gap * (count() - 1) : 0.0f);
+        }
+
+        float totalHypotheticalWithGap(float gap) const {
+            float total = 0.0f;
+            for (float size : hypotheticalMainSizes) total += size;
+            return total + (count() > 1 ? gap * (count() - 1) : 0.0f);
+        }
+
+        float totalMinimumWithGap(float gap) const {
+            float total = 0.0f;
+            for (float size : minMainSizes) total += size;
+            return total + (count() > 1 ? gap * (count() - 1) : 0.0f);
         }
 
         struct ResolveResult {
@@ -270,24 +291,34 @@ namespace layout {
             alignContent{ac}, flexWrap{wrap}
         {}
 
-        void addChild(const LayoutResult& layout, float grow, float shrink,
-                        AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
-                        float avMain, float gap, float minMainSize = 0.0f,
-                        std::optional<float> maxMainSize = std::nullopt) {
-            float childMain = axis.mainSize(layout);
-
-            float childCross = axis.crossSize(layout);
-
+        void addChild(float flexBaseSize, float childCross, float grow, float shrink,
+                      AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
+                      float avMain, float gap, float minMainSize = 0.0f,
+                      std::optional<float> maxMainSize = std::nullopt) {
             availableMain = avMain;
 
+            float hypotheticalMainSize = flexBaseSize;
+            if (maxMainSize.has_value()) {
+                hypotheticalMainSize = std::min(hypotheticalMainSize, *maxMainSize);
+            }
+            hypotheticalMainSize = std::max(hypotheticalMainSize, minMainSize);
+
             if (flexWrap != FlexWrap::NoWrap && currentLine.count() > 0) {
-                if (currentLine.totalWithGap(gap) + gap + childMain > avMain) {
+                if (currentLine.totalHypotheticalWithGap(gap) + gap + hypotheticalMainSize > avMain) {
                     lines.push_back(std::move(currentLine));
                     currentLine = FlexLine{};
                 }
             }
 
-            currentLine.addChild(childMain, childCross, grow, shrink, minMainSize, maxMainSize);
+            currentLine.addChild(
+                flexBaseSize,
+                hypotheticalMainSize,
+                childCross,
+                grow,
+                shrink,
+                minMainSize,
+                maxMainSize
+            );
             childAlignSelfs.push_back(selfAlign);
             childCrossSizes.push_back(childCross);
             childCrossSizeRequests.push_back(crossSizeRequest);
@@ -440,6 +471,8 @@ namespace layout {
         Constraints       childConstraints;
         FlexLayout        flex;
         const FrameInfo&  frameInfo;
+        Measured          measured;
+        bool              mutate;
         float             childAvailableWidth;
         float             avMain;
         float             parentAvailableWidth;
@@ -454,7 +487,6 @@ namespace layout {
         float maxIntrinsicY = 0;
 
         bool hasIndefiniteChild = false;
-
         struct Bounds {
             float maxX;
             float maxY;
@@ -464,11 +496,12 @@ namespace layout {
 
         FlexResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                         Constraints childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
+                        Measured measured, bool mutate,
                         float parentAvailableWidth, float parentAvailableHeight,
                         float minX, float minY, float maxX, float maxY)
             : tree{tree}, node{node}, parentConstraints{parentConstraints},
                 childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
-                frameInfo{frameInfo},
+                frameInfo{frameInfo}, measured{measured}, mutate{mutate},
                 childAvailableWidth{parentAvailableWidth},
                 avMain{this->flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight},
                 parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
@@ -476,7 +509,7 @@ namespace layout {
         {
             bool needsCrossShrink = this->flex.axis.isRow
                 || this->flex.alignItems != AlignItems::Stretch
-                || !node->measured->explicitWidth.has_value();
+                || !measured.explicitWidth.has_value();
 
             this->childConstraints.shrinkToFit = needsCrossShrink;
 
@@ -489,20 +522,18 @@ namespace layout {
         }
 
         bool isXIndefinite(TreeNode* child) const {
-            return !node->measured->explicitWidth.has_value() &&
+            return !measured.explicitWidth.has_value() &&
                 (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent);
         }
 
         bool isYIndefinite(TreeNode* child) const {
-            return !node->measured->explicitHeight.has_value() &&
+            return !measured.explicitHeight.has_value() &&
                 (child->shared.height.has_value() && child->shared.height->unit == Unit::Percent);
         }
 
         void prepareChildConstraints(TreeNode* child);
         void phaseA();
         void phaseB();
-        void phaseAB();
-        void phaseC();
-        Bounds phaseD();
+        Bounds phaseC();
     };
 }
