@@ -415,6 +415,10 @@ namespace tree {
     std::shared_ptr<layout::InlineFormattingContext> buildInlineBoxes(TreeNode* node, Constraints& childConstraints);
 
     // inline context calculated for a single child, independently of other siblings
-    layout::InlineFormattingInput buildIsolatedInlineBoxes(TreeNode* node, float maxWidth);
+    layout::InlineFormattingInput buildIsolatedInlineBoxes(
+        TreeNode* node,
+        float maxWidth,
+        layout::AxisResolution widthResolution
+    );
 
 }

@@ -277,6 +277,19 @@ namespace tree {
         }
     }
 
+    bool shouldTakeSoftBreak(
+        layout::AxisResolution widthResolution,
+        bool hasBreakOpportunity,
+        bool lineHasContent,
+        float prospectiveWidth,
+        float availableWidth
+    ) {
+        if (!hasBreakOpportunity || !lineHasContent) return false;
+        if (widthResolution == layout::AxisResolution::MinContent) return true;
+        if (widthResolution == layout::AxisResolution::MaxContent) return false;
+        return prospectiveWidth > availableWidth;
+    }
+
     void appendTextLineFragments(
         const std::string& text,
         const ShapedRun& shapedRun,
@@ -285,6 +298,7 @@ namespace tree {
         WordBreak wordBreak,
         ResolvedMargins margins,
         float availableWidth,
+        layout::AxisResolution widthResolution,
         std::vector<LineFragment>& fragments,
         std::vector<LineBox>& lineBoxes,
         LineBox& currentLineBox,
@@ -318,7 +332,13 @@ namespace tree {
                 runningWidth += width + margins.right;
                 runningAtomCount += cluster.glyphCount;
 
-                if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+                if (allowSoftWrap && shouldTakeSoftBreak(
+                        widthResolution,
+                        lastFragmentHasBreakOpportunity,
+                        currentLineBox.fragmentCount > 0,
+                        currentLineBox.width + runningWidth,
+                        availableWidth
+                    )) {
                     lineBoxes.push_back(currentLineBox);
                     currentLineBox = {};
                     currentLineBoxIndex++;
@@ -350,8 +370,13 @@ namespace tree {
             if (breakInsideWords && !isTextWhitespace(ch)) {
                 float prospectiveWidth = currentLineBox.width + runningWidth + width;
 
-                if (prospectiveWidth > availableWidth &&
-                    (currentLineBox.fragmentCount > 0 || runningAtomCount > 0)) {
+                if (shouldTakeSoftBreak(
+                        widthResolution,
+                        true,
+                        currentLineBox.fragmentCount > 0 || runningAtomCount > 0,
+                        prospectiveWidth,
+                        availableWidth
+                    )) {
                     bool hadPendingAtoms = runningAtomCount > 0;
                     if (runningAtomCount > 0) {
                         pushRunFragments(
@@ -400,7 +425,13 @@ namespace tree {
 
             runningWidth += margins.right;
 
-            if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+            if (allowSoftWrap && shouldTakeSoftBreak(
+                    widthResolution,
+                    lastFragmentHasBreakOpportunity,
+                    currentLineBox.fragmentCount > 0,
+                    currentLineBox.width + runningWidth,
+                    availableWidth
+                )) {
                 lineBoxes.push_back(currentLineBox);
                 currentLineBox = {};
                 currentLineBoxIndex++;
@@ -426,7 +457,13 @@ namespace tree {
         if (runningAtomCount > 0) {
             runningWidth += margins.right;
 
-            if (allowSoftWrap && lastFragmentHasBreakOpportunity && currentLineBox.fragmentCount > 0 && currentLineBox.width + runningWidth > availableWidth) {
+            if (allowSoftWrap && shouldTakeSoftBreak(
+                    widthResolution,
+                    lastFragmentHasBreakOpportunity,
+                    currentLineBox.fragmentCount > 0,
+                    currentLineBox.width + runningWidth,
+                    availableWidth
+                )) {
                 lineBoxes.push_back(currentLineBox);
                 currentLineBox = {};
                 currentLineBoxIndex++;
@@ -535,7 +572,11 @@ namespace tree {
         }
     }
 
-    layout::InlineFormattingInput buildIsolatedInlineBoxes(TreeNode* node, float maxWidth) {
+    layout::InlineFormattingInput buildIsolatedInlineBoxes(
+        TreeNode* node,
+        float maxWidth,
+        layout::AxisResolution widthResolution
+    ) {
         auto context = std::make_shared<layout::InlineFormattingContext>();
         auto& fragments = context->fragments;
         auto& lineBoxes = context->lineBoxes;
@@ -557,6 +598,7 @@ namespace tree {
                 getWordBreak(node).value_or(WordBreak::Normal),
                 margins,
                 maxWidth,
+                widthResolution,
                 fragments,
                 lineBoxes,
                 currentLineBox,
@@ -616,6 +658,7 @@ namespace tree {
                     getWordBreak(child.get()).value_or(WordBreak::Normal),
                     margins,
                     childConstraints.availableWidth,
+                    childConstraints.widthResolution,
                     fragments,
                     childrenLineBoxes,
                     currentLineBox,

@@ -437,7 +437,8 @@ namespace layout {
 
     enum class AxisResolution {
         Final,
-        Intrinsic,
+        MinContent,
+        MaxContent,
         Deferred
     };
 
@@ -600,6 +601,11 @@ namespace layout {
 
         DeferredPositionInfo deferredPosition;
         std::vector<ClipUniform> clipUniforms {};
+    };
+
+    struct LayoutOutput {
+        Measured measured;
+        LayoutResult layout;
     };
 
     

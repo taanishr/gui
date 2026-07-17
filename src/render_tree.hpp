@@ -27,7 +27,6 @@ namespace tree {
         void render(MTL::RenderCommandEncoder* encoder); 
         void markDirty();
         void markDirty(TreeNode* node, DirtyBits bits);
-        void setDebugDirtyPhases(bool enabled) { debugDirtyPhases = enabled; }
   
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
         std::vector<TreeNode*> hitTestAll(simd_float2 point);
@@ -42,28 +41,31 @@ namespace tree {
         void preLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
 
         
-        void layoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
+        layout::LayoutOutput layoutPhase(
+            TreeNode* node,
+            const FrameInfo& frameInfo,
+            Constraints constraints,
+            layout::Measured measured
+        );
+        layout::LayoutOutput speculateLayout(
+            TreeNode* node,
+            const FrameInfo& frameInfo,
+            Constraints constraints,
+            layout::Measured measured
+        );
         void postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
                              simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin);
 
         void placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints);
         void finalizePhase(TreeNode* node, Constraints& constraints);
     private:
-        struct PhaseCounter {
-            uint64_t recomputed{};
-            uint64_t skipped{};
-        };
-
-        struct DebugCounters {
-            PhaseCounter measure;
-            PhaseCounter atomize;
-            PhaseCounter layout;
-            PhaseCounter postLayout;
-            PhaseCounter place;
-            PhaseCounter finalize;
-            uint64_t renderOrderCacheHits{};
-            uint64_t renderOrderCacheMisses{};
-        };
+        layout::LayoutOutput layoutRecursive(
+            TreeNode* node,
+            const FrameInfo& frameInfo,
+            Constraints constraints,
+            layout::Measured measured,
+            bool mutate
+        );
 
         bool isFrameInfoChanged(const FrameInfo& frameInfo) const;
         ConstraintsKey makeConstraintsKey(const Constraints& constraints,
@@ -81,8 +83,6 @@ namespace tree {
         uint64_t pendingFrameBufferWrites{MaxOutstandingFrameCount};
         std::optional<FrameInfo> lastFrameInfo;
         uint64_t layoutGeneration{0};
-        bool debugDirtyPhases{false};
-        DebugCounters debugCounters{};
         bool renderOrderDirty{true};
         std::vector<TreeNode*> renderOrderCache;
 

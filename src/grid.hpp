@@ -89,6 +89,8 @@ namespace layout {
         GridLayout        gridLayout;
         AlignItems        alignItems;
         const FrameInfo&  frameInfo;
+        Measured          measured;
+        bool              mutate;
         float             childAvailableWidth;
         float             parentAvailableWidth;
         float             parentAvailableHeight;
@@ -102,7 +104,6 @@ namespace layout {
         float maxIntrinsicY = 0;
 
         bool hasIndefiniteChild = false;
-
         std::vector<size_t> inFlowIndices;
 
         struct Bounds {
@@ -112,6 +113,7 @@ namespace layout {
 
         GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
                      Constraints childConstraints, const FrameInfo& frameInfo,
+                     Measured measured, bool mutate,
                      float parentAvailableWidth, float parentAvailableHeight,
                      float minX, float minY, float maxX, float maxY);
 
@@ -121,7 +123,6 @@ namespace layout {
 
         void phaseA();
         void phaseB();
-        void phaseC();
-        Bounds phaseD();
+        Bounds phaseC();
     };
 }
