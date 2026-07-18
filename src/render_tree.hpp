@@ -3,7 +3,9 @@
 #include "element.hpp"
 #include "flex.hpp"
 #include "grid.hpp"
+#include "new_arch.hpp"
 #include "renderer_constants.hpp"
+#include <unordered_map>
 
 namespace tree {
     using elements::ElementType;
@@ -47,7 +49,7 @@ namespace tree {
             Constraints constraints,
             layout::Measured measured
         );
-        layout::LayoutOutput speculateLayout(
+        const layout::LayoutOutput& speculateLayout(
             TreeNode* node,
             const FrameInfo& frameInfo,
             Constraints constraints,
@@ -71,6 +73,11 @@ namespace tree {
         ConstraintsKey makeConstraintsKey(const Constraints& constraints,
                                           simd_float2 extraOriginA = {0.0f, 0.0f},
                                           simd_float2 extraOriginB = {0.0f, 0.0f}) const;
+        ConstraintsKey makeSpeculativeKey(
+            const TreeNode* node,
+            const Constraints& constraints,
+            const layout::Measured& measured
+        ) const;
         bool shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const;
         void markSubtreeDirty(TreeNode* node, DirtyBits bits);
         void clearDirty(TreeNode* node);
@@ -94,5 +101,7 @@ namespace tree {
 
         std::unique_ptr<TreeNode> elementTree;
         LayoutEngine layoutEngine;
+
+        std::unordered_map<ConstraintsKey, layout::LayoutOutput> speculativeLayoutCache;
     };
 }

@@ -2,6 +2,8 @@
 #include "hash_combine.hpp"
 #include "new_arch.hpp"
 #include <algorithm>
+#include <chrono>
+#include <print>
 
 namespace tree {
     using layout::FlexLayout;
@@ -143,6 +145,19 @@ namespace tree {
         hash_combine(hash, constraints.absoluteContainingBlock.origin.y);
         hash_combine(hash, constraints.absoluteContainingBlock.width);
         hash_combine(hash, constraints.absoluteContainingBlock.height);
+        hash_combine(hash, static_cast<int>(constraints.edgeIntent.edgeDisplayMode));
+        hash_combine(hash, constraints.edgeIntent.intent);
+        hash_combine(hash, constraints.edgeIntent.collapsable);
+        hash_combine(hash, constraints.prevInlineHeight);
+        auto hashOptionalSize = [&](const std::optional<Size>& size) {
+            hash_combine(hash, size.has_value());
+            if (size.has_value()) {
+                hash_combine(hash, size->value);
+                hash_combine(hash, static_cast<int>(size->unit));
+            }
+        };
+        hashOptionalSize(constraints.replacedAttributes.marginTop);
+        hashOptionalSize(constraints.replacedAttributes.marginBottom);
         hash_combine(hash, constraints.shrinkToFit);
         hash_combine(hash, static_cast<int>(constraints.widthResolution));
         hash_combine(hash, static_cast<int>(constraints.heightResolution));
@@ -200,6 +215,24 @@ namespace tree {
         hash_combine(hash, extraOriginB.y);
 
         return ConstraintsKey{.value = hash};
+    }
+
+    ConstraintsKey RenderTree::makeSpeculativeKey(
+        const TreeNode* node,
+        const Constraints& constraints,
+        const Measured& measured
+    ) const {
+        auto key = makeConstraintsKey(constraints);
+        hash_combine(key.value, node->id);
+        hash_combine(key.value, measured.explicitWidth.has_value());
+        if (measured.explicitWidth.has_value()) {
+            hash_combine(key.value, *measured.explicitWidth);
+        }
+        hash_combine(key.value, measured.explicitHeight.has_value());
+        if (measured.explicitHeight.has_value()) {
+            hash_combine(key.value, *measured.explicitHeight);
+        }
+        return key;
     }
 
     bool RenderTree::shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const {
@@ -315,7 +348,14 @@ namespace tree {
         }
         // initial layout pass
         if (needsLayoutPass) {
+            speculativeLayoutCache.clear();
+            const auto layoutStart = std::chrono::steady_clock::now();
             layoutPhase(root, frameInfo, rootConstraints, *root->measured);
+            const auto layoutEnd = std::chrono::steady_clock::now();
+            const auto layoutMs = std::chrono::duration<double, std::milli>(
+                layoutEnd - layoutStart
+            ).count();
+            std::println("Layout phase: {:.3f} ms", layoutMs);
             root->calculateGlobalZIndex(0);
         }
         sortedRenderOrder();
@@ -547,13 +587,21 @@ namespace tree {
         return layoutRecursive(node, frameInfo, std::move(constraints), measured, true);
     }
 
-    LayoutOutput RenderTree::speculateLayout(
+    const LayoutOutput& RenderTree::speculateLayout(
         TreeNode* node,
         const FrameInfo& frameInfo,
         Constraints constraints,
         Measured measured
     ) {
-        return layoutRecursive(node, frameInfo, std::move(constraints), measured, false);
+        auto key = makeSpeculativeKey(node, constraints, measured);
+        if (auto found = speculativeLayoutCache.find(key);
+            found != speculativeLayoutCache.end()) {
+            return found->second;
+        }
+
+        auto output = layoutRecursive(node, frameInfo, std::move(constraints), measured, false);
+        auto [inserted, _] = speculativeLayoutCache.emplace(key, std::move(output));
+        return inserted->second;
     }
 
     LayoutOutput RenderTree::layoutRecursive(

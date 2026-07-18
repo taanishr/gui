@@ -422,3 +422,12 @@ namespace tree {
     );
 
 }
+
+namespace std {
+    template<>
+    struct hash<tree::ConstraintsKey> {
+        size_t operator()(const tree::ConstraintsKey& key) const noexcept {
+            return key.value;
+        }
+    };
+}
