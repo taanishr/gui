@@ -437,7 +437,8 @@ namespace layout {
 
     enum class AxisResolution {
         Final,
-        Intrinsic,
+        MinContent,
+        MaxContent,
         Deferred
     };
 
