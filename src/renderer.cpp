@@ -15,6 +15,8 @@
 #include "index.hpp"
 #include "inspector.hpp"
 
+
+
 Renderer* Renderer::current = nullptr;
 
 Renderer::Renderer(MTL::Device* device, MTK::View* view):
@@ -99,11 +101,11 @@ void Renderer::draw() {
     ++sampleIndex;
     ++totalSamples;
 
-    if (totalSamples % 100 == 0) {
-        int count = std::min(totalSamples, WINDOW_SIZE);
-        double avgMs = (windowSum / static_cast<double>(count)) / 1000.0;
-        std::println("Rolling avg (last {} frames): {:.3f} ms", count, avgMs);
-    }
+    // if (totalSamples % 100 == 0) {
+    //     int count = std::min(totalSamples, WINDOW_SIZE);
+    //     double avgMs = (windowSum / static_cast<double>(count)) / 1000.0;
+    //     std::println("Rolling avg (last {} frames): {:.3f} ms", count, avgMs);
+    // }
 
     renderCommandEncoder->endEncoding();
     ctx.frameIndex = frameIndex + 1;

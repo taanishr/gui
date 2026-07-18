@@ -74,7 +74,7 @@ namespace layout {
             constraints.widthResolution
         );
 
-        auto output = tree.speculateLayout(
+        const auto& output = tree.speculateLayout(
             child,
             frameInfo,
             constraints,
@@ -110,7 +110,7 @@ namespace layout {
             bool savedShrink = childConstraints.shrinkToFit;
             if (isIndef) childConstraints.shrinkToFit = true;
             
-            auto childOutput = tree.speculateLayout(
+            const auto& childOutput = tree.speculateLayout(
                 childAsPtr,
                 frameInfo,
                 childConstraints,
@@ -168,7 +168,7 @@ namespace layout {
                 !flex.axis.hasUserCrossSize(childAsPtr->shared)) {
                 flex.axis.setCrossResolution(childConstraints, AxisResolution::Deferred);
             }
-            auto childOutput = tree.speculateLayout(
+            const auto& childOutput = tree.speculateLayout(
                 childAsPtr,
                 frameInfo,
                 childConstraints,
@@ -333,10 +333,25 @@ namespace layout {
                 childConstraints.widthResolution
             );
 
-            auto childOutput = mutate
-                ? tree.layoutPhase(childAsPtr, frameInfo, childConstraints, childMeasured)
-                : tree.speculateLayout(childAsPtr, frameInfo, childConstraints, childMeasured);
-            auto& childLayout = childOutput.layout;
+            std::optional<LayoutOutput> finalChildOutput;
+            const LayoutOutput* childOutput;
+            if (mutate) {
+                finalChildOutput = tree.layoutPhase(
+                    childAsPtr,
+                    frameInfo,
+                    childConstraints,
+                    childMeasured
+                );
+                childOutput = &*finalChildOutput;
+            } else {
+                childOutput = &tree.speculateLayout(
+                    childAsPtr,
+                    frameInfo,
+                    childConstraints,
+                    childMeasured
+                );
+            }
+            const auto& childLayout = childOutput->layout;
 
             maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);

@@ -309,7 +309,7 @@ namespace layout {
             bool savedShrink = childConstraints.shrinkToFit;
             if (isIndef) childConstraints.shrinkToFit = true;
 
-            auto childOutput = tree.speculateLayout(
+            const auto& childOutput = tree.speculateLayout(
                 childAsPtr,
                 frameInfo,
                 childConstraints,
@@ -353,7 +353,7 @@ namespace layout {
                 childConstraints.shrinkToFit = true;
             }
 
-            auto childOutput = tree.speculateLayout(
+            const auto& childOutput = tree.speculateLayout(
                 childAsPtr,
                 frameInfo,
                 childConstraints,
@@ -455,7 +455,7 @@ namespace layout {
                 childConstraints.shrinkToFit = true;
             }
 
-            auto childOutput = tree.speculateLayout(
+            const LayoutOutput* childOutput = &tree.speculateLayout(
                 childAsPtr,
                 frameInfo,
                 childConstraints,
@@ -465,11 +465,11 @@ namespace layout {
             float dx = 0.0f;
             float dy = 0.0f;
             if (effectiveAlign == AlignItems::Center) {
-                dx = (cellW - childOutput.layout.computedBox.width) / 2.0f;
-                dy = (cellH - childOutput.layout.computedBox.height) / 2.0f;
+                dx = (cellW - childOutput->layout.computedBox.width) / 2.0f;
+                dy = (cellH - childOutput->layout.computedBox.height) / 2.0f;
             } else if (effectiveAlign == AlignItems::FlexEnd) {
-                dx = cellW - childOutput.layout.computedBox.width;
-                dy = cellH - childOutput.layout.computedBox.height;
+                dx = cellW - childOutput->layout.computedBox.width;
+                dy = cellH - childOutput->layout.computedBox.height;
             }
 
             childConstraints.origin.x += dx;
@@ -477,15 +477,17 @@ namespace layout {
             childConstraints.cursor.x += dx;
             childConstraints.cursor.y += dy;
 
+            std::optional<LayoutOutput> finalChildOutput;
             if (mutate) {
-                childOutput = tree.layoutPhase(
+                finalChildOutput = tree.layoutPhase(
                     childAsPtr,
                     frameInfo,
                     childConstraints,
                     childMeasured
                 );
+                childOutput = &*finalChildOutput;
             } else if (dx != 0.0f || dy != 0.0f) {
-                childOutput = tree.speculateLayout(
+                childOutput = &tree.speculateLayout(
                     childAsPtr,
                     frameInfo,
                     childConstraints,
@@ -493,7 +495,7 @@ namespace layout {
                 );
             }
 
-            auto& childLayout = childOutput.layout;
+            const auto& childLayout = childOutput->layout;
 
             maxX = std::max(maxX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxY = std::max(maxY, childLayout.computedBox.y + childLayout.consumedHeight);
