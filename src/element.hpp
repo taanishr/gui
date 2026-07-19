@@ -194,6 +194,8 @@ namespace tree {
     using style::FlexWrap;
     using style::GridPlacement;
     using style::JustifyContent;
+    using style::JustifyItems;
+    using style::JustifySelf;
     using style::Overflow;
     using style::Position;
     using style::SharedDescriptor;
@@ -363,6 +365,8 @@ namespace tree {
         FlexWrap getFlexWrap() const { return shared.flexWrap; }
         AlignContent getAlignContent() const { return shared.alignContent; }
         AlignSelf getAlignSelf() const { return shared.alignSelf; }
+        JustifyItems getJustifyItems() const { return shared.justifyItems; }
+        JustifySelf getJustifySelf() const { return shared.justifySelf; }
         const std::vector<Size>& getGridTemplateColumns() const { return shared.gridTemplateColumns; }
         const std::vector<Size>& getGridTemplateRows() const { return shared.gridTemplateRows; }
         Size getGridColumnGap() const { return shared.gridColumnGap; }
