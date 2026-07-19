@@ -17,6 +17,7 @@ namespace layout {
     using style::JustifyContent;
     using style::Overflow;
     using style::Size;
+    using style::SizeResolveFailure;
     using style::Unit;
     using tree::RenderTree;
     using tree::TreeNode;
@@ -36,87 +37,91 @@ namespace layout {
             if (dir == Direction::rtl && isRow) isReversed = !isReversed;
         }
 
-        float mainSize(const LayoutResult& lr) const {
+        float mainSize(const LayoutResult& lr) {
             return isRow ? lr.computedBox.width : lr.computedBox.height;
         }
 
-        float crossSize(const LayoutResult& lr) const {
+        float crossSize(const LayoutResult& lr) {
             return isRow ? lr.computedBox.height : lr.computedBox.width;
         }
-        void setMainExplicit(Measured& m, float v) const {
-            if (isRow) m.explicitWidth = v;
-            else       m.explicitHeight = v;
+        const Size& mainSize(const SharedDescriptor& shared) {
+            return isRow ? shared.width : shared.height;
         }
-        void clearMainExplicit(Measured& m) const {
-            if (isRow) m.explicitWidth = std::nullopt;
-            else       m.explicitHeight = std::nullopt;
+        const Size& crossSize(const SharedDescriptor& shared) {
+            return isRow ? shared.height : shared.width;
         }
-        void setCrossExplicit(Measured& m, float v) const {
-            if (isRow) m.explicitHeight = v;
-            else       m.explicitWidth = v;
+        const Size& minMainSize(const SharedDescriptor& shared) {
+            return isRow ? shared.minWidth : shared.minHeight;
         }
-        std::optional<float> crossExplicit(const Measured& m) const {
+        const std::optional<Size>& maxMainSize(const SharedDescriptor& shared) {
+            return isRow ? shared.maxWidth : shared.maxHeight;
+        }
+        std::expected<float, SizeResolveFailure>& mainExplicit(Measured& m) {
+            return isRow ? m.explicitWidth : m.explicitHeight;
+        }
+        std::expected<float, SizeResolveFailure>& crossExplicit(Measured& m) {
             return isRow ? m.explicitHeight : m.explicitWidth;
         }
 
-        void setMainPosition(Constraints& c, float v) const {
-            if (isRow) {
-                c.origin.x = v;
-                c.cursor.x = v;
-            } else {
-                c.origin.y = v;
-                c.cursor.y = v;
-            }
-        }
-        void setCrossPosition(Constraints& c, float v) const {
-            if (isRow) {
-                c.origin.y = v;
-                c.cursor.y = v;
-            } else {
-                c.origin.x = v;
-                c.cursor.x = v;
-            }
+        simd_float2 toPhysical(float main, float cross) {
+            return isRow
+                ? simd_float2{main, cross}
+                : simd_float2{cross, main};
         }
 
-        void setMainAvailableSize(Constraints& c, float v) const {
-            if (isRow) c.availableWidth = v;
-            else       c.availableHeight = v;
+        float& mainAvailable(Constraints& c) {
+            return isRow ? c.availableWidth : c.availableHeight;
         }
-        void setCrossAvailableSize(Constraints& c, float v) const {
-            if (isRow) c.availableHeight = v;
-            else       c.availableWidth = v;
+        float& crossAvailable(Constraints& c) {
+            return isRow ? c.availableHeight : c.availableWidth;
         }
-        void setMainResolution(Constraints& c, AxisResolution v) const {
-            if (isRow) c.widthResolution = v;
-            else       c.heightResolution = v;
-        }
-        AxisResolution mainResolution(const Constraints& c) const {
+        AxisResolution& mainResolution(Constraints& c) {
             return isRow ? c.widthResolution : c.heightResolution;
         }
-        AxisResolution crossResolution(const Constraints& c) const {
+        AxisResolution& crossResolution(Constraints& c) {
             return isRow ? c.heightResolution : c.widthResolution;
         }
-        void setCrossResolution(Constraints& c, AxisResolution v) const {
-            if (isRow) c.heightResolution = v;
-            else       c.widthResolution = v;
+        bool& mainShrinkToFit(Constraints& c) {
+            return isRow ? c.shrinkWidthToFit : c.shrinkHeightToFit;
         }
-        bool hasUserCrossSize(const SharedDescriptor& s) const {
-            return isRow ? s.height.has_value() : s.width.has_value();
+        bool& crossShrinkToFit(Constraints& c) {
+            return isRow ? c.shrinkHeightToFit : c.shrinkWidthToFit;
         }
-        float clampCrossSize(float v, const SharedDescriptor& s, float referenceSize) const {
+        float clampCrossSize(float v, const SharedDescriptor& s, float referenceSize) {
             auto& maxSize = isRow ? s.maxHeight : s.maxWidth;
-            auto& minSize = isRow ? s.minHeight : s.minWidth;
-            if (maxSize.has_value()) v = std::min(v, maxSize->resolveOr(referenceSize, v));
-            if (minSize.has_value()) v = std::max(v, minSize->resolveOr(referenceSize, v));
+            const auto& minSize = isRow ? s.minHeight : s.minWidth;
+            auto basis = Size::px(referenceSize);
+            if (maxSize.has_value()) {
+                auto resolvedMax = maxSize->resolve(basis);
+                if (resolvedMax) {
+                    v = std::min(v, *resolvedMax);
+                } else {
+                    switch (resolvedMax.error()) {
+                        case SizeResolveFailure::Auto:
+                        case SizeResolveFailure::IndefiniteBasis:
+                            break;
+                        case SizeResolveFailure::FractionRequiresContext:
+                            // fr does not make sense as a flex max cross-size.
+                            break;
+                    }
+                }
+            }
+            auto resolvedMin = minSize.resolve(basis);
+            if (resolvedMin) {
+                v = std::max(v, *resolvedMin);
+            } else {
+                switch (resolvedMin.error()) {
+                    case SizeResolveFailure::Auto:
+                    case SizeResolveFailure::IndefiniteBasis:
+                        break;
+                    case SizeResolveFailure::FractionRequiresContext:
+                        // fr does not make sense as a flex min cross-size.
+                        break;
+                }
+            }
             return v;
         }
 
-        float availableMain(const Measured& m, float fallback) const {
-            return isRow ? m.explicitWidth.value_or(fallback) : m.explicitHeight.value_or(fallback);
-        }
-        float availableCross(const Measured& m, float fallback) const {
-            return isRow ? m.explicitHeight.value_or(fallback) : m.explicitWidth.value_or(fallback);
-        }
     };
 
 
@@ -158,19 +163,19 @@ namespace layout {
             maxCrossSize = std::max(crossSize, maxCrossSize);
         }
 
-        size_t count() const { return childSizes.size(); }
+        size_t count() { return childSizes.size(); }
 
-        float totalWithGap(float gap) const {
+        float totalWithGap(float gap) {
             return totalSize + (count() > 1 ? gap * (count() - 1) : 0.0f);
         }
 
-        float totalHypotheticalWithGap(float gap) const {
+        float totalHypotheticalWithGap(float gap) {
             float total = 0.0f;
             for (float size : hypotheticalMainSizes) total += size;
             return total + (count() > 1 ? gap * (count() - 1) : 0.0f);
         }
 
-        float totalMinimumWithGap(float gap) const {
+        float totalMinimumWithGap(float gap) {
             float total = 0.0f;
             for (float size : minMainSizes) total += size;
             return total + (count() > 1 ? gap * (count() - 1) : 0.0f);
@@ -182,7 +187,7 @@ namespace layout {
             float remainingSpace{};
         };
 
-        ResolveResult resolve(float availableMain) const {
+        ResolveResult resolve(float availableMain) {
             ResolveResult result;
             result.sizes = childSizes;
 
@@ -271,14 +276,14 @@ namespace layout {
         std::vector<FlexLine> lines;
         FlexLine currentLine;
         std::vector<AlignSelf> childAlignSelfs;
-        std::vector<float> childCrossSizes;
-        std::vector<std::optional<Size>> childCrossSizeRequests;
-        float availableMain{};
+        std::vector<float> crossSizes;
+        std::vector<Size> childCrossSizeRequests;
 
         struct ChildPlacement {
             float mainOffset;
             float crossOffset;
             float mainSize;
+            float crossSize;
             std::optional<float> crossSizeOverride; 
             bool needsCrossShrinkToFit{false};
         };
@@ -291,12 +296,20 @@ namespace layout {
             alignContent{ac}, flexWrap{wrap}
         {}
 
-        void addChild(float flexBaseSize, float childCross, float grow, float shrink,
-                      AlignSelf selfAlign, std::optional<Size> crossSizeRequest,
+        AlignItems effectiveAlign(AlignSelf selfAlign) {
+            switch (selfAlign) {
+                case AlignSelf::Auto:      return alignItems;
+                case AlignSelf::Stretch:   return AlignItems::Stretch;
+                case AlignSelf::FlexStart: return AlignItems::FlexStart;
+                case AlignSelf::FlexEnd:   return AlignItems::FlexEnd;
+                case AlignSelf::Center:    return AlignItems::Center;
+            }
+        }
+
+        void addChild(float flexBaseSize, float crossSize, float grow, float shrink,
+                      AlignSelf selfAlign, Size crossSizeRequest,
                       float avMain, float gap, float minMainSize = 0.0f,
                       std::optional<float> maxMainSize = std::nullopt) {
-            availableMain = avMain;
-
             float hypotheticalMainSize = flexBaseSize;
             if (maxMainSize.has_value()) {
                 hypotheticalMainSize = std::min(hypotheticalMainSize, *maxMainSize);
@@ -313,14 +326,14 @@ namespace layout {
             currentLine.addChild(
                 flexBaseSize,
                 hypotheticalMainSize,
-                childCross,
+                crossSize,
                 grow,
                 shrink,
                 minMainSize,
                 maxMainSize
             );
             childAlignSelfs.push_back(selfAlign);
-            childCrossSizes.push_back(childCross);
+            crossSizes.push_back(crossSize);
             childCrossSizeRequests.push_back(crossSizeRequest);
         }
 
@@ -331,11 +344,6 @@ namespace layout {
         };
 
         ResolveResult resolveSizes(float avMain, float gap = 0.0f) {
-            if (currentLine.count() > 0) {
-                lines.push_back(std::move(currentLine));
-                currentLine = FlexLine{};
-            }
-
             ResolveResult result;
             for (auto& line : lines) {
                 float lineGap = line.count() > 1 ? gap * (line.count() - 1) : 0.0f;
@@ -349,7 +357,9 @@ namespace layout {
 
         std::vector<ChildPlacement> computePlacements(
             const ResolveResult& resolved,
-            float availableCross, float gap
+            float availableMain,
+            float availableCross,
+            float gap
         ) {
             size_t lineCount = lines.size();
 
@@ -415,38 +425,48 @@ namespace layout {
                     ChildPlacement p;
                     p.mainOffset = accumulated;
                     p.mainSize = resolved.lineSizes[li][ci];
-                    
+
                     AlignSelf selfAlign = childAlignSelfs[childIdx];
-                    AlignItems effectiveAlign = alignItems;
-                    if (selfAlign != AlignSelf::Auto) {
-                        switch (selfAlign) {
-                            case AlignSelf::Stretch:   effectiveAlign = AlignItems::Stretch; break;
-                            case AlignSelf::FlexStart: effectiveAlign = AlignItems::FlexStart; break;
-                            case AlignSelf::FlexEnd:   effectiveAlign = AlignItems::FlexEnd; break;
-                            case AlignSelf::Center:    effectiveAlign = AlignItems::Center; break;
-                            default: break;
+                    AlignItems effectiveAlign = this->effectiveAlign(selfAlign);
+
+                    float childCross = crossSizes[childIdx];
+                    const auto& crossSizeRequest = childCrossSizeRequests[childIdx];
+                    auto resolvedCrossSize = crossSizeRequest.resolve(Size::px(lineCross));
+
+                    if (resolvedCrossSize) {
+                        childCross = *resolvedCrossSize;
+                    } else {
+                        switch (resolvedCrossSize.error()) {
+                            case SizeResolveFailure::Auto:
+                            case SizeResolveFailure::IndefiniteBasis:
+                                break;
+                            case SizeResolveFailure::FractionRequiresContext:
+                                // fr does not make sense as a flex cross size.
+                                break;
                         }
                     }
 
-                    float childCross = childCrossSizeRequests[childIdx]
-                        .and_then([lineCross](const Size& size) { return size.resolve(lineCross); })
-                        .value_or(childCrossSizes[childIdx]);
+                    p.crossSize = childCross;
+
                     switch (effectiveAlign) {
                         case AlignItems::Stretch:
                             p.crossOffset = lineCrossBase;
-                            p.crossSizeOverride = lineCross;
+                            if (crossSizeRequest.isAuto()) {
+                                p.crossSize = lineCross;
+                                p.crossSizeOverride = lineCross;
+                            }
                             break;
                         case AlignItems::FlexStart:
                             p.crossOffset = lineCrossBase;
-                            p.needsCrossShrinkToFit = !axis.isRow;
+                            p.needsCrossShrinkToFit = axis.isRow;
                             break;
                         case AlignItems::Center:
                             p.crossOffset = lineCrossBase + (lineCross - childCross) / 2.0f;
-                            p.needsCrossShrinkToFit = !axis.isRow;
+                            p.needsCrossShrinkToFit = axis.isRow;
                             break;
                         case AlignItems::FlexEnd:
                             p.crossOffset = lineCrossBase + lineCross - childCross;
-                            p.needsCrossShrinkToFit = !axis.isRow;
+                            p.needsCrossShrinkToFit = axis.isRow;
                             break;
                     }
 
@@ -465,26 +485,25 @@ namespace layout {
     };
 
     struct FlexResolver {
-        RenderTree&       tree;
-        TreeNode*         node;
-        Constraints&      parentConstraints;
-        Constraints       childConstraints;
-        FlexLayout        flex;
-        const FrameInfo&  frameInfo;
-        Measured          measured;
-        bool              mutate;
-        float             childAvailableWidth;
-        float             avMain;
-        float             parentAvailableWidth;
-        float             parentAvailableHeight;
+        RenderTree& tree;
+        TreeNode* node;
+        Constraints parentConstraints;
+        Constraints childConstraints;
+        FlexLayout flex;
+        const FrameInfo& frameInfo;
+        Measured measured;
+        bool mutate;
+        float childAvailableWidth;
+        float parentAvailableWidth;
+        float parentAvailableHeight;
 
         float minX;
         float minY;
         float maxX;
         float maxY;
 
-        float maxIntrinsicX = 0;
-        float maxIntrinsicY = 0;
+        float maxChildRight = 0;
+        float maxChildBottom = 0;
 
         bool hasIndefiniteChild = false;
         struct Bounds {
@@ -494,16 +513,15 @@ namespace layout {
 
         std::vector<size_t> inFlowIndices;
 
-        FlexResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
-                        Constraints childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
+        FlexResolver(RenderTree& tree, TreeNode* node, const Constraints& parentConstraints,
+                        const Constraints& childConstraints, FlexLayout flex, const FrameInfo& frameInfo,
                         Measured measured, bool mutate,
                         float parentAvailableWidth, float parentAvailableHeight,
                         float minX, float minY, float maxX, float maxY)
             : tree{tree}, node{node}, parentConstraints{parentConstraints},
-                childConstraints{std::move(childConstraints)}, flex{std::move(flex)},
+                childConstraints{childConstraints}, flex{std::move(flex)},
                 frameInfo{frameInfo}, measured{measured}, mutate{mutate},
                 childAvailableWidth{parentAvailableWidth},
-                avMain{this->flex.axis.isRow ? parentAvailableWidth : parentAvailableHeight},
                 parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
                 minX{minX}, minY{minY}, maxX{maxX}, maxY{maxY}
         {
@@ -511,7 +529,8 @@ namespace layout {
                 || this->flex.alignItems != AlignItems::Stretch
                 || !measured.explicitWidth.has_value();
 
-            this->childConstraints.shrinkToFit = needsCrossShrink;
+            this->flex.axis.crossShrinkToFit(this->childConstraints) =
+                needsCrossShrink;
 
             for (auto& child : node->children) {
                 if (isXIndefinite(child.get()) || isYIndefinite(child.get())) {
@@ -521,17 +540,147 @@ namespace layout {
             }
         }
 
-        bool isXIndefinite(TreeNode* child) const {
-            return !measured.explicitWidth.has_value() &&
-                (child->shared.width.has_value() && child->shared.width->unit == Unit::Percent);
+        float parentAvailableMain() {
+            return flex.axis.isRow
+                ? parentAvailableWidth
+                : parentAvailableHeight;
         }
 
-        bool isYIndefinite(TreeNode* child) const {
-            return !measured.explicitHeight.has_value() &&
-                (child->shared.height.has_value() && child->shared.height->unit == Unit::Percent);
+        float parentAvailableCross() {
+            return flex.axis.isRow
+                ? parentAvailableHeight
+                : parentAvailableWidth;
         }
 
-        void prepareChildConstraints(TreeNode* child);
+        // x and y axis indefinite checks are asymmetric
+        // because of how HTML/CSS auto-expands width (think block, flex, etc...)
+        // but does not do the same for height
+        bool isXIndefinite(TreeNode* child) {
+            /* axes are indefinite for three reasons:
+                - The axis is being shrink-to-fit measured.
+                - The axis is being measured as min/max-content.
+                - Measured explicitly says IndefiniteBasis.
+        
+                this 2 trillion line if statement effectively covers this case
+            */
+            bool basisIsIndefinite =
+                parentConstraints.shrinkWidthToFit ||
+                parentConstraints.widthResolution == AxisResolution::MinContent ||
+                parentConstraints.widthResolution == AxisResolution::MaxContent ||
+                (!measured.explicitWidth &&
+                 measured.explicitWidth.error() ==
+                    SizeResolveFailure::IndefiniteBasis);
+
+            auto resolvedWidth = child->shared.width.resolve(
+                basisIsIndefinite
+                    ? Size::autoSize()
+                    : Size::px(parentAvailableWidth)
+            );
+
+            return !resolvedWidth &&
+                resolvedWidth.error() ==
+                    SizeResolveFailure::IndefiniteBasis;
+        }
+
+        bool isYIndefinite(TreeNode* child) {
+            bool basisIsIndefinite =
+                parentConstraints.shrinkHeightToFit ||
+                parentConstraints.heightResolution == AxisResolution::MinContent ||
+                parentConstraints.heightResolution == AxisResolution::MaxContent ||
+                (!measured.explicitHeight &&
+                 (measured.explicitHeight.error() ==
+                    SizeResolveFailure::Auto ||
+                  measured.explicitHeight.error() ==
+                    SizeResolveFailure::IndefiniteBasis));
+
+            auto resolvedHeight = child->shared.height.resolve(
+                basisIsIndefinite
+                    ? Size::autoSize()
+                    : Size::px(parentAvailableHeight)
+            );
+
+            return !resolvedHeight &&
+                resolvedHeight.error() ==
+                    SizeResolveFailure::IndefiniteBasis;
+        }
+
+        std::expected<float, SizeResolveFailure> resolveMainSize(
+            const Size& request
+        ) {
+            auto& mainSize = flex.axis.mainExplicit(measured);
+            bool basisIsIndefinite = flex.axis.isRow
+                ? parentConstraints.shrinkWidthToFit ||
+                  parentConstraints.widthResolution == AxisResolution::MinContent ||
+                  parentConstraints.widthResolution == AxisResolution::MaxContent
+                : parentConstraints.shrinkHeightToFit ||
+                  parentConstraints.heightResolution == AxisResolution::MinContent ||
+                  parentConstraints.heightResolution == AxisResolution::MaxContent;
+            if (!mainSize) {
+                basisIsIndefinite = basisIsIndefinite ||
+                    mainSize.error() ==
+                        SizeResolveFailure::IndefiniteBasis ||
+                    (!flex.axis.isRow &&
+                     mainSize.error() == SizeResolveFailure::Auto);
+            }
+            auto basis = basisIsIndefinite
+                ? Size::autoSize()
+                : Size::px(parentAvailableMain());
+            return request.resolve(basis);
+        }
+
+        std::expected<float, SizeResolveFailure> resolveMainSize(
+            TreeNode* child
+        ) {
+            return resolveMainSize(flex.axis.mainSize(child->shared));
+        }
+
+        std::expected<float, SizeResolveFailure> resolveCrossSize(
+            TreeNode* child
+        ) {
+            const auto& request = flex.axis.crossSize(child->shared);
+            float availableCross = flex.axis.isRow
+                ? parentAvailableHeight
+                : parentAvailableWidth;
+            auto& crossSize = flex.axis.crossExplicit(measured);
+            bool basisIsIndefinite = flex.axis.isRow
+                ? parentConstraints.shrinkHeightToFit ||
+                  parentConstraints.heightResolution == AxisResolution::MinContent ||
+                  parentConstraints.heightResolution == AxisResolution::MaxContent
+                : parentConstraints.shrinkWidthToFit ||
+                  parentConstraints.widthResolution == AxisResolution::MinContent ||
+                  parentConstraints.widthResolution == AxisResolution::MaxContent;
+            if (!crossSize) {
+                basisIsIndefinite = basisIsIndefinite ||
+                    crossSize.error() ==
+                        SizeResolveFailure::IndefiniteBasis ||
+                    (flex.axis.isRow &&
+                     crossSize.error() == SizeResolveFailure::Auto);
+            }
+            auto basis = basisIsIndefinite
+                ? Size::autoSize()
+                : Size::px(availableCross);
+            return request.resolve(basis);
+        }
+
+        float determineFlexBaseSize(
+            TreeNode* child,
+            std::expected<float, SizeResolveFailure>& mainSize,
+            Constraints& constraints,
+            Measured& measured
+        );
+
+        float determineMinMainSize(
+            TreeNode* child,
+            std::expected<float, SizeResolveFailure>& mainSize,
+            Constraints& constraints,
+            Measured& measured
+        );
+
+        std::optional<float> determineMaxMainSize(TreeNode* child);
+        float determineAvailableMain(float contentMainSize);
+        float determineAvailableCross(float contentCrossSize);
+
+        Constraints prepareChildConstraints(TreeNode* child);
         void phaseA();
         void phaseB();
         Bounds phaseC();

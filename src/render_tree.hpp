@@ -50,8 +50,8 @@ namespace tree {
             layout::Measured measured
         );
         const layout::LayoutOutput& speculateLayout(
-            TreeNode* node,
             const FrameInfo& frameInfo,
+            TreeNode* node,
             Constraints constraints,
             layout::Measured measured
         );
