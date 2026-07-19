@@ -310,6 +310,11 @@ namespace style {
         Scroll
     };
 
+    enum class PointerEvents {
+        Auto,
+        None
+    };
+
     enum class WhiteSpace {
         Normal,
         NoWrap,
@@ -412,6 +417,7 @@ namespace style {
         simd_float4 borderColor{0,0,0,1};
 
         Overflow overflow {Overflow::Visible};
+        PointerEvents pointerEvents {PointerEvents::Auto};
         TextOverflow textOverflow{};
         std::optional<TextAlign> textAlign{};
     };

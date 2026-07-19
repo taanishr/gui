@@ -318,6 +318,7 @@ namespace tree {
         renderOrderCache = collectAllNodes(getRoot());
 
         uint64_t paintOrderIndex = 0;
+
         std::function<void(TreeNode*)> assignPaintOrderIndices = [&](TreeNode* node) {
             if (!node) return;
 
@@ -327,6 +328,7 @@ namespace tree {
             }
             node->paintPostorderIndex = paintOrderIndex++;
         };
+
         assignPaintOrderIndices(getRoot());
 
         std::sort(renderOrderCache.begin(), renderOrderCache.end(), [](TreeNode* a, TreeNode* b) {
@@ -346,8 +348,11 @@ namespace tree {
                 return false;
             }
 
-            return a->id < b->id;
+            // return a->id < b->id;
+
+            return a->paintPreorderIndex < b->paintPreorderIndex;
         });
+
         renderOrderDirty = false;
         if constexpr (instrumentation::enabled) {
             instrumentation::recordRenderOrderCache(
@@ -1239,35 +1244,26 @@ namespace tree {
             startedAt = std::chrono::steady_clock::now();
         }
         uint64_t nodesExamined = 0;
+        TreeNode* hit = nullptr;
 
-        auto visit = [&](this auto&& self, TreeNode* current) -> TreeNode* {
-            if (!current) return nullptr;
-            nodesExamined++;
+        if (node) {
+            auto& renderOrder = sortedRenderOrder();
+            for (auto it = renderOrder.rbegin(); it != renderOrder.rend(); ++it) {
+                auto* candidate = *it;
+                auto isInSubtree = node->paintPreorderIndex <= candidate->paintPreorderIndex
+                    && candidate->paintPostorderIndex <= node->paintPostorderIndex;
+                if (!isInSubtree) {
+                    continue;
+                }
 
-            std::vector<TreeNode*> sortedChildren;
-            for (auto& child : current->children) {
-                sortedChildren.push_back(child.get());
+                nodesExamined++;
+                if (candidate->contains(point)) {
+                    hit = candidate;
+                    break;
+                }
             }
-            std::sort(sortedChildren.begin(), sortedChildren.end(),
-                [](TreeNode* a, TreeNode* b) {
-                    if (a->globalZIndex != b->globalZIndex) {
-                        return a->globalZIndex > b->globalZIndex;
-                    }
-                    return a->id > b->id;
-                });
+        }
 
-            for (auto* child : sortedChildren) {
-                if (auto* hit = self(child)) return hit;
-            }
-
-            if (current->contains(point)) {
-                return current;
-            }
-
-            return nullptr;
-        };
-
-        auto* hit = visit(node);
         if constexpr (instrumentation::enabled) {
             instrumentation::recordHitTest(
                 nodesExamined,

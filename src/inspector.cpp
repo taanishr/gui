@@ -1,11 +1,14 @@
 #include "inspector.hpp"
 #include "context_manager.hpp"
 #include "events.hpp"
+#include "instrumentation.hpp"
 #include "new_arch.hpp"
 #include "sizing.hpp"
 #include <algorithm>
+#include <functional>
 #include <print>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "fonts.hpp"
 
@@ -39,6 +42,56 @@ namespace Inspector {
                 case style::Overflow::Scroll: return "Scroll";
             }
         }
+
+        std::string_view phaseName(instrumentation::Phase phase) {
+            using instrumentation::Phase;
+            switch (phase) {
+                case Phase::Update: return "update";
+                case Phase::Measure: return "measure";
+                case Phase::Atomize: return "atomize";
+                case Phase::PreLayout: return "pre-layout";
+                case Phase::Layout: return "layout";
+                case Phase::PostLayout: return "post-layout";
+                case Phase::Place: return "place";
+                case Phase::Finalize: return "finalize";
+                case Phase::Render: return "render";
+                case Phase::Count: return "unknown";
+            }
+        }
+
+        std::string_view recomputeReasonName(instrumentation::RecomputeReason reason) {
+            using instrumentation::RecomputeReason;
+            switch (reason) {
+                case RecomputeReason::None: return "cached";
+                case RecomputeReason::Dirty: return "dirty";
+                case RecomputeReason::MissingConstraintsKey: return "no key";
+                case RecomputeReason::ConstraintsChanged: return "constraints";
+                case RecomputeReason::AncestorRecomputed: return "ancestor";
+            }
+        }
+
+        double milliseconds(std::chrono::nanoseconds duration) {
+            return std::chrono::duration<double, std::milli>(duration).count();
+        }
+
+        bool hasPropagation(
+            instrumentation::DirtyPropagation value,
+            instrumentation::DirtyPropagation flag
+        ) {
+            return (std::to_underlying(value) & std::to_underlying(flag)) != 0;
+        }
+
+        bool isAncestorOf(const tree::TreeNode* ancestor, const tree::TreeNode* node) {
+            for (auto* current = node; current; current = current->parent) {
+                if (current == ancestor) return true;
+            }
+            return false;
+        }
+
+        std::string_view fileName(std::string_view path) {
+            auto separator = path.find_last_of("/\\");
+            return separator == std::string_view::npos ? path : path.substr(separator + 1);
+        }
     }
 
     Inspector::Inspector():
@@ -55,43 +108,114 @@ namespace Inspector {
         nodeScrollText{text(nodeScrollLabel()).fontSize(style::Size::pt(12.0)).font(Menlo).color(simd_float4{1.0,1.0,1.0,1.0})},
         nodeZIndexText{text(nodeZIndexLabel()).fontSize(style::Size::pt(12.0)).font(Menlo).color(simd_float4{1.0,1.0,1.0,1.0})},
         nodePathText{text(nodePathLabel()).fontSize(style::Size::pt(12.0)).font(Menlo).color(simd_float4{1.0,1.0,1.0,1.0})},
-        visualizerState{
+        frameStatsText{text("frame: waiting").fontSize(style::Size::pt(12.0)).font(Menlo).color(simd_float4{0.65,0.85,1.0,1.0})},
+        phaseStatsText{text("phases: waiting").fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.94,0.96,1.0,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        cacheStatsText{text("caches: waiting").fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.94,0.96,1.0,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        renderStatsText{text("render: waiting").fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.94,0.96,1.0,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        hitTestStatsText{text("hit tests: waiting").fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.94,0.96,1.0,1.0})},
+        dirtyPhaseText{text("No selected node").fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.94,0.96,1.0,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        mutationHistoryText{text("No recent mutations").fontSize(style::Size::pt(10.0)).font(Menlo).color(simd_float4{0.8,0.84,0.92,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        treeViewText{text(treeViewDetails).fontSize(style::Size::pt(11.0)).font(Menlo).color(simd_float4{0.9,0.93,1.0,1.0}).whiteSpace(style::WhiteSpace::PreWrap)},
+        selectionLabelText{text("None").fontSize(style::Size::pt(10.0)).font(Menlo).color(simd_float4{1.0,1.0,1.0,1.0}).pointerEvents(style::PointerEvents::None)},
+        marginOverlayState{
             div()
-                .color(simd_float4{0,0,0,0.5})
-                .height(style::Size::px(320))
-                .width(style::Size::px(280))
+                .color(simd_float4{0,0,0,0})
+                .borderWidth(style::Size::px(1.0))
+                .borderColor(simd_float4{1.0,0.55,0.15,0.95})
+                .height(style::Size::px(0))
+                .width(style::Size::px(0))
                 .position(style::Position::Fixed)
-                .zIndex(DEBUG_Z_INDEX)
-                .padding(style::Size::px(12.0))
-                .right(style::Size::px(0))
-                .top(style::Size::px(0))
-                .margin(style::Size::px(12.0))
-                .cornerRadius(style::Size::px(12.0))
+                .pointerEvents(style::PointerEvents::None)
+                .left(style::Size::px(-10000))
+                .top(style::Size::px(-10000))
+        },
+        paddingOverlayState{
+            div()
+                .color(simd_float4{0,0,0,0})
+                .borderWidth(style::Size::px(1.0))
+                .borderColor(simd_float4{0.3,0.9,0.55,0.95})
+                .height(style::Size::px(0))
+                .width(style::Size::px(0))
+                .position(style::Position::Fixed)
+                .pointerEvents(style::PointerEvents::None)
+                .left(style::Size::px(-10000))
+                .top(style::Size::px(-10000))
+        },
+        contentOverlayState{
+            div()
+                .color(simd_float4{0,0,0,0})
+                .borderWidth(style::Size::px(1.0))
+                .borderColor(simd_float4{0.2,0.6,1.0,1.0})
+                .height(style::Size::px(0))
+                .width(style::Size::px(0))
+                .position(style::Position::Fixed)
+                .pointerEvents(style::PointerEvents::None)
+                .left(style::Size::px(-10000))
+                .top(style::Size::px(-10000))
+        },
+        selectionLabelState{
+            div()
+                .color(simd_float4{0.04,0.08,0.14,0.96})
+                .padding(style::Size::px(4.0))
+                .cornerRadius(style::Size::px(4.0))
+                .position(style::Position::Fixed)
+                .pointerEvents(style::PointerEvents::None)
+                .left(style::Size::px(-10000))
+                .top(style::Size::px(-10000))
+            (
+                selectionLabelText
+            )
+        },
+        panelState{
+            div()
+                .color(simd_float4{0.035,0.045,0.07,0.96})
+                .height(style::Size::px(720))
+                .width(style::Size::px(420))
+                .position(style::Position::Fixed)
+                .padding(style::Size::px(14.0))
+                .right(style::Size::px(12))
+                .top(style::Size::px(12))
+                .cornerRadius(style::Size::px(14.0))
+                .borderWidth(style::Size::px(1.0))
+                .borderColor(simd_float4{0.22,0.27,0.38,0.9})
                 .overflow(style::Overflow::Scroll)
             (
-                text("Inspector").fontSize(style::Size::pt(24.0)).font(ArialBold),
                 div()
                     .display(style::Display::Flex)
                     .flexDirection(FlexDirection::Col)
-                    .flexGap(style::Size::px(10.0))
+                    .flexGap(style::Size::px(12.0))
                 (
                     div()
                         .display(style::Display::Flex)
-                        .flexDirection(FlexDirection::Col)
+                        .alignItems(style::AlignItems::Center)
+                        .justifyContent(style::JustifyContent::SpaceBetween)
                     (
-                        text("Mouse").fontSize(style::Size::pt(12.0)).font(ArialBold),
-                        div().display(style::Display::Flex).flexGap(style::Size::px(12.0))
-                        (
-                            mouseXText,
-                            mouseYText
-                        )
+                        text("Inspector").fontSize(style::Size::pt(22.0)).font(ArialBold),
+                        frameStatsText
                     ),
                     div()
+                        .color(simd_float4{0.075,0.09,0.13,0.9})
+                        .padding(style::Size::px(10.0))
+                        .cornerRadius(style::Size::px(8.0))
                         .display(style::Display::Flex)
                         .flexDirection(FlexDirection::Col)
+                        .flexGap(style::Size::px(4.0))
                     (
-                        text("Node").fontSize(style::Size::pt(12.0)).font(ArialBold),
-                        hitStackText,
+                        text("Renderer").fontSize(style::Size::pt(12.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
+                        phaseStatsText,
+                        cacheStatsText,
+                        renderStatsText,
+                        hitTestStatsText
+                    ),
+                    div()
+                        .color(simd_float4{0.075,0.09,0.13,0.9})
+                        .padding(style::Size::px(10.0))
+                        .cornerRadius(style::Size::px(8.0))
+                        .display(style::Display::Flex)
+                        .flexDirection(FlexDirection::Col)
+                        .flexGap(style::Size::px(3.0))
+                    (
+                        text("Selected node").fontSize(style::Size::pt(12.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
                         nodeIDText,
                         nodeTypeText,
                         nodeStyleText,
@@ -103,23 +227,70 @@ namespace Inspector {
                         ),
                         nodeLocalBoxText,
                         nodeScrollText,
-                        nodeZIndexText
-                    ),
-                    div()
-                        .display(style::Display::Flex)
-                        .flexDirection(FlexDirection::Col)
-                    (
-                        text("Controls").fontSize(style::Size::pt(12.0)).font(ArialBold),
-                        text("Shift+Up/Down cycle nodes").fontSize(style::Size::pt(12.0)).font(Menlo)
-                    ),
-                    div()
-                        .display(style::Display::Flex)
-                        .flexDirection(FlexDirection::Col)
-                    (
-                        text("Path").fontSize(style::Size::pt(12.0)).font(ArialBold),
+                        nodeZIndexText,
                         nodePathText
+                    ),
+                    div()
+                        .color(simd_float4{0.075,0.09,0.13,0.9})
+                        .padding(style::Size::px(10.0))
+                        .cornerRadius(style::Size::px(8.0))
+                        .display(style::Display::Flex)
+                        .flexDirection(FlexDirection::Col)
+                        .flexGap(style::Size::px(4.0))
+                    (
+                        text("Dirty / recompute").fontSize(style::Size::pt(12.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
+                        dirtyPhaseText,
+                        mutationHistoryText
+                    ),
+                    div()
+                        .color(simd_float4{0.075,0.09,0.13,0.9})
+                        .padding(style::Size::px(10.0))
+                        .cornerRadius(style::Size::px(8.0))
+                        .display(style::Display::Flex)
+                        .flexDirection(FlexDirection::Col)
+                        .flexGap(style::Size::px(4.0))
+                    (
+                        text("Hit stack  ·  Shift+Up/Down").fontSize(style::Size::pt(12.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
+                        hitStackText
+                    ),
+                    div()
+                        .color(simd_float4{0.075,0.09,0.13,0.9})
+                        .padding(style::Size::px(10.0))
+                        .cornerRadius(style::Size::px(8.0))
+                        .display(style::Display::Flex)
+                        .flexDirection(FlexDirection::Col)
+                        .flexGap(style::Size::px(4.0))
+                    (
+                        text("Tree").fontSize(style::Size::pt(12.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
+                        treeViewText
+                    ),
+                    div()
+                        .display(style::Display::Flex)
+                        .flexDirection(FlexDirection::Col)
+                    (
+                        text("Pointer").fontSize(style::Size::pt(11.0)).font(ArialBold).color(simd_float4{0.55,0.78,1.0,1.0}),
+                        div().display(style::Display::Flex).flexGap(style::Size::px(12.0))
+                        (
+                            mouseXText,
+                            mouseYText
+                        )
                     )
                 )
+            )
+        },
+        visualizerState{
+            div()
+                .color(simd_float4{0,0,0,0})
+                .height(style::Size::px(0))
+                .width(style::Size::px(0))
+                .position(style::Position::Fixed)
+                .zIndex(DEBUG_Z_INDEX)
+            (
+                marginOverlayState,
+                paddingOverlayState,
+                contentOverlayState,
+                selectionLabelState,
+                panelState
             )
         }
     {
@@ -165,6 +336,7 @@ namespace Inspector {
             hitNodes.end()
         );
         hitNodeCount = hitNodes.size();
+        tree::TreeNode* selectedNode = nullptr;
 
         int cycleDirection = 0;
         if (event.type == EventType::KeyDown) {
@@ -215,6 +387,7 @@ namespace Inspector {
             }
 
             auto htNode = hitNodes[selectedHitIndex];
+            selectedNode = htNode;
             htNodeID = htNode->id;
             htNodeElementType = std::string(htNode->element->elementTypeName());
             htNodeDisplay = displayName(htNode->shared.display);
@@ -252,6 +425,177 @@ namespace Inspector {
             }
             htNodePath = formattedPath;
         }
+
+        hitStackDetails.clear();
+        if (hitNodes.empty()) {
+            hitStackDetails = "None";
+        } else {
+            for (std::size_t i = 0; i < hitNodes.size(); ++i) {
+                auto* node = hitNodes[i];
+                hitStackDetails += std::format(
+                    "{} {}#{}  z:{}",
+                    i == selectedHitIndex ? ">" : " ",
+                    node->element->elementTypeName(),
+                    node->id,
+                    node->globalZIndex
+                );
+                if (i + 1 < hitNodes.size()) hitStackDetails += '\n';
+            }
+        }
+
+        std::unordered_map<uint64_t, tree::TreeNode*> nodesById;
+        treeViewDetails.clear();
+        std::function<void(tree::TreeNode*, std::size_t)> appendTree =
+            [&](tree::TreeNode* node, std::size_t depth) {
+                if (!node || node->id == inspectorNodeID) return;
+
+                nodesById.emplace(node->id, node);
+                treeViewDetails.append(depth * 2, ' ');
+                treeViewDetails += std::format(
+                    "{}{}#{}",
+                    htNodeID == node->id ? "> " : "  ",
+                    node->element->elementTypeName(),
+                    node->id
+                );
+                treeViewDetails += '\n';
+
+                for (auto& child : node->children) {
+                    appendTree(child.get(), depth + 1);
+                }
+            };
+        appendTree(tree.getRoot(), 0);
+        if (!treeViewDetails.empty()) treeViewDetails.pop_back();
+
+        if constexpr (instrumentation::enabled) {
+            auto& diagnostics = instrumentation::getDiagnostics();
+            const auto& frame = diagnostics.latestFrame();
+
+            frameStatsText.text(std::format(
+                "frame {}  {:.2f} ms",
+                frame.frameIndex,
+                milliseconds(frame.elapsed)
+            ));
+
+            std::string phases;
+            for (std::size_t i = 0; i < static_cast<std::size_t>(instrumentation::Phase::Count); ++i) {
+                auto phase = static_cast<instrumentation::Phase>(i);
+                const auto& phaseData = frame.phases[i];
+                phases += std::format(
+                    "{:<11} {:>6.2f} ms  {:>4} nodes",
+                    phaseName(phase),
+                    milliseconds(phaseData.elapsed),
+                    phaseData.recomputedNodes
+                );
+                if (i + 1 < static_cast<std::size_t>(instrumentation::Phase::Count)) {
+                    phases += '\n';
+                }
+            }
+            phaseStatsText.text(phases);
+
+            cacheStatsText.text(std::format(
+                "render order  {} hit / {} miss  {:.2f} ms\n"
+                "spec layout   {} hit / {} miss",
+                frame.renderOrderCache.hits,
+                frame.renderOrderCache.misses,
+                milliseconds(frame.renderOrderCache.rebuildTime),
+                frame.speculativeLayoutCache.hits,
+                frame.speculativeLayoutCache.misses
+            ));
+
+            renderStatsText.text(std::format(
+                "{} nodes  {} draws  {} atoms\n{} buffer writes  {:.1f} KiB",
+                frame.render.nodesEncoded,
+                frame.render.drawCalls,
+                frame.render.atomsRendered,
+                frame.render.bufferWrites,
+                static_cast<double>(frame.render.bufferBytes) / 1024.0
+            ));
+
+            hitTestStatsText.text(std::format(
+                "{} hit tests  {} examined  {} hits  {:.2f} ms",
+                frame.hitTests.calls,
+                frame.hitTests.nodesExamined,
+                frame.hitTests.hits,
+                milliseconds(frame.hitTests.elapsed)
+            ));
+
+            std::string dirtyDetails;
+            if (selectedNode) {
+                dirtyDetails = std::format(
+                    "dirty self: 0x{:02x}  subtree: 0x{:02x}",
+                    std::to_underlying(selectedNode->dirtySelf),
+                    std::to_underlying(selectedNode->dirtySubtree)
+                );
+
+                if (auto found = diagnostics.nodes().find(selectedNode->id);
+                    found != diagnostics.nodes().end()) {
+                    constexpr std::array phasesToShow {
+                        instrumentation::Phase::Measure,
+                        instrumentation::Phase::Atomize,
+                        instrumentation::Phase::Layout,
+                        instrumentation::Phase::PostLayout,
+                        instrumentation::Phase::Place,
+                        instrumentation::Phase::Finalize
+                    };
+                    for (auto phase : phasesToShow) {
+                        auto index = static_cast<std::size_t>(phase);
+                        dirtyDetails += std::format(
+                            "\n{:<11} {:<11} x{}",
+                            phaseName(phase),
+                            recomputeReasonName(found->second.lastRecomputeReasons[index]),
+                            found->second.recomputeCounts[index]
+                        );
+                    }
+                }
+            } else {
+                dirtyDetails = "No selected node";
+            }
+            dirtyPhaseText.text(dirtyDetails);
+
+            std::string mutations;
+            std::size_t mutationCount = 0;
+            if (selectedNode) {
+                for (auto frameIt = diagnostics.frames().rbegin();
+                    frameIt != diagnostics.frames().rend() && mutationCount < 6;
+                    ++frameIt) {
+                    for (auto mutationIt = frameIt->mutations.rbegin();
+                        mutationIt != frameIt->mutations.rend() && mutationCount < 6;
+                        ++mutationIt) {
+                        const auto& mutation = *mutationIt;
+                        auto source = nodesById.find(mutation.sourceNodeId);
+                        bool affectsSelection = mutation.sourceNodeId == selectedNode->id;
+                        if (source != nodesById.end()) {
+                            affectsSelection = affectsSelection ||
+                                (hasPropagation(
+                                    mutation.propagation,
+                                    instrumentation::DirtyPropagation::Ancestors
+                                ) && isAncestorOf(selectedNode, source->second)) ||
+                                (hasPropagation(
+                                    mutation.propagation,
+                                    instrumentation::DirtyPropagation::Descendants
+                                ) && isAncestorOf(source->second, selectedNode));
+                        }
+                        if (!affectsSelection) continue;
+
+                        if (!mutations.empty()) mutations += '\n';
+                        mutations += std::format(
+                            "#{}  0x{:02x}→0x{:02x}  {}:{}",
+                            mutation.sourceNodeId,
+                            mutation.requestedDirtyBits,
+                            mutation.effectiveSelfDirtyBits,
+                            fileName(mutation.file),
+                            mutation.line
+                        );
+                        mutationCount++;
+                    }
+                }
+            }
+            mutationHistoryText.text(
+                mutations.empty() ? "No recent relevant mutations" : mutations
+            );
+        }
+
+        updateSelectionOverlay(selectedNode);
     
         nodeIDText.text(nodeIdLabel());
         nodeTypeText.text(nodeTypeLabel());
@@ -264,9 +608,66 @@ namespace Inspector {
         nodeScrollText.text(nodeScrollLabel());
         nodeZIndexText.text(nodeZIndexLabel());
         nodePathText.text(nodePathLabel());
+        treeViewText.text(treeViewDetails);
         mouseXText.text(mouseXLabel());
         mouseYText.text(mouseYLabel());
         visualizerState.markDirty();
+    }
+
+    void Inspector::updateSelectionOverlay(tree::TreeNode* node) {
+        if (!node || !node->layout.has_value()) {
+            auto hide = [](auto& overlay) {
+                overlay
+                    .left(style::Size::px(-10000.0f))
+                    .top(style::Size::px(-10000.0f))
+                    .width(style::Size::px(0.0f))
+                    .height(style::Size::px(0.0f));
+            };
+            hide(marginOverlayState);
+            hide(paddingOverlayState);
+            hide(contentOverlayState);
+            selectionLabelState
+                .left(style::Size::px(-10000.0f))
+                .top(style::Size::px(-10000.0f));
+            selectionLabelText.text("None");
+            return;
+        }
+
+        const auto& layout = *node->layout;
+        const auto& box = layout.computedBox;
+        auto margins = node->preLayout.has_value()
+            ? node->preLayout->resolvedMargins
+            : layout::ResolvedMargins{};
+
+        marginOverlayState
+            .left(style::Size::px(box.x - margins.left))
+            .top(style::Size::px(box.y - margins.top))
+            .width(style::Size::px(box.width + margins.left + margins.right))
+            .height(style::Size::px(box.height + margins.top + margins.bottom));
+
+        paddingOverlayState
+            .left(style::Size::px(box.x))
+            .top(style::Size::px(box.y))
+            .width(style::Size::px(box.width))
+            .height(style::Size::px(box.height));
+
+        const auto& padding = layout.resolvedPadding;
+        contentOverlayState
+            .left(style::Size::px(box.x + padding.left))
+            .top(style::Size::px(box.y + padding.top))
+            .width(style::Size::px(std::max(0.0f, box.width - padding.left - padding.right)))
+            .height(style::Size::px(std::max(0.0f, box.height - padding.top - padding.bottom)));
+
+        selectionLabelText.text(std::format(
+            "{}#{}  {:.0f}×{:.0f}",
+            node->element->elementTypeName(),
+            node->id,
+            box.width,
+            box.height
+        ));
+        selectionLabelState
+            .left(style::Size::px(box.x))
+            .top(style::Size::px(std::max(0.0f, box.y - 22.0f)));
     }
 
     // store state
@@ -292,8 +693,7 @@ namespace Inspector {
     }
 
     std::string Inspector::hitStackLabel() {
-        auto hit = hitNodeCount > 0 ? std::format("hit: {} / {}", selectedHitIndex + 1, hitNodeCount) : std::format("hit: None");
-        return hit;
+        return hitStackDetails;
     }
 
     std::string Inspector::nodeStyleLabel() {

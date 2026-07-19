@@ -32,6 +32,7 @@ namespace elements {
     using style::JustifyItems;
     using style::JustifySelf;
     using style::Overflow;
+    using style::PointerEvents;
     using style::Position;
     using style::Size;
     using style::TextOverflow;
@@ -313,6 +314,15 @@ namespace elements {
         Derived& overflow(Overflow overflow) {
             node->shared.overflow = overflow;
             markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        PointerEvents pointerEvents() const {
+            return node->shared.pointerEvents;
+        }
+
+        Derived& pointerEvents(PointerEvents pointerEvents) {
+            node->shared.pointerEvents = pointerEvents;
             return self();
         }
 
