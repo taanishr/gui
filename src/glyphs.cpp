@@ -31,7 +31,7 @@ Contour processContour(
     float ascender,
     CurveType curveType
 ) {
-    Quad quad {.topLeft = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, .bottomRight = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()}};
+    Quad quad {.topLeft = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, .bottomRight = {std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()}};
 
     std::vector<simd_float2> points {};
     std::vector<simd_float2> pointsBuffer {};
