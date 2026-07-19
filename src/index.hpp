@@ -21,6 +21,7 @@ namespace gui {
     using style::AlignContent;
     using style::FlexWrap;
     using style::Overflow;
+    using style::PointerEvents;
     using style::TextOverflow;
     using style::TextAlign;
     using style::WhiteSpace;

@@ -198,6 +198,7 @@ namespace tree {
     using style::JustifyItems;
     using style::JustifySelf;
     using style::Overflow;
+    using style::PointerEvents;
     using style::Position;
     using style::SharedDescriptor;
     using style::Size;
@@ -333,6 +334,7 @@ namespace tree {
         }
 
         bool contains(simd_float2 point) const {
+            if (shared.pointerEvents == PointerEvents::None) return false;
             if (!layout.has_value()) return false;
             
             auto& box = layout->computedBox;

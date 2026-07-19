@@ -41,6 +41,7 @@ namespace Inspector {
         std::string nodePathLabel();
         std::string mouseXLabel();
         std::string mouseYLabel();
+        void updateSelectionOverlay(tree::TreeNode* node);
         NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> visualizer();
 
         std::optional<EventType> lastEventType;
@@ -60,6 +61,20 @@ namespace Inspector {
         NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> nodeScrollText;
         NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> nodeZIndexText;
         NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> nodePathText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> frameStatsText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> phaseStatsText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> cacheStatsText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> renderStatsText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> hitTestStatsText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> dirtyPhaseText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> mutationHistoryText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> treeViewText;
+        NodeBuilder<Text<TextStorage>, TextProcessor<TextStorage, TextUniforms>> selectionLabelText;
+        NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> marginOverlayState;
+        NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> paddingOverlayState;
+        NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> contentOverlayState;
+        NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> selectionLabelState;
+        NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> panelState;
         NodeBuilder<Div<DivStorage>, DivProcessor<DivStorage, DivUniforms>> visualizerState;
         uint64_t inspectorNodeID;
         std::size_t selectedHitIndex = 0;
@@ -82,5 +97,7 @@ namespace Inspector {
         std::optional<float> htNodeScrollY;
         std::optional<uint64_t> htNodeZIndex;
         std::optional<std::string> htNodePath;
+        std::string hitStackDetails{"hit: None"};
+        std::string treeViewDetails{"tree: None"};
     };
 };
