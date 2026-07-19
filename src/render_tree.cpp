@@ -48,21 +48,42 @@ namespace tree {
     }
 
     bool RenderTree::requiresFrame(const FrameInfo& frameInfo) const {
-        return needsUpdate
-            || isFrameInfoChanged(frameInfo)
-            || pendingFrameBufferWrites > 0;
+        uint32_t reasons = 0;
+        if (needsUpdate) {
+            reasons |= std::to_underlying(instrumentation::FrameReason::Mutation);
+        }
+        if (isFrameInfoChanged(frameInfo)) {
+            reasons |= std::to_underlying(instrumentation::FrameReason::FrameInfoChanged);
+        }
+        if (pendingFrameBufferWrites > 0) {
+            reasons |= std::to_underlying(instrumentation::FrameReason::PendingBufferWrites);
+        }
+        instrumentation::recordFrameDecision(reasons);
+        return reasons != 0;
     }
 
-    void RenderTree::markDirty() {
+    void RenderTree::markDirty(std::source_location source) {
         needsUpdate = true;
         pendingFrameBufferWrites = MaxOutstandingFrameCount;
         renderOrderDirty = true;
+        instrumentation::recordRenderOrderInvalidation(
+            std::to_underlying(instrumentation::RenderOrderReason::FullTreeDirty)
+        );
         if (auto root = getRoot()) {
+            instrumentation::recordMutation(
+                root->id,
+                std::to_underlying(allPhaseDirtyBits()),
+                std::to_underlying(allPhaseDirtyBits()),
+                root->children.empty()
+                    ? instrumentation::DirtyPropagation::None
+                    : instrumentation::DirtyPropagation::Descendants,
+                source
+            );
             markSubtreeDirty(root, allPhaseDirtyBits());
         }
     }
 
-    void RenderTree::markDirty(TreeNode* node, DirtyBits bits) {
+    void RenderTree::markDirty(TreeNode* node, DirtyBits bits, std::source_location source) {
         if (!node || bits == DirtyBits::None) return;
 
         needsUpdate = true;
@@ -70,6 +91,9 @@ namespace tree {
 
         if (hasDirty(bits, DirtyBits::PaintOrder)) {
             renderOrderDirty = true;
+            instrumentation::recordRenderOrderInvalidation(std::to_underlying(
+                instrumentation::RenderOrderReason::PaintOrderChanged
+            ));
         }
 
         DirtyBits selfBits = bits;
@@ -82,6 +106,22 @@ namespace tree {
         if (hasDirty(bits, DirtyBits::Place)) {
             selfBits |= DirtyBits::Finalize;
         }
+
+        uint8_t propagation = 0;
+        if (node->parent) {
+            propagation |= std::to_underlying(instrumentation::DirtyPropagation::Ancestors);
+        }
+        if (!node->children.empty() && hasDirty(bits, DirtyBits::PostLayout | DirtyBits::Place)) {
+            propagation |= std::to_underlying(instrumentation::DirtyPropagation::Descendants);
+        }
+
+        instrumentation::recordMutation(
+            node->id,
+            std::to_underlying(bits),
+            std::to_underlying(selfBits),
+            static_cast<instrumentation::DirtyPropagation>(propagation),
+            source
+        );
 
         node->dirtySelf |= selfBits;
         node->dirtySubtree |= selfBits;
@@ -248,16 +288,32 @@ namespace tree {
         return key;
     }
 
-    bool RenderTree::shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const {
-        return hasDirty(node->dirtySelf, bit) ||
-            !node->constraintsKey.has_value() ||
-            *node->constraintsKey != incomingKey;
+    instrumentation::RecomputeReason RenderTree::recomputeReason(
+        TreeNode* node,
+        DirtyBits bit,
+        const ConstraintsKey& incomingKey
+    ) const {
+        using instrumentation::RecomputeReason;
+
+        if (hasDirty(node->dirtySelf, bit)) return RecomputeReason::Dirty;
+        if (!node->constraintsKey.has_value()) return RecomputeReason::MissingConstraintsKey;
+        if (*node->constraintsKey != incomingKey) return RecomputeReason::ConstraintsChanged;
+        return RecomputeReason::None;
     }
 
     const std::vector<TreeNode*>& RenderTree::sortedRenderOrder() {
         if (!renderOrderDirty && !renderOrderCache.empty()) {
+            instrumentation::recordRenderOrderCache(true);
             return renderOrderCache;
         }
+
+        auto rebuildStartedAt = std::chrono::steady_clock::time_point{};
+        if constexpr (instrumentation::enabled) {
+            rebuildStartedAt = std::chrono::steady_clock::now();
+        }
+        uint32_t immediateReason = renderOrderCache.empty()
+            ? std::to_underlying(instrumentation::RenderOrderReason::EmptyCache)
+            : 0;
 
         renderOrderCache = collectAllNodes(getRoot());
 
@@ -293,6 +349,13 @@ namespace tree {
             return a->id < b->id;
         });
         renderOrderDirty = false;
+        if constexpr (instrumentation::enabled) {
+            instrumentation::recordRenderOrderCache(
+                false,
+                immediateReason,
+                std::chrono::steady_clock::now() - rebuildStartedAt
+            );
+        }
         return renderOrderCache;
     }
 
@@ -305,6 +368,9 @@ namespace tree {
                 markSubtreeDirty(root, allPhaseDirtyBits());
             }
             renderOrderDirty = true;
+            instrumentation::recordRenderOrderInvalidation(
+                std::to_underlying(instrumentation::RenderOrderReason::FrameInfoChanged)
+            );
         }
 
         if (!needsUpdate && !frameInfoChanged && pendingFrameBufferWrites == 0) {
@@ -347,9 +413,11 @@ namespace tree {
         // );
 
         if (subtreeHasDirty(root, DirtyBits::Measure) || !root->measured.has_value()) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::Measure};
             measurePhase(root, rootConstraints);
         }
         if (subtreeHasDirty(root, DirtyBits::Atomize) || !root->atomized.has_value()) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::Atomize};
             if (!atomizePhase(root, rootConstraints)) return;
         }
     
@@ -357,30 +425,29 @@ namespace tree {
         // precompute margin metadata + intents
         bool needsLayoutPass = subtreeHasDirty(root, DirtyBits::Layout) || !root->layout.has_value();
         if (needsLayoutPass && (subtreeHasDirty(root, DirtyBits::Layout) || !root->preLayout.has_value())) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::PreLayout};
             preLayoutPhase(root, frameInfo, rootConstraints);
         }
         // initial layout pass
         if (needsLayoutPass) {
             speculativeLayoutCache.clear();
-            const auto layoutStart = std::chrono::steady_clock::now();
+            instrumentation::PhaseTimer timer{instrumentation::Phase::Layout};
             layoutPhase(root, frameInfo, rootConstraints, *root->measured);
-            const auto layoutEnd = std::chrono::steady_clock::now();
-            const auto layoutMs = std::chrono::duration<double, std::milli>(
-                layoutEnd - layoutStart
-            ).count();
-            std::println("Layout phase: {:.3f} ms", layoutMs);
             root->calculateGlobalZIndex(0);
         }
         sortedRenderOrder();
         // postLayout: resolve global positions (serial, top-down) + reconcile atoms
         if (subtreeHasDirty(root, DirtyBits::PostLayout) || !root->layout.has_value()) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::PostLayout};
             postLayoutPhase(root, frameInfo, rootConstraints, {0.0f, 0.0f}, {0.0f, 0.0f});
         }
 
         if (subtreeHasDirty(root, DirtyBits::Place) || !root->placed.has_value()) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::Place};
             placePhase(root, frameInfo, rootConstraints);
         }
         if (subtreeHasDirty(root, DirtyBits::Finalize) || !root->finalized.has_value()) {
+            instrumentation::PhaseTimer timer{instrumentation::Phase::Finalize};
             finalizePhase(root, rootConstraints);
         }
 
@@ -395,18 +462,27 @@ namespace tree {
 
     void RenderTree::render(MTL::RenderCommandEncoder* encoder) {
         auto& allNodes = sortedRenderOrder();
+        uint64_t atomCount = 0;
         
         // serially encoded; encoders are not thread safe
-        for (auto node : allNodes) { 
+        for (auto node : allNodes) {
+            if (node->atomized.has_value()) {
+                const auto& atomized = *node->atomized;
+                atomCount += atomized.usesDrawableAtoms
+                    ? atomized.drawableAtoms.size()
+                    : atomized.atoms.size();
+            }
             auto& finalized = node->finalized;
             node->element->encode(encoder, finalized);
         }
+        instrumentation::recordRenderWork(allNodes.size(), allNodes.size(), atomCount);
     }
 
     void RenderTree::measurePhase(TreeNode* node, Constraints& constraints) {
         auto key = makeConstraintsKey(constraints);
-        bool recompute = shouldRecompute(node, DirtyBits::Measure, key);
-        if (recompute) {
+        auto reason = recomputeReason(node, DirtyBits::Measure, key);
+        if (reason != instrumentation::RecomputeReason::None) {
+            instrumentation::recordRecompute(node->id, instrumentation::Phase::Measure, reason);
             auto measured = node->element->measure(constraints, node->shared);
             node->measured = measured;
             node->constraintsKey = key;
@@ -441,8 +517,9 @@ namespace tree {
         node->textBidiInput = constraints.textBidiInput;
 
         auto key = makeConstraintsKey(constraints);
-        bool recompute = shouldRecompute(node, DirtyBits::Atomize, key);
-        if (recompute) {
+        auto reason = recomputeReason(node, DirtyBits::Atomize, key);
+        if (reason != instrumentation::RecomputeReason::None) {
+            instrumentation::recordRecompute(node->id, instrumentation::Phase::Atomize, reason);
             auto& measured  = *node->measured;
             auto& shared = node->shared;
             auto atomized = node->element->atomize(constraints, shared, measured);
@@ -609,8 +686,11 @@ namespace tree {
         auto key = makeSpeculativeKey(node, constraints, measured);
         if (auto found = speculativeLayoutCache.find(key);
             found != speculativeLayoutCache.end()) {
+            instrumentation::recordSpeculativeLayoutCache(true);
             return found->second;
         }
+
+        instrumentation::recordSpeculativeLayoutCache(false);
 
         auto output = layoutRecursive(node, frameInfo, std::move(constraints), measured, false);
         auto [inserted, _] = speculativeLayoutCache.emplace(key, std::move(output));
@@ -625,6 +705,14 @@ namespace tree {
         bool mutate
     ) {
         auto key = makeConstraintsKey(constraints);
+
+        if (mutate) {
+            auto reason = recomputeReason(node, DirtyBits::Layout, key);
+            if (reason == instrumentation::RecomputeReason::None) {
+                reason = instrumentation::RecomputeReason::AncestorRecomputed;
+            }
+            instrumentation::recordRecompute(node->id, instrumentation::Phase::Layout, reason);
+        }
 
         auto& atomized = *node->atomized;
         auto& prelayout = *node->preLayout;
@@ -950,10 +1038,11 @@ namespace tree {
     void RenderTree::postLayoutPhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints,
                                       simd_float2 parentGlobalOrigin, simd_float2 absBlockGlobalOrigin) {
         auto key = makeConstraintsKey(constraints, parentGlobalOrigin, absBlockGlobalOrigin);
-        bool recompute = shouldRecompute(node, DirtyBits::PostLayout, key);
-        if (!recompute) {
+        auto reason = recomputeReason(node, DirtyBits::PostLayout, key);
+        if (reason == instrumentation::RecomputeReason::None) {
             return;
         }
+        instrumentation::recordRecompute(node->id, instrumentation::Phase::PostLayout, reason);
 
         auto& layout = *node->layout;
         layout.computedBox = layout.localComputedBox;
@@ -1107,8 +1196,9 @@ namespace tree {
 
     void RenderTree::placePhase(TreeNode* node, const FrameInfo& frameInfo, Constraints& constraints) {
         auto key = makeConstraintsKey(constraints);
-        bool recompute = shouldRecompute(node, DirtyBits::Place, key);
-        if (recompute) {
+        auto reason = recomputeReason(node, DirtyBits::Place, key);
+        if (reason != instrumentation::RecomputeReason::None) {
+            instrumentation::recordRecompute(node->id, instrumentation::Phase::Place, reason);
             auto& measured = *node->measured;
             auto& atomized = *node->atomized;
             auto& layout = *node->layout;
@@ -1126,8 +1216,9 @@ namespace tree {
 
     void RenderTree::finalizePhase(TreeNode* node, Constraints& constraints) {
         auto key = makeConstraintsKey(constraints);
-        bool recompute = shouldRecompute(node, DirtyBits::Finalize, key);
-        if (recompute) {
+        auto reason = recomputeReason(node, DirtyBits::Finalize, key);
+        if (reason != instrumentation::RecomputeReason::None) {
+            instrumentation::recordRecompute(node->id, instrumentation::Phase::Finalize, reason);
             auto& measured =  *node->measured;
             auto& atomized = *node->atomized;
             auto& layout = *node->layout;
@@ -1143,33 +1234,55 @@ namespace tree {
     }
 
     TreeNode* RenderTree::hitTestRecursive(TreeNode* node, simd_float2 point) {
-        if (!node) return nullptr;
-        
-        std::vector<TreeNode*> sortedChildren;
-        for (auto& child : node->children) {
-            sortedChildren.push_back(child.get());
+        auto startedAt = std::chrono::steady_clock::time_point{};
+        if constexpr (instrumentation::enabled) {
+            startedAt = std::chrono::steady_clock::now();
         }
-        std::sort(sortedChildren.begin(), sortedChildren.end(), 
-            [](TreeNode* a, TreeNode* b) {
-                if (a->globalZIndex != b->globalZIndex) {
-                    return a->globalZIndex > b->globalZIndex;
-                }
-                return a->id > b->id;
-            });
-        
-        for (auto* child : sortedChildren) {
-            TreeNode* hit = hitTestRecursive(child, point);
-            if (hit) return hit;
+        uint64_t nodesExamined = 0;
+
+        auto visit = [&](this auto&& self, TreeNode* current) -> TreeNode* {
+            if (!current) return nullptr;
+            nodesExamined++;
+
+            std::vector<TreeNode*> sortedChildren;
+            for (auto& child : current->children) {
+                sortedChildren.push_back(child.get());
+            }
+            std::sort(sortedChildren.begin(), sortedChildren.end(),
+                [](TreeNode* a, TreeNode* b) {
+                    if (a->globalZIndex != b->globalZIndex) {
+                        return a->globalZIndex > b->globalZIndex;
+                    }
+                    return a->id > b->id;
+                });
+
+            for (auto* child : sortedChildren) {
+                if (auto* hit = self(child)) return hit;
+            }
+
+            if (current->contains(point)) {
+                return current;
+            }
+
+            return nullptr;
+        };
+
+        auto* hit = visit(node);
+        if constexpr (instrumentation::enabled) {
+            instrumentation::recordHitTest(
+                nodesExamined,
+                hit ? 1 : 0,
+                std::chrono::steady_clock::now() - startedAt
+            );
         }
-        
-        if (node->contains(point)) {
-            return node;
-        }
-        
-        return nullptr;
+        return hit;
     }
 
     std::vector<TreeNode*> RenderTree::hitTestAll(simd_float2 point) {
+        auto startedAt = std::chrono::steady_clock::time_point{};
+        if constexpr (instrumentation::enabled) {
+            startedAt = std::chrono::steady_clock::now();
+        }
         std::vector<TreeNode*> hits;
         auto& renderOrder = sortedRenderOrder();
 
@@ -1177,6 +1290,14 @@ namespace tree {
             if ((*it)->contains(point)) {
                 hits.push_back(*it);
             }
+        }
+
+        if constexpr (instrumentation::enabled) {
+            instrumentation::recordHitTest(
+                renderOrder.size(),
+                hits.size(),
+                std::chrono::steady_clock::now() - startedAt
+            );
         }
 
         return hits;

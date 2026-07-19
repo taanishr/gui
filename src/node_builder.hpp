@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <memory>
 #include <print>
+#include <source_location>
 #include "context_manager.hpp"
 
 namespace elements {
@@ -76,12 +77,15 @@ namespace elements {
             node{node}
         {}
 
-        void markDirty() {
-            renderTree.markDirty();
+        void markDirty(std::source_location source = std::source_location::current()) {
+            renderTree.markDirty(source);
         }
 
-        void markDirty(DirtyBits bits) {
-            renderTree.markDirty(node, bits);
+        void markDirty(
+            DirtyBits bits,
+            std::source_location source = std::source_location::current()
+        ) {
+            renderTree.markDirty(node, bits, source);
         }
 
         static constexpr DirtyBits layoutDirtyBits() {

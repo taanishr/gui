@@ -1,6 +1,7 @@
 #pragma once
 
 #include "buffer_allocator.hpp"
+#include "instrumentation.hpp"
 #include <cstdint>
 #include <vector>
 
@@ -16,6 +17,7 @@ struct FrameBufferedBuffer {
     }
 
     void write(uint64_t frameIndex, const T* data, size_t length, size_t offset = 0) {
+        instrumentation::recordBufferWrite(length);
         auto writingIndex = frameIndex % numFrames;
         auto& buffer = buffers[writingIndex];
         auto rawBuffer = buffer.get();

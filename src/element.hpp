@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include "frame_info.hpp"
+#include "instrumentation.hpp"
 #include <optional>
 #include <print>
 #include <simd/vector_types.h>
@@ -275,6 +276,9 @@ namespace tree {
             paintPostorderIndex{0}
         {}
 
+        ~TreeNode() {
+            instrumentation::removeNode(id);
+        }
 
         void addEventListener(EventType type, EventHandler handler) {
             eventHandlers[type].push_back(std::move(handler));
