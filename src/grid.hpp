@@ -11,6 +11,7 @@ namespace tree {
 namespace layout {
     using style::AlignItems;
     using style::Size;
+    using style::SizeResolveFailure;
     using tree::RenderTree;
     using tree::TreeNode;
 
@@ -71,7 +72,14 @@ namespace layout {
 
         // helpers
         void resolveStructure(size_t templateRows, size_t templateCols);
-        std::vector<Track> resolveTracks(std::vector<Size>& templateTracks, std::vector<float> itemSizes, float available, float gap, bool isCol, bool axisDefinite);
+        std::vector<Track> resolveTracks(
+            std::vector<Size>& templateTracks,
+            std::vector<float> itemSizes,
+            float available,
+            float gap,
+            bool isCol,
+            bool axisDefinite
+        );
 
         void resolve(size_t numRows, size_t numCols,
             const std::vector<Size>& templateRows, const std::vector<Size>& templateCols,
@@ -84,7 +92,7 @@ namespace layout {
     struct GridResolver {
         RenderTree&       tree;
         TreeNode*         node;
-        Constraints&      parentConstraints;
+        Constraints       parentConstraints;
         Constraints       childConstraints;
         GridLayout        gridLayout;
         AlignItems        alignItems;
@@ -100,8 +108,8 @@ namespace layout {
         float maxX;
         float maxY;
 
-        float maxIntrinsicX = 0;
-        float maxIntrinsicY = 0;
+        float maxChildRight = 0;
+        float maxChildBottom = 0;
 
         bool hasIndefiniteChild = false;
         std::vector<size_t> inFlowIndices;
@@ -111,15 +119,17 @@ namespace layout {
             float maxY;
         };
 
-        GridResolver(RenderTree& tree, TreeNode* node, Constraints& parentConstraints,
-                     Constraints childConstraints, const FrameInfo& frameInfo,
+        GridResolver(RenderTree& tree, TreeNode* node,
+                     const Constraints& parentConstraints,
+                     const Constraints& childConstraints,
+                     const FrameInfo& frameInfo,
                      Measured measured, bool mutate,
                      float parentAvailableWidth, float parentAvailableHeight,
                      float minX, float minY, float maxX, float maxY);
 
-        bool isXIndefinite(TreeNode* child) const;
-        bool isYIndefinite(TreeNode* child) const;
-        void prepareChildConstraints(TreeNode* child);
+        bool isXIndefinite(TreeNode* child);
+        bool isYIndefinite(TreeNode* child);
+        Constraints prepareChildConstraints(TreeNode* child);
 
         void phaseA();
         void phaseB();

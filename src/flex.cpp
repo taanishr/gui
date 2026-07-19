@@ -401,24 +401,23 @@ namespace layout {
             flex.axis.mainResolution(preparedChildConstraints) = AxisResolution::Deferred;
             flex.axis.mainExplicit(childMeasured) = p.mainSize;
 
-            flex.axis.crossAvailable(preparedChildConstraints) = p.crossSize;
-            auto crossResolution = flex.axis.crossResolution(preparedChildConstraints);
-            if (crossResolution != AxisResolution::MinContent &&
-                crossResolution != AxisResolution::MaxContent) {
-                flex.axis.crossResolution(preparedChildConstraints) = AxisResolution::Final;
-            }
-
-            flex.axis.crossShrinkToFit(preparedChildConstraints) =
-                p.needsCrossShrinkToFit;
+            float finalCrossSize = p.crossSize;
 
             if (p.crossSizeOverride.has_value()) {
-                flex.axis.crossExplicit(childMeasured) =
-                    flex.axis.clampCrossSize(
-                        *p.crossSizeOverride,
-                        childNode->shared,
-                        availableCross
-                    );
+                finalCrossSize = flex.axis.clampCrossSize(
+                    *p.crossSizeOverride,
+                    childNode->shared,
+                    availableCross
+                );
             }
+
+            flex.axis.crossAvailable(preparedChildConstraints) =
+                finalCrossSize;
+            flex.axis.crossResolution(preparedChildConstraints) =
+                AxisResolution::Deferred;
+            flex.axis.crossExplicit(childMeasured) = finalCrossSize;
+            flex.axis.crossShrinkToFit(preparedChildConstraints) =
+                p.needsCrossShrinkToFit;
 
             preparedChildConstraints.inlineFormatting = buildIsolatedInlineBoxes(
                 childNode,
