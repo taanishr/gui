@@ -53,6 +53,7 @@ set(GUI_SOURCES
     grid.cpp
     image.cpp
     index.cpp
+    instrumentation.cpp
     inspector.cpp
     main.cpp
     new_arch.cpp
@@ -116,6 +117,7 @@ set_target_properties(gui PROPERTIES
 
 target_compile_definitions(gui PRIVATE
     GUI_ENABLE_INSPECTOR=$<BOOL:${GUI_ENABLE_INSPECTOR}>
+    GUI_ENABLE_INSTRUMENTATION=$<BOOL:${GUI_ENABLE_INSTRUMENTATION}>
     _LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE
 )
 

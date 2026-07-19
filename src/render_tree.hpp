@@ -3,8 +3,10 @@
 #include "element.hpp"
 #include "flex.hpp"
 #include "grid.hpp"
+#include "instrumentation.hpp"
 #include "new_arch.hpp"
 #include "renderer_constants.hpp"
+#include <source_location>
 #include <unordered_map>
 
 namespace tree {
@@ -28,8 +30,12 @@ namespace tree {
         bool requiresFrame(const FrameInfo& frameInfo) const;
         void update(const FrameInfo& frameInfo, uint64_t frameIndex);
         void render(MTL::RenderCommandEncoder* encoder); 
-        void markDirty();
-        void markDirty(TreeNode* node, DirtyBits bits);
+        void markDirty(std::source_location source = std::source_location::current());
+        void markDirty(
+            TreeNode* node,
+            DirtyBits bits,
+            std::source_location source = std::source_location::current()
+        );
   
         TreeNode* hitTestRecursive(TreeNode* node, simd_float2 point);
         std::vector<TreeNode*> hitTestAll(simd_float2 point);
@@ -79,7 +85,11 @@ namespace tree {
             const Constraints& constraints,
             const layout::Measured& measured
         ) const;
-        bool shouldRecompute(TreeNode* node, DirtyBits bit, const ConstraintsKey& incomingKey) const;
+        instrumentation::RecomputeReason recomputeReason(
+            TreeNode* node,
+            DirtyBits bit,
+            const ConstraintsKey& incomingKey
+        ) const;
         void markSubtreeDirty(TreeNode* node, DirtyBits bits);
         void clearDirty(TreeNode* node);
         bool subtreeHasDirty(TreeNode* node, DirtyBits bits) const;

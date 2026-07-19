@@ -14,6 +14,7 @@
 #include <simd/vector_types.h>
 #include "index.hpp"
 #include "inspector.hpp"
+#include "instrumentation.hpp"
 
 
 
@@ -80,6 +81,8 @@ void Renderer::draw() {
     auto frameInfo = getFrameInfo();
     if (!rootTree.requiresFrame(frameInfo)) return;
 
+    instrumentation::FrameTimer frameTimer{ctx.frameIndex};
+
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
     this->frameSemaphore.acquire();
@@ -91,9 +94,15 @@ void Renderer::draw() {
     uint64_t frameIndex = ctx.frameIndex;
 
     auto ts1 = clock.now();
-    rootTree.update(frameInfo, frameIndex);
-    rootTree.render(renderCommandEncoder);
-    
+    {
+        instrumentation::PhaseTimer timer{instrumentation::Phase::Update};
+        rootTree.update(frameInfo, frameIndex);
+    }
+    {
+        instrumentation::PhaseTimer timer{instrumentation::Phase::Render};
+        rootTree.render(renderCommandEncoder);
+    }
+
     auto ts2 = clock.now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(ts2 - ts1).count();
 
