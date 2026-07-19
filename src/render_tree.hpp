@@ -25,6 +25,7 @@ namespace tree {
         
         TreeNode* getRoot() { return elementTree.get(); }
         
+        bool requiresFrame(const FrameInfo& frameInfo) const;
         void update(const FrameInfo& frameInfo, uint64_t frameIndex);
         void render(MTL::RenderCommandEncoder* encoder); 
         void markDirty();
