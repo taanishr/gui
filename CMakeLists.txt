@@ -11,12 +11,5 @@ option(GUI_PROFILE "Build with profiling-friendly frame pointers" OFF)
 set(METAL_CPP_ROOT "/Users/treja/metal-cpp" CACHE PATH "Path to metal-cpp")
 set(METAL_CPP_EXTENSIONS_ROOT "/Users/treja/metal-cpp-extensions" CACHE PATH "Path to metal-cpp-extensions")
 
-include(CTest)
-
-add_subdirectory(vendor)
 add_subdirectory(apple-extensions)
 add_subdirectory(src)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()

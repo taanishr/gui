@@ -6,6 +6,7 @@ find_package(ZLIB REQUIRED)
 
 pkg_check_modules(HarfBuzz REQUIRED IMPORTED_TARGET harfbuzz)
 pkg_check_modules(Resvg REQUIRED IMPORTED_TARGET resvg)
+pkg_check_modules(SheenBidi REQUIRED IMPORTED_TARGET sheenbidi)
 
 find_library(METAL_FRAMEWORK Metal REQUIRED)
 find_library(METALKIT_FRAMEWORK MetalKit REQUIRED)
@@ -134,7 +135,7 @@ target_include_directories(gui PRIVATE
 )
 
 target_link_libraries(gui PRIVATE
-    gui::sheenbidi
+    PkgConfig::SheenBidi
     Freetype::Freetype
     PkgConfig::HarfBuzz
     PkgConfig::Resvg
