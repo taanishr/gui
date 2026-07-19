@@ -289,6 +289,21 @@ namespace style {
         Center
     };
 
+    enum class JustifyItems {
+        Stretch,
+        Start,
+        End,
+        Center
+    };
+
+    enum class JustifySelf {
+        Auto,
+        Stretch,
+        Start,
+        End,
+        Center
+    };
+
     enum class Overflow {
         Visible,
         Hidden,
@@ -377,6 +392,8 @@ namespace style {
         FlexWrap flexWrap{FlexWrap::NoWrap};
         AlignContent alignContent{AlignContent::Stretch};
         AlignSelf alignSelf{AlignSelf::Auto};
+        JustifyItems justifyItems{JustifyItems::Stretch};
+        JustifySelf justifySelf{JustifySelf::Auto};
         Size flexGrow{Size::px(0.0)};
         Size flexShrink{Size::px(1.0)};
         Size flexGap{Size::px(0)};
@@ -409,6 +426,8 @@ namespace layout {
     using style::FlexDirection;
     using style::FlexWrap;
     using style::JustifyContent;
+    using style::JustifyItems;
+    using style::JustifySelf;
     using style::Position;
     using style::SharedDescriptor;
     using style::Size;

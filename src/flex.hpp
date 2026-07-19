@@ -431,19 +431,12 @@ namespace layout {
 
                     float childCross = crossSizes[childIdx];
                     const auto& crossSizeRequest = childCrossSizeRequests[childIdx];
-                    auto resolvedCrossSize = crossSizeRequest.resolve(Size::px(lineCross));
+                    auto resolvedCrossSize = crossSizeRequest.resolve(
+                        Size::px(lineCross)
+                    );
 
                     if (resolvedCrossSize) {
                         childCross = *resolvedCrossSize;
-                    } else {
-                        switch (resolvedCrossSize.error()) {
-                            case SizeResolveFailure::Auto:
-                            case SizeResolveFailure::IndefiniteBasis:
-                                break;
-                            case SizeResolveFailure::FractionRequiresContext:
-                                // fr does not make sense as a flex cross size.
-                                break;
-                        }
                     }
 
                     p.crossSize = childCross;

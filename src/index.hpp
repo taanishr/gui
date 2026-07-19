@@ -14,6 +14,8 @@ namespace gui {
     using style::Position;
     using style::FlexDirection;
     using style::JustifyContent;
+    using style::JustifyItems;
+    using style::JustifySelf;
     using style::AlignItems;
     using style::AlignSelf;
     using style::AlignContent;

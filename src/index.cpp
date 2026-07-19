@@ -1696,263 +1696,263 @@ auto index() -> void {
     // );
 
 
-    // Flex Phase A shrink-to-fit stress test.
-    // Compare the resolved geometry with the equivalent browser reference page.
-    div(S::percent(1.0), S::percent(1.0), simd_float4{0.06,0.07,0.09,1.0})
-        .display(gui::Display::Flex)
-        .flexDirection(gui::FlexDirection::Col)
-        .alignItems(gui::AlignItems::FlexStart)
-        .padding(S::px(48))
-        .flexGap(S::px(28))
-    (
-        text("PHASE A: INDEFINITE PERCENT VS AUTO")
-            .font(Arial)
-            .fontSize(S::pt(24))
-            .color(simd_float4{0.96,0.97,1.0,1.0}),
-        text("Compare each cyan percentage target and auto control with the browser reference")
-            .font(Arial)
-            .fontSize(S::pt(14))
-            .color(simd_float4{0.70,0.73,0.80,1.0}),
+//     // Flex Phase A shrink-to-fit stress test.
+//     // Compare the resolved geometry with the equivalent browser reference page.
+//     div(S::percent(1.0), S::percent(1.0), simd_float4{0.06,0.07,0.09,1.0})
+//         .display(gui::Display::Flex)
+//         .flexDirection(gui::FlexDirection::Col)
+//         .alignItems(gui::AlignItems::FlexStart)
+//         .padding(S::px(48))
+//         .flexGap(S::px(28))
+//     (
+//         text("PHASE A: INDEFINITE PERCENT VS AUTO")
+//             .font(Arial)
+//             .fontSize(S::pt(24))
+//             .color(simd_float4{0.96,0.97,1.0,1.0}),
+//         text("Compare each cyan percentage target and auto control with the browser reference")
+//             .font(Arial)
+//             .fontSize(S::pt(14))
+//             .color(simd_float4{0.70,0.73,0.80,1.0}),
 
-        // Width case: row flex parent has no definite width.
-        text("INDEFINITE WIDTH — 60% TARGET VS AUTO CONTROL")
-            .font(Arial)
-            .fontSize(S::pt(13))
-            .color(simd_float4{0.98,0.76,0.24,1.0}),
-        div().display(gui::Display::Flex).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(48))
-        (
-            div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(8))
-            (
-                text("AUTO CONTROL").font(Arial).fontSize(S::pt(12)).color(simd_float4{0.38,0.92,0.56,1.0}),
-                div(S::autoSize(), S::px(112), simd_float4{0.15,0.16,0.20,1.0})
-                    .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(14))
-                (
-                    div(S::autoSize(), S::px(76), simd_float4{0.08,0.72,0.86,1.0})
-                        .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(10)).flexGap(S::px(8))
-                    (
-                        div(S::px(180), S::px(56), simd_float4{0.98,0.76,0.20,1.0})(),
-                        div(S::px(120), S::px(56), simd_float4{0.96,0.30,0.46,1.0})()
-                    )
-                )
-            ),
-            div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(8))
-            (
-                text("60% TARGET").font(Arial).fontSize(S::pt(12)).color(simd_float4{1.0,0.54,0.22,1.0}),
-                div(S::autoSize(), S::px(112), simd_float4{0.15,0.16,0.20,1.0})
-                    .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(14))
-                (
-                    div(S::percent(0.60), S::px(76), simd_float4{0.08,0.72,0.86,1.0})
-                        .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(10)).flexGap(S::px(8))
-                    (
-                        div(S::px(180), S::px(56), simd_float4{0.98,0.76,0.20,1.0})(),
-                        div(S::px(120), S::px(56), simd_float4{0.96,0.30,0.46,1.0})()
-                    )
-                )
-            )
-        ),
+//         // Width case: row flex parent has no definite width.
+//         text("INDEFINITE WIDTH — 60% TARGET VS AUTO CONTROL")
+//             .font(Arial)
+//             .fontSize(S::pt(13))
+//             .color(simd_float4{0.98,0.76,0.24,1.0}),
+//         div().display(gui::Display::Flex).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(48))
+//         (
+//             div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(8))
+//             (
+//                 text("AUTO CONTROL").font(Arial).fontSize(S::pt(12)).color(simd_float4{0.38,0.92,0.56,1.0}),
+//                 div(S::autoSize(), S::px(112), simd_float4{0.15,0.16,0.20,1.0})
+//                     .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(14))
+//                 (
+//                     div(S::autoSize(), S::px(76), simd_float4{0.08,0.72,0.86,1.0})
+//                         .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(10)).flexGap(S::px(8))
+//                     (
+//                         div(S::px(180), S::px(56), simd_float4{0.98,0.76,0.20,1.0})(),
+//                         div(S::px(120), S::px(56), simd_float4{0.96,0.30,0.46,1.0})()
+//                     )
+//                 )
+//             ),
+//             div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(8))
+//             (
+//                 text("60% TARGET").font(Arial).fontSize(S::pt(12)).color(simd_float4{1.0,0.54,0.22,1.0}),
+//                 div(S::autoSize(), S::px(112), simd_float4{0.15,0.16,0.20,1.0})
+//                     .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(14))
+//                 (
+//                     div(S::percent(0.60), S::px(76), simd_float4{0.08,0.72,0.86,1.0})
+//                         .display(gui::Display::Flex).alignItems(gui::AlignItems::Center).padding(S::px(10)).flexGap(S::px(8))
+//                     (
+//                         div(S::px(180), S::px(56), simd_float4{0.98,0.76,0.20,1.0})(),
+//                         div(S::px(120), S::px(56), simd_float4{0.96,0.30,0.46,1.0})()
+//                     )
+//                 )
+//             )
+//         ),
 
-        // Height case: column flex parent has no definite height.
-        text("INDEFINITE HEIGHT — 50% TARGET VS AUTO CONTROL")
-            .font(Arial)
-            .fontSize(S::pt(13))
-            .color(simd_float4{0.98,0.76,0.24,1.0}),
-        div().display(gui::Display::Flex).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(48))
-        (
-            div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-            (
-                text("AUTO CONTROL").font(Arial).fontSize(S::pt(12)).color(simd_float4{0.38,0.92,0.56,1.0}),
-                div(S::px(360), S::autoSize(), simd_float4{0.15,0.16,0.20,1.0})
-                    .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::Stretch).padding(S::px(14))
-                (
-                    div(S::percent(1.0), S::autoSize(), simd_float4{0.08,0.72,0.86,1.0})
-                        .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).padding(S::px(10)).flexGap(S::px(8))
-                    (
-                        div(S::percent(1.0), S::px(72), simd_float4{0.98,0.76,0.20,1.0})(),
-                        div(S::percent(1.0), S::px(48), simd_float4{0.96,0.30,0.46,1.0})()
-                    )
-                )
-            ),
-            div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-            (
-                text("50% TARGET").font(Arial).fontSize(S::pt(12)).color(simd_float4{1.0,0.54,0.22,1.0}),
-                div(S::px(360), S::autoSize(), simd_float4{0.15,0.16,0.20,1.0})
-                    .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::Stretch).padding(S::px(14))
-                (
-                    div(S::percent(1.0), S::percent(0.50), simd_float4{0.08,0.72,0.86,1.0})
-                        .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).padding(S::px(10)).flexGap(S::px(8))
-                    (
-                        div(S::percent(1.0), S::px(72), simd_float4{0.98,0.76,0.20,1.0})(),
-                        div(S::percent(1.0), S::px(48), simd_float4{0.96,0.30,0.46,1.0})()
-                    )
-                )
-            )
-        )
-    );
+//         // Height case: column flex parent has no definite height.
+//         text("INDEFINITE HEIGHT — 50% TARGET VS AUTO CONTROL")
+//             .font(Arial)
+//             .fontSize(S::pt(13))
+//             .color(simd_float4{0.98,0.76,0.24,1.0}),
+//         div().display(gui::Display::Flex).alignItems(gui::AlignItems::FlexStart).flexGap(S::px(48))
+//         (
+//             div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//             (
+//                 text("AUTO CONTROL").font(Arial).fontSize(S::pt(12)).color(simd_float4{0.38,0.92,0.56,1.0}),
+//                 div(S::px(360), S::autoSize(), simd_float4{0.15,0.16,0.20,1.0})
+//                     .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::Stretch).padding(S::px(14))
+//                 (
+//                     div(S::percent(1.0), S::autoSize(), simd_float4{0.08,0.72,0.86,1.0})
+//                         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).padding(S::px(10)).flexGap(S::px(8))
+//                     (
+//                         div(S::percent(1.0), S::px(72), simd_float4{0.98,0.76,0.20,1.0})(),
+//                         div(S::percent(1.0), S::px(48), simd_float4{0.96,0.30,0.46,1.0})()
+//                     )
+//                 )
+//             ),
+//             div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//             (
+//                 text("50% TARGET").font(Arial).fontSize(S::pt(12)).color(simd_float4{1.0,0.54,0.22,1.0}),
+//                 div(S::px(360), S::autoSize(), simd_float4{0.15,0.16,0.20,1.0})
+//                     .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).alignItems(gui::AlignItems::Stretch).padding(S::px(14))
+//                 (
+//                     div(S::percent(1.0), S::percent(0.50), simd_float4{0.08,0.72,0.86,1.0})
+//                         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).padding(S::px(10)).flexGap(S::px(8))
+//                     (
+//                         div(S::percent(1.0), S::px(72), simd_float4{0.98,0.76,0.20,1.0})(),
+//                         div(S::percent(1.0), S::px(48), simd_float4{0.96,0.30,0.46,1.0})()
+//                     )
+//                 )
+//             )
+//         )
+//     );
     
-    const std::string Devanagari = "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc";
-    const std::string GeezaPro = "/System/Library/Fonts/GeezaPro.ttc";
-    const auto background = simd_float4{0.07f, 0.08f, 0.10f, 1.0f};
-    const auto panel = simd_float4{0.12f, 0.13f, 0.16f, 1.0f};
-    const auto heading = simd_float4{0.45f, 0.80f, 1.0f, 1.0f};
-    const auto body = simd_float4{0.92f, 0.93f, 0.96f, 1.0f};
-    const auto note = simd_float4{0.58f, 0.62f, 0.70f, 1.0f};
+//     const std::string Devanagari = "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc";
+//     const std::string GeezaPro = "/System/Library/Fonts/GeezaPro.ttc";
+//     const auto background = simd_float4{0.07f, 0.08f, 0.10f, 1.0f};
+//     const auto panel = simd_float4{0.12f, 0.13f, 0.16f, 1.0f};
+//     const auto heading = simd_float4{0.45f, 0.80f, 1.0f, 1.0f};
+//     const auto body = simd_float4{0.92f, 0.93f, 0.96f, 1.0f};
+//     const auto note = simd_float4{0.58f, 0.62f, 0.70f, 1.0f};
 
-    div(S::percent(1.0), S::percent(1.0), background)
-        .display(gui::Display::Flex)
-        .flexDirection(gui::FlexDirection::Col)
-        .flexGap(S::px(16))
-        .padding(S::px(28))
-        .overflow(gui::Overflow::Scroll)
-    (
-        text("HarfBuzz shaping coverage").font(ArialBold).fontSize(S::pt(24)).color(body),
-        text("Kerning, ligatures, combining marks, and contextual script shaping")
-            .fontSize(S::pt(13)).color(note),
+//     div(S::percent(1.0), S::percent(1.0), background)
+//         .display(gui::Display::Flex)
+//         .flexDirection(gui::FlexDirection::Col)
+//         .flexGap(S::px(16))
+//         .padding(S::px(28))
+//         .overflow(gui::Overflow::Scroll)
+//     (
+//         text("HarfBuzz shaping coverage").font(ArialBold).fontSize(S::pt(24)).color(body),
+//         text("Kerning, ligatures, combining marks, and contextual script shaping")
+//             .fontSize(S::pt(13)).color(note),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("4. Kerning").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("AVATAR   To Wa Yo VA").font(Arial).fontSize(S::pt(34)).color(body),
-            text("Look for tighter AV, To, Wa, and Yo pairs.").fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("4. Kerning").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("AVATAR   To Wa Yo VA").font(Arial).fontSize(S::pt(34)).color(body),
+//             text("Look for tighter AV, To, Wa, and Yo pairs.").fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("5. Ligatures").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("office   affinity   ffi   fi   fl").font(Helvetica).fontSize(S::pt(34)).color(body),
-            text("Helvetica should substitute fi/fl glyphs; ‘office’ should contain an fi ligature.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("5. Ligatures").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("office   affinity   ffi   fi   fl").font(Helvetica).fontSize(S::pt(34)).color(body),
+//             text("Helvetica should substitute fi/fl glyphs; ‘office’ should contain an fi ligature.")
+//                 .fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6a. Combining marks").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("decomposed:  cafe\xCC\x81   A\xCC\x8A   n\xCC\x83").font(Arial).fontSize(S::pt(34)).color(body),
-            text("composed:    café   Å   ñ").font(Arial).fontSize(S::pt(34)).color(body),
-            text("The two rows should have equivalent accent placement.").fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("6a. Combining marks").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("decomposed:  cafe\xCC\x81   A\xCC\x8A   n\xCC\x83").font(Arial).fontSize(S::pt(34)).color(body),
+//             text("composed:    café   Å   ñ").font(Arial).fontSize(S::pt(34)).color(body),
+//             text("The two rows should have equivalent accent placement.").fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6b. Arabic contextual shaping").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("السلام عليكم").font(GeezaPro).fontSize(S::pt(40)).color(body),
-            text("Letters should join contextually; lam-alef should form a ligature.").fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("6b. Arabic contextual shaping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("السلام عليكم").font(GeezaPro).fontSize(S::pt(40)).color(body),
+//             text("Letters should join contextually; lam-alef should form a ligature.").fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6c. Devanagari reordering and conjuncts").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
-            text("The conjunct and pre-base vowel marks should be shaped and positioned.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("6c. Devanagari reordering and conjuncts").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
+//             text("The conjunct and pre-base vowel marks should be shaped and positioned.")
+//                 .fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7a. Mixed LTR and RTL runs").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("Hello السلام").font(Arial).fontSize(S::pt(30)).color(body),
-            text("السلام Hello").font(Arial).fontSize(S::pt(30)).color(body),
-            text("Each Arabic run should remain joined while the two scripts retain their reading order.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("7a. Mixed LTR and RTL runs").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("Hello السلام").font(Arial).fontSize(S::pt(30)).color(body),
+//             text("السلام Hello").font(Arial).fontSize(S::pt(30)).color(body),
+//             text("Each Arabic run should remain joined while the two scripts retain their reading order.")
+//                 .fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7b. Numbers and neutral punctuation").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("السلام 123 عليكم").font(Arial).fontSize(S::pt(30)).color(body),
-            text("Hello (السلام) 123").font(Arial).fontSize(S::pt(30)).color(body),
-            text("The digits should read 123 and the parentheses should enclose the Arabic word.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("7b. Numbers and neutral punctuation").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             text("السلام 123 عليكم").font(Arial).fontSize(S::pt(30)).color(body),
+//             text("Hello (السلام) 123").font(Arial).fontSize(S::pt(30)).color(body),
+//             text("The digits should read 123 and the parentheses should enclose the Arabic word.")
+//                 .fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7c. Bidi resolution across text siblings").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            div()
-            (
-                text("Hello ").font(Arial).fontSize(S::pt(30)).color(body),
-                text("السلام").font(GeezaPro).fontSize(S::pt(30)).color(body),
-                text(" 123").font(Arial).fontSize(S::pt(30)).color(body)
-            ),
-            text("This is three sibling Text nodes and should match a single mixed-direction sentence.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("7c. Bidi resolution across text siblings").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             div()
+//             (
+//                 text("Hello ").font(Arial).fontSize(S::pt(30)).color(body),
+//                 text("السلام").font(GeezaPro).fontSize(S::pt(30)).color(body),
+//                 text(" 123").font(Arial).fontSize(S::pt(30)).color(body)
+//             ),
+//             text("This is three sibling Text nodes and should match a single mixed-direction sentence.")
+//                 .fontSize(S::pt(12)).color(note)
+//         ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7d. Mixed-direction wrapping").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            div().width(S::px(260))
-            (
-                text("Hello السلام 123 عليكم from a narrow mixed-direction line")
-                    .font(Arial).fontSize(S::pt(24)).color(body)
-            ),
-            text("Every physical line should remain separate, joined, and non-overlapping.")
-                .fontSize(S::pt(12)).color(note)
-        )
-    );
+//         div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+//             .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+//         (
+//             text("7d. Mixed-direction wrapping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+//             div().width(S::px(260))
+//             (
+//                 text("Hello السلام 123 عليكم from a narrow mixed-direction line")
+//                     .font(Arial).fontSize(S::pt(24)).color(body)
+//             ),
+//             text("Every physical line should remain separate, joined, and non-overlapping.")
+//                 .fontSize(S::pt(12)).color(note)
+//         )
+//     );
 
-    const auto alignmentSample = R"(Short line
-A considerably longer line that wraps inside the panel)";
-    const auto panelColor = simd_float4{0.94f, 0.95f, 0.97f, 1.0f};
-    const auto textColor = simd_float4{0.08f, 0.09f, 0.11f, 1.0f};
-    const auto labelColor = simd_float4{0.32f, 0.35f, 0.40f, 1.0f};
+//     const auto alignmentSample = R"(Short line
+// A considerably longer line that wraps inside the panel)";
+//     const auto panelColor = simd_float4{0.94f, 0.95f, 0.97f, 1.0f};
+//     const auto textColor = simd_float4{0.08f, 0.09f, 0.11f, 1.0f};
+//     const auto labelColor = simd_float4{0.32f, 0.35f, 0.40f, 1.0f};
 
-    div(S::percent(1.0), S::percent(1.0), simd_float4{1.0f, 1.0f, 1.0f, 1.0f})
-        .display(gui::Display::Flex)
-        .flexDirection(gui::FlexDirection::Col)
-        .flexGap(S::px(12))
-        .padding(S::px(24))
-        .overflow(gui::Overflow::Scroll)
-    (
-        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
-        (
-            text("Start").fontSize(S::pt(12)).color(labelColor),
-            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
-                .textAlign(gui::TextAlign::Start)
-            (
-                text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
-                    .whiteSpace(gui::WhiteSpace::PreWrap)
-            )
-        ),
-        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
-        (
-            text("Left").fontSize(S::pt(12)).color(labelColor),
-            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
-                .textAlign(gui::TextAlign::Left)
-            (
-                text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
-                    .whiteSpace(gui::WhiteSpace::PreWrap)
-            )
-        ),
-        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
-        (
-            text("Center").fontSize(S::pt(12)).color(labelColor),
-            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
-                .textAlign(gui::TextAlign::Center)
-            (
-                text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
-                    .whiteSpace(gui::WhiteSpace::PreWrap)
-            )
-        ),
-        div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
-        (
-            text("Right").fontSize(S::pt(12)).color(labelColor),
-            div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
-                .textAlign(gui::TextAlign::Right)
-            (
-                text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
-                    .whiteSpace(gui::WhiteSpace::PreWrap)
-            )
-        )
-    );
+//     div(S::percent(1.0), S::percent(1.0), simd_float4{1.0f, 1.0f, 1.0f, 1.0f})
+//         .display(gui::Display::Flex)
+//         .flexDirection(gui::FlexDirection::Col)
+//         .flexGap(S::px(12))
+//         .padding(S::px(24))
+//         .overflow(gui::Overflow::Scroll)
+//     (
+//         div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+//         (
+//             text("Start").fontSize(S::pt(12)).color(labelColor),
+//             div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+//                 .textAlign(gui::TextAlign::Start)
+//             (
+//                 text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+//                     .whiteSpace(gui::WhiteSpace::PreWrap)
+//             )
+//         ),
+//         div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+//         (
+//             text("Left").fontSize(S::pt(12)).color(labelColor),
+//             div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+//                 .textAlign(gui::TextAlign::Left)
+//             (
+//                 text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+//                     .whiteSpace(gui::WhiteSpace::PreWrap)
+//             )
+//         ),
+//         div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+//         (
+//             text("Center").fontSize(S::pt(12)).color(labelColor),
+//             div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+//                 .textAlign(gui::TextAlign::Center)
+//             (
+//                 text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+//                     .whiteSpace(gui::WhiteSpace::PreWrap)
+//             )
+//         ),
+//         div().display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(4))
+//         (
+//             text("Right").fontSize(S::pt(12)).color(labelColor),
+//             div().width(S::px(280)).minHeight(S::px(90)).color(panelColor)
+//                 .textAlign(gui::TextAlign::Right)
+//             (
+//                 text(alignmentSample).fontSize(S::pt(16)).lineHeight(1.25f).color(textColor)
+//                     .whiteSpace(gui::WhiteSpace::PreWrap)
+//             )
+//         )
+//     );
 
 
 
@@ -2574,7 +2574,6 @@ div()
         ()
     )
 );
-*/
 
 /*
 div()
@@ -2905,6 +2904,7 @@ div()
 );
 */
 
+
 /*
 div()
     .width(S::percent(1.0))
@@ -3081,6 +3081,88 @@ div()
     )
 );
 */
+
+div()
+    .width(S::percent(1.0))
+    .height(S::percent(1.0))
+    .color(simd_float4{0.04,0.04,0.05,1.0})
+    .display(gui::Display::Grid)
+    .gridTemplateColumns({S::fr(1.0), S::fr(1.0)})
+    .gridTemplateRows({S::fr(1.0), S::fr(1.0)})
+    .gridColumnGap(S::px(20))
+    .gridRowGap(S::px(20))
+    .padding(S::px(40))
+(
+    div()
+        .color(simd_float4{0.12,0.12,0.15,1.0})
+        .display(gui::Display::Grid)
+        .gridTemplateColumns({S::fr(1.0)})
+        .gridTemplateRows({S::fr(1.0)})
+        .justifyItems(gui::JustifyItems::Start)
+        .alignItems(gui::AlignItems::Center)
+        .padding(S::px(20))
+    (
+        div()
+            .width(S::px(120))
+            .height(S::px(80))
+            .color(simd_float4{0.95,0.18,0.22,1.0})
+            .cornerRadius(S::px(5))
+        ()
+    ),
+
+    div()
+        .color(simd_float4{0.12,0.12,0.15,1.0})
+        .display(gui::Display::Grid)
+        .gridTemplateColumns({S::fr(1.0)})
+        .gridTemplateRows({S::fr(1.0)})
+        .justifyItems(gui::JustifyItems::Center)
+        .alignItems(gui::AlignItems::Center)
+        .padding(S::px(20))
+    (
+        div()
+            .width(S::px(120))
+            .height(S::px(80))
+            .color(simd_float4{0.32,0.95,0.42,1.0})
+            .cornerRadius(S::px(5))
+        ()
+    ),
+
+    div()
+        .color(simd_float4{0.12,0.12,0.15,1.0})
+        .display(gui::Display::Grid)
+        .gridTemplateColumns({S::fr(1.0)})
+        .gridTemplateRows({S::fr(1.0)})
+        .justifyItems(gui::JustifyItems::End)
+        .alignItems(gui::AlignItems::Center)
+        .padding(S::px(20))
+    (
+        div()
+            .width(S::px(120))
+            .height(S::px(80))
+            .justifySelf(gui::JustifySelf::Start)
+            .color(simd_float4{0.10,0.72,0.95,1.0})
+            .cornerRadius(S::px(5))
+        ()
+    ),
+
+    div()
+        .color(simd_float4{0.12,0.12,0.15,1.0})
+        .display(gui::Display::Grid)
+        .gridTemplateColumns({S::fr(1.0)})
+        .gridTemplateRows({S::fr(1.0)})
+        .justifyItems(gui::JustifyItems::Start)
+        .alignItems(gui::AlignItems::Center)
+        .padding(S::px(20))
+    (
+        div()
+            .height(S::px(80))
+            .justifySelf(gui::JustifySelf::Stretch)
+            .color(simd_float4{0.54,0.28,0.98,1.0})
+            .cornerRadius(S::px(5))
+        ()
+    )
+);
+
 
 
 // complex test scene
