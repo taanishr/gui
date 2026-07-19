@@ -13,9 +13,11 @@
 #include "MTKTexture_loader.hpp"
 #include <format>
 #include <optional>
+#include <shared_mutex>
 #include <simd/vector_types.h>
 #include "new_arch.hpp"
 #include <any>
+#include <unordered_map>
 
 namespace elements {
     using layout::Atomized;
@@ -68,6 +70,22 @@ namespace elements {
         uint32_t numClips;
     };
 
+    struct ImageAsset {
+        std::string path;
+        NS::SharedPtr<MTL::Texture> texture;
+        simd_float2 intrinsicSize {0.0f, 0.0f};
+    };
+
+    struct ImageCache {
+        std::shared_ptr<ImageAsset> retrieve(
+            const std::string& path,
+            const MTKTextures::MTKTextureLoader& textureLoader
+        );
+
+        std::shared_mutex mutex;
+        std::unordered_map<std::string, std::shared_ptr<ImageAsset>> assets;
+    };
+
     struct ImageStorage {
         ImageStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(ImagePoint), MaxOutstandingFrameCount},
@@ -80,10 +98,7 @@ namespace elements {
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<ImageUniforms> uniformsBuffer;
         FrameBufferedBuffer<ClipUniform> clipsBuffer;
-
-
-        NS::SharedPtr<MTL::Texture> texture;
-        simd_float2 intrinsicSize {0.0f, 0.0f};
+        std::shared_ptr<ImageAsset> asset;
     };
 
     template <typename S = ImageStorage>
@@ -221,20 +236,8 @@ namespace elements {
         void initializeTexture(Fragment<S>& fragment, const std::string& path) {
             auto& storage = fragment.fragmentStorage;
 
-
-            if (storage.texture && storage.intrinsicSize.x > 0.0f) return;
-
-            // optimization: downsample images
-            storage.texture = NS::TransferPtr(
-                MTKTextures::createTexture(getTextureLoader(), path)
-            );
-            
-            if (storage.texture) {
-                storage.intrinsicSize = { (float)storage.texture->width(), (float)storage.texture->height() };
-            } else {
-                storage.intrinsicSize = { 0.0f, 0.0f };
-            }
-
+            if (storage.asset && storage.asset->path == path) return;
+            storage.asset = imageCache.retrieve(path, getTextureLoader());
         }
 
         Measured measure(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc) {
@@ -265,7 +268,9 @@ namespace elements {
 
             // Fall back to intrinsic size if not specified
             if (shared.width.isAuto() || shared.height.isAuto()) {
-                const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
+                const auto intrinsic = fragment.fragmentStorage.asset
+                    ? fragment.fragmentStorage.asset->intrinsicSize
+                    : simd_float2{0.0f, 0.0f};
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
                     resolvedWidth = intrinsic.x;
                     resolvedHeight = intrinsic.y;
@@ -439,8 +444,8 @@ namespace elements {
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
             encoder->setFragmentBuffer(clipsBuf, 0, 1);
 
-            if (fragment.fragmentStorage.texture) {
-                encoder->setFragmentTexture(fragment.fragmentStorage.texture.get(), 0);
+            if (fragment.fragmentStorage.asset && fragment.fragmentStorage.asset->texture) {
+                encoder->setFragmentTexture(fragment.fragmentStorage.asset->texture.get(), 0);
             }
             
             encoder->setFragmentSamplerState(sampler, 0);
@@ -455,6 +460,7 @@ namespace elements {
             return hitTestFunction;
         }
 
+        ImageCache imageCache;
         UIContext& ctx;
     };
 }
