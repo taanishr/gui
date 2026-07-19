@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ImageIO
 import Metal
 import MetalKit
 
@@ -23,23 +24,61 @@ public func releaseMTKTextureLoader(loaderPtr: UnsafeMutableRawPointer) {
     loader.release();
 }
 
-@_cdecl("createTexture")
-public func createTexture(loaderPtr: UnsafeMutableRawPointer, filePath: UnsafePointer<CChar>) -> UnsafeMutableRawPointer?
-{
-    let loader = Unmanaged<MTKTextureLoader>.fromOpaque(loaderPtr).takeUnretainedValue();
-    let fileURL = URL(fileURLWithPath: String(cString: filePath));
-    
-    let options: [MTKTextureLoader.Option: Any] = [
+@_cdecl("createDownsampledTexture")
+public func createDownsampledTexture(
+    loaderPtr: UnsafeMutableRawPointer,
+    filePath: UnsafePointer<CChar>,
+    targetPixelWidth: UInt32,
+    targetPixelHeight: UInt32
+) -> UnsafeMutableRawPointer? {
+    let loader = Unmanaged<MTKTextureLoader>.fromOpaque(loaderPtr).takeUnretainedValue()
+    let fileURL = URL(fileURLWithPath: String(cString: filePath))
+
+    guard targetPixelWidth > 0, targetPixelHeight > 0,
+          let source = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else {
+        return nil
+    }
+
+    let thumbnailOptions: [CFString: Any] = [
+        kCGImageSourceCreateThumbnailFromImageAlways: true,
+        kCGImageSourceCreateThumbnailWithTransform: true,
+        kCGImageSourceThumbnailMaxPixelSize: Int(max(targetPixelWidth, targetPixelHeight))
+    ]
+
+    guard let image = CGImageSourceCreateThumbnailAtIndex(
+        source,
+        0,
+        thumbnailOptions as CFDictionary
+    ) else {
+        return nil
+    }
+
+    guard let context = CGContext(
+        data: nil,
+        width: image.width,
+        height: image.height,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else {
+        return nil
+    }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+
+    guard let rgbaImage = context.makeImage() else {
+        return nil
+    }
+
+    let textureOptions: [MTKTextureLoader.Option: Any] = [
         .textureUsage: MTLTextureUsage.shaderRead.rawValue,
         .textureStorageMode: MTLStorageMode.private.rawValue,
         .origin: MTKTextureLoader.Origin.topLeft
-    ];
-    
-    guard let texture = try? loader.newTexture(URL: fileURL, options: options)
-    else {
-        return nil;
+    ]
+
+    guard let texture = try? loader.newTexture(cgImage: rgbaImage, options: textureOptions) else {
+        return nil
     }
-    
-    let texturePtr = UnsafeMutableRawPointer(Unmanaged.passRetained(texture).toOpaque());
-    return texturePtr; // must transfer ownership using NS::SharedPtr in C++
+
+    return UnsafeMutableRawPointer(Unmanaged.passRetained(texture).toOpaque())
 }

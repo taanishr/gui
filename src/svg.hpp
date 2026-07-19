@@ -351,23 +351,6 @@ namespace elements {
             auto resolvedWidth = resolvedSize.width;
             auto resolvedHeight = resolvedSize.height;
 
-            if (shared.width.isAuto() || shared.height.isAuto()) {
-                const auto intrinsic = fragment.fragmentStorage.asset
-                    ? fragment.fragmentStorage.asset->intrinsicSize
-                    : simd_float2{0.0f, 0.0f};
-                if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
-                    resolvedWidth = intrinsic.x;
-                    resolvedHeight = intrinsic.y;
-                }
-            }
-
-            float w = resolvedWidth.value_or(0.0f);
-            float h = resolvedHeight.value_or(0.0f);
-
-            if (w > 0.0f && h > 0.0f) {
-                loadTexture(fragment, w, h);
-            }
-
             measured.explicitWidth = resolvedWidth;
             measured.explicitHeight = resolvedHeight;
 
@@ -416,6 +399,10 @@ namespace elements {
             float width = layout.computedBox.width;
             float height = layout.computedBox.height;
 
+            if (width > 0.0f && height > 0.0f) {
+                loadTexture(fragment, width, height);
+            }
+
             size_t bufferLen = 6*sizeof(SVGPoint);
             
             std::array<SVGPoint, 6> atomPoints {{
@@ -430,7 +417,7 @@ namespace elements {
             fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
             
             Atom atom;
-            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(ctx.frameIndex);
             atom.offset = 0;
             atom.length = bufferLen;
             atom.width = width;

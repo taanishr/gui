@@ -9,6 +9,7 @@
 
 #include "swift_object.hpp"
 #include "metal_imports.hpp"
+#include <cstdint>
 
 namespace MTKTextures {
     class MTKTextureLoader {
@@ -21,8 +22,11 @@ namespace MTKTextures {
         std::shared_ptr<SwiftObject> m_textureLoader;
     };
 
-    MTL::Texture* createTexture(const MTKTextureLoader& textureLoader, 
-                                const std::string& filepath);
+    MTL::Texture* createDownsampledTexture(
+        const MTKTextureLoader& textureLoader,
+        const std::string& filepath,
+        uint32_t targetPixelWidth,
+        uint32_t targetPixelHeight
+    );
 
 }
-
