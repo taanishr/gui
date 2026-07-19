@@ -8,6 +8,40 @@
 - `build/apple-extensions/`: ignored Swift extension build products linked by the main app.
 - `scripts/`: local build/run helpers.
 
+## Building
+
+The project uses CMake with Ninja and Homebrew LLVM.
+
+Configure the debug build once, then build and run it:
+
+```sh
+cmake --preset debug
+cmake --build --preset debug
+cmake --build --preset debug --target run
+```
+
+After the initial configure, normal iteration only requires the latter two
+commands. Ninja automatically reruns CMake when its inputs change.
+
+Other configurations are available as presets:
+
+```sh
+cmake --preset release
+cmake --build --preset release
+
+cmake --preset profile
+cmake --build --preset profile
+
+cmake --preset inspector
+cmake --build --preset inspector
+```
+
+Run the tests with:
+
+```sh
+ctest --preset debug
+```
+
 *Example:*
 ```
 static int count = 0;

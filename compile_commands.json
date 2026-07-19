@@ -1,7 +1,0 @@
-[
-  {
-    "directory": "/Users/treja/projects/gui",
-    "file": "src/main.cpp",
-    "command": "/usr/bin/clang++ -std=c++26 -Isrc -I/opt/homebrew/opt/harfbuzz/include/harfbuzz -I/Users/treja/projects/gui/vendor/SheenBidi/Headers src/main.cpp"
-  }
-]

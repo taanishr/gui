@@ -3,64 +3,27 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ROOT_DIR"
 
-BINARY_NAME="gui"
-SRC_DIR="$ROOT_DIR/src"
-BUILD_DIR="$ROOT_DIR/build"
-BIN_OUT="$BUILD_DIR/bin"
-OBJ_DIR="$BIN_OUT/obj"
-APPLE_EXT_BUILD="$BUILD_DIR/apple-extensions"
-MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
 ENABLE_DEBUG_UI=0
 ENABLE_PROFILE=0
 
-XCODEBUILD="/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
-SDK_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-METAL_CPP="/Users/treja/metal-cpp"
-METAL_CPP_EXT="/Users/treja/metal-cpp-extensions"
-FREETYPE_INC="/opt/homebrew/opt/freetype/include/freetype2"
-HARFBUZZ_INC="/opt/homebrew/opt/harfbuzz/include/harfbuzz"
-SHEENBIDI_DIR="$ROOT_DIR/vendor/SheenBidi"
-SHEENBIDI_INC="$SHEENBIDI_DIR/Headers"
-RESVG_INC="/opt/homebrew/opt/resvg/include/resvg"
-LIB_RESVG="/opt/homebrew/opt/resvg/lib"
-
-LIB_FREETYPE="/opt/homebrew/opt/freetype/lib/libfreetype.dylib"
-LIB_HARFBUZZ="/opt/homebrew/opt/harfbuzz/lib/libharfbuzz.dylib"
-LIB_MTK_EXT="$APPLE_EXT_BUILD/MTK-Extensions"
-LIB_APPKIT_EXT="$APPLE_EXT_BUILD/AppKit-Extensions"
-
-CXXFLAGS=(
-    -std=c++26
-    -isysroot "$SDK_PATH"
-    -fno-objc-arc
-    -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE
-    -stdlib=libc++
-    -I"$SRC_DIR"
-    -I"$METAL_CPP"
-    -I"$METAL_CPP_EXT"
-    -I"$FREETYPE_INC"
-    -I"$HARFBUZZ_INC"
-    -I"$SHEENBIDI_INC"
-    -I"$RESVG_INC"
-)
-
 usage() {
     cat <<EOF
-Usage: scripts/ship.sh [--debug-ui] [--profile] [build|run|buildrun|debug|extensions|xcode]
+Usage: scripts/ship.sh [--debug-ui] [--profile] [build|run|buildrun|debug|extensions|xcode|test]
 
 Options:
   --debug-ui  Enable the compile-time debug inspector UI
-  --profile   Build an optimized executable with debug symbols and frame pointers
+  --profile   Build with optimization, debug symbols, and frame pointers
 
 Commands:
-  build       Build Swift extensions, Metal shaders, and C++ executable
-  run         Run build/bin/gui
-  buildrun   Build, then run build/bin/gui
-  debug      Build, then run build/bin/gui under lldb
-  extensions Build only the Swift AppKit/MTK extension static libraries
-  xcode      Build the main gui.xcodeproj target with xcodebuild
-  test       Build and run focused unit tests
+  build       Configure and build the application
+  run         Run the existing application build
+  buildrun    Configure, build, and run the application
+  debug       Configure and build, then run under lldb
+  extensions  Build only the Swift AppKit/MTK extension libraries
+  xcode       Compatibility alias for build
+  test        Configure, build, and run the tests
 EOF
     exit 1
 }
@@ -88,289 +51,60 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ $ENABLE_PROFILE -eq 1 ]]; then
-    CXXFLAGS+=(-O2 -g -fno-omit-frame-pointer)
-    BINARY_NAME="gui-profile"
-    BUILD_MODE="profile"
-elif [[ ${1:-} == "debug" ]]; then
-    CXXFLAGS+=(-O0 -g)
-    BINARY_NAME="gui-debug"
-    OBJ_DIR="$BIN_OUT/obj-lldb"
-    BUILD_MODE="debug"
+[[ $# -eq 1 ]] || usage
+COMMAND="$1"
+
+if [[ $ENABLE_PROFILE -eq 1 && $ENABLE_DEBUG_UI -eq 1 ]]; then
+    PRESET=profile-inspector
+elif [[ $ENABLE_PROFILE -eq 1 ]]; then
+    PRESET=profile
+elif [[ $ENABLE_DEBUG_UI -eq 1 ]]; then
+    PRESET=inspector
 else
-    CXXFLAGS+=(-O2 -g)
-    BUILD_MODE="optimized"
+    PRESET=debug
 fi
 
-if [[ $ENABLE_DEBUG_UI -eq 1 ]]; then
-    CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=1)
-    if [[ $ENABLE_PROFILE -eq 1 ]]; then
-        OBJ_DIR="$BIN_OUT/obj-profile-debug-ui"
-        BINARY_NAME="gui-profile-debug-ui"
-    elif [[ ${1:-} == "debug" ]]; then
-        OBJ_DIR="$BIN_OUT/obj-lldb-debug-ui"
-        BINARY_NAME="gui-debug-ui"
-    else
-        OBJ_DIR="$BIN_OUT/obj-debug-ui"
-    fi
-else
-    CXXFLAGS+=(-DGUI_ENABLE_INSPECTOR=0)
-    if [[ $ENABLE_PROFILE -eq 1 ]]; then
-        OBJ_DIR="$BIN_OUT/obj-profile"
-    fi
-fi
-
-needs_rebuild() {
-    local src="$1" out="$2" dep="${3:-}"
-    [[ ! -f "$out" ]] && return 0
-    [[ "$src" -nt "$out" ]] && return 0
-    [[ -n "$dep" && ! -f "$dep" ]] && return 0
-    [[ -z "$dep" || ! -f "$dep" ]] && return 1
-
-    while IFS= read -r line; do
-        line="${line%\\}"
-        line="${line#"${line%%[![:space:]]*}"}"
-        line="${line#*: }"
-        for hdr in $line; do
-            [[ -f "$hdr" && "$hdr" -nt "$out" ]] && return 0
-        done
-    done < "$dep"
-
-    return 1
+configure() {
+    cmake --preset "$PRESET" -S "$ROOT_DIR"
 }
 
-build_extensions() {
-    mkdir -p "$APPLE_EXT_BUILD" "$BUILD_DIR/xcode-derived"
+build() {
+    configure
+    cmake --build --preset "$PRESET"
+}
 
-    echo "Building AppKit extension..."
-    "$XCODEBUILD" \
-        -project "$ROOT_DIR/apple-extensions/AppKit/AppKit-Extensions.xcodeproj" \
-        -scheme AppKit-Extensions \
-        -configuration Debug \
-        -derivedDataPath "$BUILD_DIR/xcode-derived/AppKit" \
-        CODE_SIGNING_ALLOWED=NO \
+binary="$ROOT_DIR/build/$PRESET/gui"
+
+case "$COMMAND" in
+    build|xcode)
         build
-
-    echo "Building MTK extension..."
-    "$XCODEBUILD" \
-        -project "$ROOT_DIR/apple-extensions/MTK/MTK-Extensions.xcodeproj" \
-        -scheme MTK-Extensions-Library \
-        -configuration Debug \
-        -derivedDataPath "$BUILD_DIR/xcode-derived/MTK" \
-        CODE_SIGNING_ALLOWED=NO \
+        ;;
+    run)
+        [[ -x "$binary" ]] || {
+            echo "Missing executable: $binary"
+            echo "Run: scripts/ship.sh build"
+            exit 1
+        }
+        exec "$binary"
+        ;;
+    buildrun)
         build
-}
-
-build_shaders() {
-    echo "Compiling Metal shaders..."
-    local metal metallib
-    metal="$(xcrun -sdk macosx --find metal)"
-    metallib="$(xcrun -sdk macosx --find metallib)"
-
-    mkdir -p "$BIN_OUT" "$MODULE_CACHE_DIR"
-    local air_files=()
-
-    for shader in "$SRC_DIR"/*.metal; do
-        [[ -f "$shader" ]] || { echo "No .metal files found in $SRC_DIR"; return 1; }
-        local air="$BIN_OUT/$(basename "$shader" .metal).air"
-        if needs_rebuild "$shader" "$air"; then
-            echo "  shader: ${shader#$ROOT_DIR/}"
-            "$metal" -c "$shader" -fmodules-cache-path="$MODULE_CACHE_DIR" -o "$air"
-            [[ -f "$air" ]] || { echo "Error: shader did not produce $air"; return 1; }
-        fi
-        air_files+=("$air")
-    done
-
-    local metallib_out="$BIN_OUT/default.metallib"
-    local relink=0
-    for air in "${air_files[@]}"; do
-        [[ ! -f "$metallib_out" || "$air" -nt "$metallib_out" ]] && relink=1 && break
-    done
-
-    if [[ $relink -eq 1 ]]; then
-        echo "  linking metallib..."
-        "$metallib" "${air_files[@]}" -o "$metallib_out"
-        [[ -f "$metallib_out" ]] || { echo "Error: metallib did not produce $metallib_out"; return 1; }
-    fi
-
-    echo "Shaders done."
-}
-
-build_cpp() {
-    mkdir -p "$OBJ_DIR"
-
-    if [[ ! -f "$SHEENBIDI_DIR/Source/SheenBidi.c" ]]; then
-        echo "Missing vendor/SheenBidi."
-        echo "Run: git submodule update --init --recursive"
-        return 1
-    fi
-
-    if [[ ! -f "$LIB_MTK_EXT" || ! -f "$LIB_APPKIT_EXT" ]]; then
-        echo "Missing Swift extension libraries. Run: scripts/ship.sh extensions"
-        return 1
-    fi
-
-    local llvm_prefix
-    if [[ -x /opt/homebrew/opt/llvm/bin/clang++ ]]; then
-        llvm_prefix=/opt/homebrew/opt/llvm
-    else
-        llvm_prefix="$(brew --prefix llvm)"
-    fi
-
-    local objs=()
-    local srcs_to_compile=()
-    local any_rebuilt=0
-    local build_flags_stamp="$BIN_OUT/.${BINARY_NAME}-build-flags"
-    local build_flags="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI BUILD_MODE=$BUILD_MODE"
-    local force_recompile=0
-
-    local sheen_src="$SHEENBIDI_DIR/Source/SheenBidi.c"
-    local sheen_obj="$OBJ_DIR/sheenbidi.o"
-    if needs_rebuild "$sheen_src" "$sheen_obj"; then
-        echo "  compile: vendor/SheenBidi/Source/SheenBidi.c"
-        "$llvm_prefix/bin/clang" \
-            -std=c11 -DSB_CONFIG_UNITY \
-            -I"$SHEENBIDI_INC" -I"$SHEENBIDI_DIR/Source" \
-            -c "$sheen_src" -o "$sheen_obj"
-        any_rebuilt=1
-    fi
-    objs+=("$sheen_obj")
-
-    if [[ ! -f "$build_flags_stamp" || "$(< "$build_flags_stamp")" != "$build_flags" ]]; then
-        force_recompile=1
-    fi
-
-    for src in "$SRC_DIR"/*.cpp; do
-        [[ -f "$src" ]] || continue
-        local base obj dep
-        base="$(basename "$src" .cpp)"
-        obj="$OBJ_DIR/${base}.o"
-        dep="$OBJ_DIR/${base}.d"
-        objs+=("$obj")
-
-        if [[ $force_recompile -eq 1 ]] || needs_rebuild "$src" "$obj" "$dep"; then
-            srcs_to_compile+=("$src")
-            any_rebuilt=1
-        fi
-    done
-
-    if [[ ${#srcs_to_compile[@]} -gt 0 ]]; then
-        local nproc fail_marker
-        nproc="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
-        [[ -n "$nproc" && "$nproc" =~ ^[0-9]+$ && "$nproc" -gt 0 ]] || nproc=4
-        fail_marker="$OBJ_DIR/.compile_failed"
-        rm -f "$fail_marker"
-
-        echo "Compiling ${#srcs_to_compile[@]} file(s) with $nproc jobs..."
-        printf '%s\0' "${srcs_to_compile[@]}" | xargs -0 -P "$nproc" -I{} bash -c '
-            src="$1"
-            base="$(basename "$src" .cpp)"
-            obj="'"$OBJ_DIR"'/${base}.o"
-            dep="'"$OBJ_DIR"'/${base}.d"
-            rel="${src#'"$ROOT_DIR"'/}"
-            echo "  compile: $rel"
-            if ! "'"$llvm_prefix"'/bin/clang++" '"$(printf " %q" "${CXXFLAGS[@]}")"' \
-                -I"'"$llvm_prefix"'/include/c++/v1" \
-                -MMD -MF "$dep" \
-                -c "$src" -o "$obj"; then
-                touch "'"$fail_marker"'"
-            fi
-        ' _ {}
-
-        if [[ -f "$fail_marker" ]]; then
-            rm -f "$fail_marker"
-            echo "Error: compile failed"
-            return 1
-        fi
-    fi
-
-    local bin="$BIN_OUT/$BINARY_NAME"
-    if [[ $any_rebuilt -eq 1 || ! -f "$bin" || "$LIB_MTK_EXT" -nt "$bin" || "$LIB_APPKIT_EXT" -nt "$bin" ]]; then
-        echo "Linking $BINARY_NAME..."
-        "$llvm_prefix/bin/clang++" \
-            -std=c++26 \
-            -isysroot "$SDK_PATH" \
-            -fno-objc-arc \
-            -stdlib=libc++ \
-            "${objs[@]}" \
-            "$LIB_MTK_EXT" "$LIB_APPKIT_EXT" "$LIB_FREETYPE" "$LIB_HARFBUZZ" \
-            -L"$llvm_prefix/lib/c++" \
-            -Wl,-rpath,"$llvm_prefix/lib/c++" \
-            -L"$LIB_RESVG" -lresvg \
-            -Wl,-rpath,"$LIB_RESVG" \
-            -Wl,-rpath,/opt/homebrew/opt/freetype/lib \
-            -Wl,-rpath,/opt/homebrew/opt/harfbuzz/lib \
-            -L/opt/homebrew/lib -lpng -lbz2 -lz \
-            -framework Metal -framework MetalKit -framework Foundation \
-            -framework QuartzCore -framework AppKit -framework Cocoa \
-            -L/usr/lib/swift \
-            -lswiftCore -lswiftMetal -lswiftMetalKit \
-            -lswiftFoundation -lswiftQuartzCore -lswiftAppKit \
-            -Wl,-rpath,/usr/lib/swift \
-            -lc++ \
-            -o "$bin"
-        printf '%s\n' "$build_flags" > "$build_flags_stamp"
-        echo "Build successful: $bin"
-    else
-        echo "Nothing to rebuild."
-    fi
-}
-
-build_xcode() {
-    build_extensions
-    local inspector_definition="GUI_ENABLE_INSPECTOR=$ENABLE_DEBUG_UI"
-    "$XCODEBUILD" \
-        -project "$ROOT_DIR/gui.xcodeproj" \
-        -scheme gui \
-        -configuration Debug \
-        -derivedDataPath "$BUILD_DIR/xcode-derived/gui" \
-        CODE_SIGNING_ALLOWED=NO \
-        GCC_PREPROCESSOR_DEFINITIONS="\$(inherited) $inspector_definition" \
+        exec "$binary"
+        ;;
+    debug)
         build
-}
-
-run_tests() {
-    local test_dir="$BUILD_DIR/tests"
-    local llvm_prefix=/opt/homebrew/opt/llvm
-    mkdir -p "$test_dir"
-
-    if [[ ! -f "$SHEENBIDI_DIR/Source/SheenBidi.c" ]]; then
-        echo "Missing vendor/SheenBidi."
-        echo "Run: git submodule update --init --recursive"
-        return 1
-    fi
-
-    "$llvm_prefix/bin/clang" \
-        -std=c11 -DSB_CONFIG_UNITY \
-        -I"$SHEENBIDI_INC" -I"$SHEENBIDI_DIR/Source" \
-        -c "$SHEENBIDI_DIR/Source/SheenBidi.c" \
-        -o "$test_dir/sheenbidi.o"
-
-    "$llvm_prefix/bin/clang++" \
-        -std=c++26 -I"$SRC_DIR" -I"$SHEENBIDI_INC" \
-        "$ROOT_DIR/tests/bidi.cpp" "$SRC_DIR/bidi.cpp" "$SRC_DIR/text_bidi.cpp" \
-        "$test_dir/sheenbidi.o" \
-        -o "$test_dir/bidi"
-
-    "$test_dir/bidi"
-    echo "Tests passed."
-}
-
-run_binary() {
-    local bin="$BIN_OUT/$BINARY_NAME"
-    [[ -x "$bin" ]] || { echo "Missing executable: $bin"; return 1; }
-    "$bin"
-}
-
-[[ $# -eq 0 ]] && usage
-
-case "$1" in
-    build) build_extensions && build_shaders && build_cpp ;;
-    run) run_binary ;;
-    buildrun) build_extensions && build_shaders && build_cpp && run_binary ;;
-    debug) build_extensions && build_shaders && build_cpp && lldb "$BIN_OUT/$BINARY_NAME" -o run ;;
-    extensions) build_extensions ;;
-    xcode) build_xcode ;;
-    test) run_tests ;;
-    *) usage ;;
+        exec lldb "$binary" -o run
+        ;;
+    extensions)
+        configure
+        cmake --build --preset "$PRESET" --target gui_apple_extensions
+        ;;
+    test)
+        configure
+        cmake --build --preset "$PRESET" --target gui_bidi_test
+        ctest --preset "$PRESET"
+        ;;
+    *)
+        usage
+        ;;
 esac
