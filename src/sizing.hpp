@@ -1,7 +1,14 @@
 #pragma once
+#include <expected>
 #include <optional>
 
 namespace style {
+    enum class SizeResolveFailure {
+        Auto,
+        IndefiniteBasis,
+        FractionRequiresContext
+    };
+
     enum class Unit {
         Px,
         Percent,
@@ -35,25 +42,26 @@ namespace style {
         bool isAuto() const { return unit == Unit::Auto; }
         bool isFr() const { return unit == Unit::Fr; }
 
-        std::optional<float> resolve(float referenceSize) const {
+        std::expected<float, SizeResolveFailure> resolve(const Size& basis) const {
             switch (unit) {
                 case Unit::Px:
                     return value;
-                case Unit::Percent:
-                    return value * referenceSize;
                 case Unit::Auto:
-                    return std::nullopt;
+                    return std::unexpected(SizeResolveFailure::Auto);
                 case Unit::Pt:
                     return value;
                 case Unit::Fr:
-                    return std::nullopt;
-                default:
-                    return std::nullopt;
+                    return std::unexpected(SizeResolveFailure::FractionRequiresContext);
+                case Unit::Percent:
+                    if (basis.unit == Unit::Px || basis.unit == Unit::Pt) {
+                        return value * basis.value;
+                    }
+                    return std::unexpected(SizeResolveFailure::IndefiniteBasis);
             }
         }
 
-        float resolveOr(float referenceSize, float defaultVal = 0.0f) const {
-            auto resolved = resolve(referenceSize);
+        float resolveOr(const Size& basis, float defaultVal = 0.0f) const {
+            auto resolved = resolve(basis);
             return resolved.value_or(defaultVal);
         }
 

@@ -529,20 +529,18 @@ namespace tree {
                 contentHeight = std::max(contentHeight, atom.height);
             }
 
-            float width = node->shared.width.has_value()
-                ? node->shared.width->resolveOr(0.0f)
-                : 0.0f;
-            if (width > 0) {
-                contentWidth = width;
-            } else {
-                contentWidth = constraints.availableWidth;
-            }
+            auto resolvedWidth = node->shared.width.resolve(
+                Size::px(constraints.availableWidth)
+            );
+            contentWidth = resolvedWidth.value_or(constraints.availableWidth);
 
             LayoutInput li{
                 .position = position,
                 .display = display,
-                .width = width,
-                .height = 0,
+                .width = resolvedWidth,
+                .height = std::unexpected(
+                    style::SizeResolveFailure::Auto
+                ),
                 .marginTop = marginTop,
                 .marginRight = marginRight,
                 .marginBottom = marginBottom,
@@ -552,10 +550,10 @@ namespace tree {
             margins = LayoutEngine::resolveAutoMargins(li, constraints.replacedAttributes, constraints.availableWidth, contentWidth);
         } else {
             margins = {
-                .top = marginTop.resolveOr(0.0f, 0.0f),
-                .right = marginRight.resolveOr(0.0f, 0.0f),
-                .bottom = marginBottom.resolveOr(0.0f, 0.0f),
-                .left = marginLeft.resolveOr(0.0f, 0.0f),
+                .top = marginTop.resolveOr(Size::px(0.0f), 0.0f),
+                .right = marginRight.resolveOr(Size::px(0.0f), 0.0f),
+                .bottom = marginBottom.resolveOr(Size::px(0.0f), 0.0f),
+                .left = marginLeft.resolveOr(Size::px(0.0f), 0.0f),
             };
         }
 

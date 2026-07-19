@@ -282,7 +282,7 @@ namespace elements {
         ) {
             float fontSize = 0.0;
             if (desc.fontSize.unit == Unit::Pt) {
-                fontSize = desc.fontSize.resolveOr(0.0);
+                fontSize = desc.fontSize.resolveOr(Size::px(0.0f));
             }
 
             float scale = fontSize / BASE_PIXEL_HEIGHT;
@@ -666,7 +666,7 @@ namespace elements {
             float fontSize;
 
             if (desc.fontSize.unit == Unit::Pt) {
-                fontSize = desc.fontSize.resolveOr(0.0);
+                fontSize = desc.fontSize.resolveOr(Size::px(0.0f));
             }
 
             TextUniforms uniforms {

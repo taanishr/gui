@@ -40,8 +40,12 @@ namespace layout {
 
     struct Measured {
         FragmentID id;
-        std::optional<float> explicitWidth;
-        std::optional<float> explicitHeight;
+        std::expected<float, style::SizeResolveFailure> explicitWidth{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
+        std::expected<float, style::SizeResolveFailure> explicitHeight{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
     };
 
     struct Atomized {
@@ -354,8 +358,11 @@ namespace style {
         Position position{Position::Static};
         Display display{Display::Block};
 
-        std::optional<Size> width, height;
-        std::optional<Size> minWidth, minHeight, maxWidth, maxHeight;
+        Size width{Size::autoSize()};
+        Size height{Size::autoSize()};
+        Size minWidth{Size::autoSize()};
+        Size minHeight{Size::autoSize()};
+        std::optional<Size> maxWidth, maxHeight;
         std::optional<Size> top, left, bottom, right;
 
         Size margin{};
@@ -464,7 +471,8 @@ namespace layout {
         std::vector<ClipUniform> clipUniforms {};
         std::optional<TextOverflow> textOverflow{};
 
-        bool shrinkToFit{false};
+        bool shrinkWidthToFit{false};
+        bool shrinkHeightToFit{false};
         AxisResolution widthResolution{AxisResolution::Final};
         AxisResolution heightResolution{AxisResolution::Final};
     };
@@ -473,8 +481,15 @@ namespace layout {
         Position position;
         Display display;
 
-        std::optional<float> width, height;
-        std::optional<Size> minWidth, minHeight, maxWidth, maxHeight;
+        std::expected<float, style::SizeResolveFailure> width{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
+        std::expected<float, style::SizeResolveFailure> height{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
+        Size minWidth{Size::autoSize()};
+        Size minHeight{Size::autoSize()};
+        std::optional<Size> maxWidth, maxHeight;
         
         std::optional<Size> top, left, bottom, right;
 
@@ -523,8 +538,8 @@ namespace layout {
         const std::optional<Size>&  right;
         const std::optional<Size>&  bottom;
         const std::optional<Size>&  left;
-        const std::optional<Size>& requestedWidth;
-        const std::optional<Size>& requestedHeight;
+        const Size& requestedWidth;
+        const Size& requestedHeight;
         float availableWidth;
         float availableHeight;
     };
@@ -538,8 +553,12 @@ namespace layout {
 
 
     struct ResolvedSize {
-        std::optional<float> width;
-        std::optional<float> height;
+        std::expected<float, style::SizeResolveFailure> width{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
+        std::expected<float, style::SizeResolveFailure> height{
+            std::unexpected(style::SizeResolveFailure::Auto)
+        };
     };
     
     simd_float2 resolvePosition(const PositionResolutionContext& ctx);
