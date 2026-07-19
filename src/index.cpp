@@ -66,7 +66,7 @@ auto index() -> void {
     // turns out they just were not being downsampled
 
     // // seg faults fucking hell
-    using S = gui::Size;
+    // using S = gui::Size;
 
     // // Grid demo: holy grail layout
     // div(S::percent(1.0), S::percent(1.0), simd_float4{0.95,0.95,0.95,1.0})
@@ -1789,115 +1789,115 @@ auto index() -> void {
 //         )
 //     );
     
-    const std::string Devanagari = "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc";
-    const std::string GeezaPro = "/System/Library/Fonts/GeezaPro.ttc";
-    const auto background = simd_float4{0.07f, 0.08f, 0.10f, 1.0f};
-    const auto panel = simd_float4{0.12f, 0.13f, 0.16f, 1.0f};
-    const auto heading = simd_float4{0.45f, 0.80f, 1.0f, 1.0f};
-    const auto body = simd_float4{0.92f, 0.93f, 0.96f, 1.0f};
-    const auto note = simd_float4{0.58f, 0.62f, 0.70f, 1.0f};
+    // const std::string Devanagari = "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc";
+    // const std::string GeezaPro = "/System/Library/Fonts/GeezaPro.ttc";
+    // const auto background = simd_float4{0.07f, 0.08f, 0.10f, 1.0f};
+    // const auto panel = simd_float4{0.12f, 0.13f, 0.16f, 1.0f};
+    // const auto heading = simd_float4{0.45f, 0.80f, 1.0f, 1.0f};
+    // const auto body = simd_float4{0.92f, 0.93f, 0.96f, 1.0f};
+    // const auto note = simd_float4{0.58f, 0.62f, 0.70f, 1.0f};
 
-    div(S::percent(1.0), S::percent(1.0), background)
-        .display(gui::Display::Flex)
-        .flexDirection(gui::FlexDirection::Col)
-        .flexGap(S::px(16))
-        .padding(S::px(28))
-        .overflow(gui::Overflow::Scroll)
-    (
-        text("HarfBuzz shaping coverage").font(ArialBold).fontSize(S::pt(24)).color(body),
-        text("Kerning, ligatures, combining marks, and contextual script shaping")
-            .fontSize(S::pt(13)).color(note),
+    // div(S::percent(1.0), S::percent(1.0), background)
+    //     .display(gui::Display::Flex)
+    //     .flexDirection(gui::FlexDirection::Col)
+    //     .flexGap(S::px(16))
+    //     .padding(S::px(28))
+    //     .overflow(gui::Overflow::Scroll)
+    // (
+    //     text("HarfBuzz shaping coverage").font(ArialBold).fontSize(S::pt(24)).color(body),
+    //     text("Kerning, ligatures, combining marks, and contextual script shaping")
+    //         .fontSize(S::pt(13)).color(note),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("4. Kerning").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("AVATAR   To Wa Yo VA").font(Arial).fontSize(S::pt(34)).color(body),
-            text("Look for tighter AV, To, Wa, and Yo pairs.").fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("4. Kerning").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("AVATAR   To Wa Yo VA").font(Arial).fontSize(S::pt(34)).color(body),
+    //         text("Look for tighter AV, To, Wa, and Yo pairs.").fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("5. Ligatures").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("office   affinity   ffi   fi   fl").font(Helvetica).fontSize(S::pt(34)).color(body),
-            text("Helvetica should substitute fi/fl glyphs; ‘office’ should contain an fi ligature.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("5. Ligatures").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("office   affinity   ffi   fi   fl").font(Helvetica).fontSize(S::pt(34)).color(body),
+    //         text("Helvetica should substitute fi/fl glyphs; ‘office’ should contain an fi ligature.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6a. Combining marks").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("decomposed:  cafe\xCC\x81   A\xCC\x8A   n\xCC\x83").font(Arial).fontSize(S::pt(34)).color(body),
-            text("composed:    café   Å   ñ").font(Arial).fontSize(S::pt(34)).color(body),
-            text("The two rows should have equivalent accent placement.").fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("6a. Combining marks").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("decomposed:  cafe\xCC\x81   A\xCC\x8A   n\xCC\x83").font(Arial).fontSize(S::pt(34)).color(body),
+    //         text("composed:    café   Å   ñ").font(Arial).fontSize(S::pt(34)).color(body),
+    //         text("The two rows should have equivalent accent placement.").fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6b. Arabic contextual shaping").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("السلام عليكم").font(GeezaPro).fontSize(S::pt(40)).color(body),
-            text("Letters should join contextually; lam-alef should form a ligature.").fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("6b. Arabic contextual shaping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("السلام عليكم").font(GeezaPro).fontSize(S::pt(40)).color(body),
+    //         text("Letters should join contextually; lam-alef should form a ligature.").fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("6c. Devanagari reordering and conjuncts").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
-            text("The conjunct and pre-base vowel marks should be shaped and positioned.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("6c. Devanagari reordering and conjuncts").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("नमस्ते दुनिया").font(Devanagari).fontSize(S::pt(40)).color(body),
+    //         text("The conjunct and pre-base vowel marks should be shaped and positioned.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7a. Mixed LTR and RTL runs").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("Hello السلام").font(Arial).fontSize(S::pt(30)).color(body),
-            text("السلام Hello").font(Arial).fontSize(S::pt(30)).color(body),
-            text("Each Arabic run should remain joined while the two scripts retain their reading order.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("7a. Mixed LTR and RTL runs").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("Hello السلام").font(Arial).fontSize(S::pt(30)).color(body),
+    //         text("السلام Hello").font(Arial).fontSize(S::pt(30)).color(body),
+    //         text("Each Arabic run should remain joined while the two scripts retain their reading order.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7b. Numbers and neutral punctuation").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            text("السلام 123 عليكم").font(Arial).fontSize(S::pt(30)).color(body),
-            text("Hello (السلام) 123").font(Arial).fontSize(S::pt(30)).color(body),
-            text("The digits should read 123 and the parentheses should enclose the Arabic word.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("7b. Numbers and neutral punctuation").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         text("السلام 123 عليكم").font(Arial).fontSize(S::pt(30)).color(body),
+    //         text("Hello (السلام) 123").font(Arial).fontSize(S::pt(30)).color(body),
+    //         text("The digits should read 123 and the parentheses should enclose the Arabic word.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7c. Bidi resolution across text siblings").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            div()
-            (
-                text("Hello ").font(Arial).fontSize(S::pt(30)).color(body),
-                text("السلام").font(GeezaPro).fontSize(S::pt(30)).color(body),
-                text(" 123").font(Arial).fontSize(S::pt(30)).color(body)
-            ),
-            text("This is three sibling Text nodes and should match a single mixed-direction sentence.")
-                .fontSize(S::pt(12)).color(note)
-        ),
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("7c. Bidi resolution across text siblings").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         div()
+    //         (
+    //             text("Hello ").font(Arial).fontSize(S::pt(30)).color(body),
+    //             text("السلام").font(GeezaPro).fontSize(S::pt(30)).color(body),
+    //             text(" 123").font(Arial).fontSize(S::pt(30)).color(body)
+    //         ),
+    //         text("This is three sibling Text nodes and should match a single mixed-direction sentence.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     ),
 
-        div().width(S::percent(1.0)).color(panel).padding(S::px(18))
-            .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
-        (
-            text("7d. Mixed-direction wrapping").font(ArialBold).fontSize(S::pt(13)).color(heading),
-            div().width(S::px(260))
-            (
-                text("Hello السلام 123 عليكم from a narrow mixed-direction line")
-                    .font(Arial).fontSize(S::pt(24)).color(body)
-            ),
-            text("Every physical line should remain separate, joined, and non-overlapping.")
-                .fontSize(S::pt(12)).color(note)
-        )
-    );
+    //     div().width(S::percent(1.0)).color(panel).padding(S::px(18))
+    //         .display(gui::Display::Flex).flexDirection(gui::FlexDirection::Col).flexGap(S::px(8))
+    //     (
+    //         text("7d. Mixed-direction wrapping").font(ArialBold).fontSize(S::pt(13)).color(heading),
+    //         div().width(S::px(260))
+    //         (
+    //             text("Hello السلام 123 عليكم from a narrow mixed-direction line")
+    //                 .font(Arial).fontSize(S::pt(24)).color(body)
+    //         ),
+    //         text("Every physical line should remain separate, joined, and non-overlapping.")
+    //             .fontSize(S::pt(12)).color(note)
+    //     )
+    // );
 
 //     const auto alignmentSample = R"(Short line
 // A considerably longer line that wraps inside the panel)";
@@ -3274,28 +3274,28 @@ div()
     // - The second image is sized by flex after measurement.
     // Resize the window to make the flex image cross rendition bins and verify
     // its post-layout atoms continue to use the current frame-buffer slot.
-    // constexpr auto butterflyPath = "/Users/treja/projects/gui/assets/butterfly.png";
+    constexpr auto butterflyPath = "/Users/treja/projects/gui/assets/butterfly.png";
 
-    // div(gui::Size::percent(1.0), gui::Size::percent(1.0), simd_float4{0.94,0.94,0.96,1.0})
-    //     .display(gui::Display::Flex)
-    //     .alignItems(gui::AlignItems::Center)
-    //     .justifyContent(gui::JustifyContent::Center)
-    // (
-    //     div()
-    //         .width(gui::Size::percent(0.8))
-    //         .height(gui::Size::px(260))
-    //         .minWidth(gui::Size::px(360))
-    //         .maxWidth(gui::Size::px(900))
-    //         .padding(gui::Size::px(20))
-    //         .flexGap(gui::Size::px(20))
-    //         .display(gui::Display::Flex)
-    //         .alignItems(gui::AlignItems::Stretch)
-    //         .color(simd_float4{1.0,1.0,1.0,1.0})
-    //         .cornerRadius(gui::Size::px(12))
-    //     (
-    //         image(butterflyPath, gui::Size::px(128), gui::Size::px(128)),
-    //         image(butterflyPath, gui::Size::autoSize(), gui::Size::autoSize())
-    //             .flexGrow(gui::Size::px(1.0))
-    //     )
-    // );
+    div(gui::Size::percent(1.0), gui::Size::percent(1.0), simd_float4{0.94,0.94,0.96,1.0})
+        .display(gui::Display::Flex)
+        .alignItems(gui::AlignItems::Center)
+        .justifyContent(gui::JustifyContent::Center)
+    (
+        div()
+            .width(gui::Size::percent(0.8))
+            .height(gui::Size::px(260))
+            .minWidth(gui::Size::px(360))
+            .maxWidth(gui::Size::px(900))
+            .padding(gui::Size::px(20))
+            .flexGap(gui::Size::px(20))
+            .display(gui::Display::Flex)
+            .alignItems(gui::AlignItems::Stretch)
+            .color(simd_float4{1.0,1.0,1.0,1.0})
+            .cornerRadius(gui::Size::px(12))
+        (
+            image(butterflyPath, gui::Size::px(128), gui::Size::px(128)),
+            image(butterflyPath, gui::Size::autoSize(), gui::Size::autoSize())
+                .flexGrow(gui::Size::px(1.0))
+        )
+    );
 }
