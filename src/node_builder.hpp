@@ -28,6 +28,8 @@ namespace elements {
     using style::FlexWrap;
     using style::GridPlacement;
     using style::JustifyContent;
+    using style::JustifyItems;
+    using style::JustifySelf;
     using style::Overflow;
     using style::Position;
     using style::Size;
@@ -276,6 +278,26 @@ namespace elements {
 
         Derived& alignSelf(AlignSelf as) {
             node->shared.alignSelf = as;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        JustifyItems justifyItems() const {
+            return node->shared.justifyItems;
+        }
+
+        Derived& justifyItems(JustifyItems justifyItems) {
+            node->shared.justifyItems = justifyItems;
+            markDirty(layoutDirtyBits());
+            return self();
+        }
+
+        JustifySelf justifySelf() const {
+            return node->shared.justifySelf;
+        }
+
+        Derived& justifySelf(JustifySelf justifySelf) {
+            node->shared.justifySelf = justifySelf;
             markDirty(layoutDirtyBits());
             return self();
         }

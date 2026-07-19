@@ -10,6 +10,8 @@ namespace tree {
 
 namespace layout {
     using style::AlignItems;
+    using style::JustifyItems;
+    using style::JustifySelf;
     using style::Size;
     using style::SizeResolveFailure;
     using tree::RenderTree;
@@ -96,6 +98,7 @@ namespace layout {
         Constraints       childConstraints;
         GridLayout        gridLayout;
         AlignItems        alignItems;
+        JustifyItems      justifyItems;
         const FrameInfo&  frameInfo;
         Measured          measured;
         bool              mutate;

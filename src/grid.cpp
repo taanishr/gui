@@ -280,6 +280,7 @@ namespace layout {
         : tree{tree}, node{node}, parentConstraints{parentConstraints},
           childConstraints{childConstraints},
           alignItems{node->getAlignItems()},
+          justifyItems{node->getJustifyItems()},
           frameInfo{frameInfo}, measured{measured}, mutate{mutate},
           childAvailableWidth{parentAvailableWidth},
           parentAvailableWidth{parentAvailableWidth}, parentAvailableHeight{parentAvailableHeight},
@@ -533,14 +534,29 @@ namespace layout {
                 }
             }
 
-            // stretch: override measured size if child has no explicit size
-            if (effectiveAlign == AlignItems::Stretch) {
-                if (childAsPtr->shared.width.isAuto())
-                    childMeasured.explicitWidth = itemW;
-                if (childAsPtr->shared.height.isAuto())
-                    childMeasured.explicitHeight = itemH;
-            } else {
+            JustifyItems effectiveJustify = justifyItems;
+            auto selfJustify = childAsPtr->getJustifySelf();
+            if (selfJustify != JustifySelf::Auto) {
+                switch (selfJustify) {
+                    case JustifySelf::Stretch: effectiveJustify = JustifyItems::Stretch; break;
+                    case JustifySelf::Start:   effectiveJustify = JustifyItems::Start; break;
+                    case JustifySelf::End:     effectiveJustify = JustifyItems::End; break;
+                    case JustifySelf::Center:  effectiveJustify = JustifyItems::Center; break;
+                    default: break;
+                }
+            }
+
+            if (effectiveJustify == JustifyItems::Stretch &&
+                childAsPtr->shared.width.isAuto()) {
+                childMeasured.explicitWidth = itemW;
+            } else if (childAsPtr->shared.width.isAuto()) {
                 preparedChildConstraints.shrinkWidthToFit = true;
+            }
+
+            if (effectiveAlign == AlignItems::Stretch &&
+                childAsPtr->shared.height.isAuto()) {
+                childMeasured.explicitHeight = itemH;
+            } else if (childAsPtr->shared.height.isAuto()) {
                 preparedChildConstraints.shrinkHeightToFit = true;
             }
 
@@ -551,6 +567,13 @@ namespace layout {
                 childMeasured
             );
 
+            float dx = 0.0f;
+            if (effectiveJustify == JustifyItems::Center) {
+                dx = (cellW - childOutput->layout.computedBox.width) / 2.0f;
+            } else if (effectiveJustify == JustifyItems::End) {
+                dx = cellW - childOutput->layout.computedBox.width;
+            }
+
             float dy = 0.0f;
             if (effectiveAlign == AlignItems::Center) {
                 dy = (cellH - childOutput->layout.computedBox.height) / 2.0f;
@@ -558,7 +581,9 @@ namespace layout {
                 dy = cellH - childOutput->layout.computedBox.height;
             }
 
+            preparedChildConstraints.origin.x += dx;
             preparedChildConstraints.origin.y += dy;
+            preparedChildConstraints.cursor.x += dx;
             preparedChildConstraints.cursor.y += dy;
 
             std::optional<LayoutOutput> finalChildOutput;
@@ -570,7 +595,7 @@ namespace layout {
                     childMeasured
                 );
                 childOutput = &*finalChildOutput;
-            } else if (dy != 0.0f) {
+            } else if (dx != 0.0f || dy != 0.0f) {
                 childOutput = &tree.speculateLayout(
                     frameInfo,
                     childAsPtr,
