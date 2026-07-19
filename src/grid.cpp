@@ -6,13 +6,11 @@
 
 namespace layout {
     namespace {
-        float applyMinMax(float value, const std::optional<Size>& minSize, const std::optional<Size>& maxSize, float referenceSize) {
+        float applyMinMax(float value, const Size& minSize, const std::optional<Size>& maxSize, float referenceSize) {
             if (maxSize.has_value()) {
-                value = std::min(value, maxSize->resolveOr(referenceSize, value));
+                value = std::min(value, maxSize->resolveOr(Size::px(referenceSize), value));
             }
-            if (minSize.has_value()) {
-                value = std::max(value, minSize->resolveOr(referenceSize, value));
-            }
+            value = std::max(value, minSize.resolveOr(Size::px(referenceSize), value));
             return value;
         }
     }
@@ -204,7 +202,7 @@ namespace layout {
             } else if (def.isFr()) {
                 frTotal += def.value;
             } else {
-                sizes[i] = def.resolveOr(available, 0);
+                sizes[i] = def.resolveOr(Size::px(available), 0);
                 fixedTotal += sizes[i];
             }
         }
@@ -272,12 +270,14 @@ namespace layout {
 
     bool GridResolver::isXIndefinite(TreeNode* child) const {
         return !measured.explicitWidth.has_value() &&
-            child->shared.width.has_value() && (child->shared.width->unit == Unit::Percent || child->shared.width->unit == Unit::Fr);
+            (child->shared.width.unit == Unit::Percent ||
+             child->shared.width.unit == Unit::Fr);
     }
 
     bool GridResolver::isYIndefinite(TreeNode* child) const {
         return !measured.explicitHeight.has_value() &&
-            child->shared.height.has_value() && (child->shared.height->unit == Unit::Percent || child->shared.height->unit == Unit::Fr);
+            (child->shared.height.unit == Unit::Percent ||
+             child->shared.height.unit == Unit::Fr);
     }
 
     void GridResolver::prepareChildConstraints(TreeNode* child) {
@@ -301,17 +301,24 @@ namespace layout {
             bool yIndef = isYIndefinite(childAsPtr);
 
             Measured childMeasured = *childAsPtr->measured;
-            if (xIndef) childMeasured.explicitWidth = std::nullopt;
-            if (yIndef) childMeasured.explicitHeight = std::nullopt;
+            if (xIndef) {
+                childMeasured.explicitWidth =
+                    std::unexpected(style::SizeResolveFailure::IndefiniteBasis);
+            }
+            if (yIndef) {
+                childMeasured.explicitHeight =
+                    std::unexpected(style::SizeResolveFailure::IndefiniteBasis);
+            }
 
             prepareChildConstraints(childAsPtr);
-            bool isIndef = xIndef || yIndef;
-            bool savedShrink = childConstraints.shrinkToFit;
-            if (isIndef) childConstraints.shrinkToFit = true;
+            bool savedShrinkWidth = childConstraints.shrinkWidthToFit;
+            bool savedShrinkHeight = childConstraints.shrinkHeightToFit;
+            if (xIndef) childConstraints.shrinkWidthToFit = true;
+            if (yIndef) childConstraints.shrinkHeightToFit = true;
 
             const auto& childOutput = tree.speculateLayout(
-                childAsPtr,
                 frameInfo,
+                childAsPtr,
                 childConstraints,
                 childMeasured
             );
@@ -320,7 +327,8 @@ namespace layout {
             maxIntrinsicX = std::max(maxIntrinsicX, childLayout.computedBox.x + childLayout.computedBox.width);
             maxIntrinsicY = std::max(maxIntrinsicY, childLayout.computedBox.y + childLayout.consumedHeight);
 
-            childConstraints.shrinkToFit = savedShrink;
+            childConstraints.shrinkWidthToFit = savedShrinkWidth;
+            childConstraints.shrinkHeightToFit = savedShrinkHeight;
         }
     }
 
@@ -329,8 +337,8 @@ namespace layout {
         auto& templateRows = node->getGridTemplateRows();
         float availableWidth = measured.explicitWidth.value_or(parentConstraints.availableWidth);
         float availableHeight = measured.explicitHeight.value_or(parentConstraints.availableHeight);
-        float colGap = node->getGridColumnGap().resolveOr(availableWidth, 0);
-        float rowGap = node->getGridRowGap().resolveOr(availableHeight, 0);
+        float colGap = node->getGridColumnGap().resolveOr(Size::px(availableWidth), 0);
+        float rowGap = node->getGridRowGap().resolveOr(Size::px(availableHeight), 0);
 
         std::vector<float> itemWidths;
         std::vector<float> itemHeights;
@@ -350,12 +358,13 @@ namespace layout {
 
             prepareChildConstraints(childAsPtr);
             if (!hasIndefiniteChild) {
-                childConstraints.shrinkToFit = true;
+                childConstraints.shrinkWidthToFit = true;
+                childConstraints.shrinkHeightToFit = true;
             }
 
             const auto& childOutput = tree.speculateLayout(
-                childAsPtr,
                 frameInfo,
+                childAsPtr,
                 childConstraints,
                 childMeasured
             );
@@ -383,10 +392,10 @@ namespace layout {
             itemHeights.push_back(itemHeight);
         }
 
-        float trackAvailableWidth = parentConstraints.shrinkToFit && !measured.explicitWidth.has_value()
+        float trackAvailableWidth = parentConstraints.shrinkWidthToFit && !measured.explicitWidth.has_value()
             ? 0.0f
             : parentAvailableWidth;
-        float trackAvailableHeight = parentConstraints.shrinkToFit && !measured.explicitHeight.has_value()
+        float trackAvailableHeight = parentConstraints.shrinkHeightToFit && !measured.explicitHeight.has_value()
             ? 0.0f
             : parentAvailableHeight;
 
@@ -430,7 +439,8 @@ namespace layout {
             childConstraints.origin = {cellX, cellY};
             childConstraints.cursor = {cellX, cellY};
             childConstraints.inheritedProperties = parentConstraints.inheritedProperties;
-            childConstraints.shrinkToFit = false;
+            childConstraints.shrinkWidthToFit = false;
+            childConstraints.shrinkHeightToFit = false;
 
             // resolve alignment
             AlignItems effectiveAlign = alignItems;
@@ -447,17 +457,18 @@ namespace layout {
 
             // stretch: override measured size if child has no explicit size
             if (effectiveAlign == AlignItems::Stretch) {
-                if (!childAsPtr->shared.width.has_value())
+                if (childAsPtr->shared.width.isAuto())
                     childMeasured.explicitWidth = itemW;
-                if (!childAsPtr->shared.height.has_value())
+                if (childAsPtr->shared.height.isAuto())
                     childMeasured.explicitHeight = itemH;
             } else {
-                childConstraints.shrinkToFit = true;
+                childConstraints.shrinkWidthToFit = true;
+                childConstraints.shrinkHeightToFit = true;
             }
 
             const LayoutOutput* childOutput = &tree.speculateLayout(
-                childAsPtr,
                 frameInfo,
+                childAsPtr,
                 childConstraints,
                 childMeasured
             );
@@ -488,8 +499,8 @@ namespace layout {
                 childOutput = &*finalChildOutput;
             } else if (dx != 0.0f || dy != 0.0f) {
                 childOutput = &tree.speculateLayout(
-                    childAsPtr,
                     frameInfo,
+                    childAsPtr,
                     childConstraints,
                     childMeasured
                 );

@@ -367,13 +367,13 @@ namespace elements {
             float borderWidth = 0.0;
 
             if (shared.borderWidth.unit == Unit::Px) {
-                borderWidth = shared.borderWidth.resolveOr(constraints.availableWidth);
+                borderWidth = shared.borderWidth.resolveOr(Size::px(constraints.availableWidth));
             }
 
             float minDim = std::min(layout.computedBox.width, layout.computedBox.height);
             simd_float2 cornerRadius {
-                shared.cornerRadius.resolveOr(minDim),
-                shared.cornerRadius.resolveOr(minDim)
+                shared.cornerRadius.resolveOr(Size::px(minDim)),
+                shared.cornerRadius.resolveOr(Size::px(minDim))
             };
 
             DivStyleUniforms styleUniforms{

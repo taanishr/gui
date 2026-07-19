@@ -15,11 +15,12 @@ namespace tree {
     using layout::SizeResolutionContext;
     using layout::AxisResolution;
     using style::ClipUniform;
+    using style::SizeResolveFailure;
     using style::Unit;
 
     void applyContentResolution(
-        std::optional<float>& explicitSize,
-        const std::optional<style::Size>& requestedSize,
+        std::expected<float, SizeResolveFailure>& explicitSize,
+        const style::Size& requestedSize,
         AxisResolution resolution,
         bool isText
     ) {
@@ -30,11 +31,12 @@ namespace tree {
 
         if (isText) {
             explicitSize = 0.0f;
-        } else if (!requestedSize.has_value() ||
-                   requestedSize->unit == Unit::Percent ||
-                   requestedSize->unit == Unit::Auto ||
-                   requestedSize->unit == Unit::Fr) {
-            explicitSize = std::nullopt;
+        } else if (requestedSize.unit == Unit::Auto) {
+            explicitSize = std::unexpected(SizeResolveFailure::Auto);
+        } else if (requestedSize.unit == Unit::Percent) {
+            explicitSize = std::unexpected(SizeResolveFailure::IndefiniteBasis);
+        } else if (requestedSize.unit == Unit::Fr) {
+            explicitSize = std::unexpected(SizeResolveFailure::FractionRequiresContext);
         }
     }
 
@@ -158,7 +160,8 @@ namespace tree {
         };
         hashOptionalSize(constraints.replacedAttributes.marginTop);
         hashOptionalSize(constraints.replacedAttributes.marginBottom);
-        hash_combine(hash, constraints.shrinkToFit);
+        hash_combine(hash, constraints.shrinkWidthToFit);
+        hash_combine(hash, constraints.shrinkHeightToFit);
         hash_combine(hash, static_cast<int>(constraints.widthResolution));
         hash_combine(hash, static_cast<int>(constraints.heightResolution));
         auto lineFragments = constraints.inlineFormatting.lineFragments();
@@ -227,10 +230,14 @@ namespace tree {
         hash_combine(key.value, measured.explicitWidth.has_value());
         if (measured.explicitWidth.has_value()) {
             hash_combine(key.value, *measured.explicitWidth);
+        } else {
+            hash_combine(key.value, static_cast<int>(measured.explicitWidth.error()));
         }
         hash_combine(key.value, measured.explicitHeight.has_value());
         if (measured.explicitHeight.has_value()) {
             hash_combine(key.value, *measured.explicitHeight);
+        } else {
+            hash_combine(key.value, static_cast<int>(measured.explicitHeight.error()));
         }
         return key;
     }
@@ -400,10 +407,10 @@ namespace tree {
             node->dirtySelf |= DirtyBits::Atomize | DirtyBits::Layout | DirtyBits::PostLayout | DirtyBits::Place | DirtyBits::Finalize;
         }
         
-        float paddingLeft = node->shared.paddingLeft.value_or(Size{}).resolveOr(constraints.availableWidth);
-        float paddingTop = node->shared.paddingTop.value_or(Size{}).resolveOr(constraints.availableHeight);
-        float paddingRight = node->shared.paddingRight.value_or(Size{}).resolveOr(constraints.availableWidth);
-        float paddingBottom = node->shared.paddingBottom.value_or(Size{}).resolveOr(constraints.availableHeight);
+        float paddingLeft = node->shared.paddingLeft.value_or(Size{}).resolveOr(Size::px(constraints.availableWidth));
+        float paddingTop = node->shared.paddingTop.value_or(Size{}).resolveOr(Size::px(constraints.availableHeight));
+        float paddingRight = node->shared.paddingRight.value_or(Size{}).resolveOr(Size::px(constraints.availableWidth));
+        float paddingBottom = node->shared.paddingBottom.value_or(Size{}).resolveOr(Size::px(constraints.availableHeight));
 
         Constraints childConstraints {};
 
@@ -588,8 +595,8 @@ namespace tree {
     }
 
     const LayoutOutput& RenderTree::speculateLayout(
-        TreeNode* node,
         const FrameInfo& frameInfo,
+        TreeNode* node,
         Constraints constraints,
         Measured measured
     ) {
@@ -633,18 +640,17 @@ namespace tree {
         constraints.resolvedMargins = prelayout.resolvedMargins;
 
         // Re-resolve percent sizes from current constraints, but only in final layout
-        // passes (shrinkToFit = false). During intermediate measurements (shrinkToFit = true),
+        // passes that are not shrink-to-fit on the relevant axis.
+        // During intermediate measurements, percentage bases may be indefinite and
         // maxWidth comes from an indefinite ancestor and would give wrong values.
         bool shouldResolvePercentWidth =
-            !constraints.shrinkToFit &&
+            !constraints.shrinkWidthToFit &&
             constraints.widthResolution == AxisResolution::Final &&
-            node->shared.width.has_value() &&
-            node->shared.width->unit == Unit::Percent;
+            node->shared.width.unit == Unit::Percent;
         bool shouldResolvePercentHeight =
-            !constraints.shrinkToFit &&
+            !constraints.shrinkHeightToFit &&
             constraints.heightResolution == AxisResolution::Final &&
-            node->shared.height.has_value() &&
-            node->shared.height->unit == Unit::Percent;
+            node->shared.height.unit == Unit::Percent;
 
         if (shouldResolvePercentWidth || shouldResolvePercentHeight) {
             SizeResolutionContext sizeCtx {
@@ -674,6 +680,12 @@ namespace tree {
         auto layout = node->element->layout(constraints, node->shared, measured, atomized);
 
         auto childConstraints = layout.childConstraints;
+        if (constraints.shrinkWidthToFit && node->shared.width.isAuto()) {
+            childConstraints.shrinkWidthToFit = true;
+        }
+        if (constraints.shrinkHeightToFit && node->shared.height.isAuto()) {
+            childConstraints.shrinkHeightToFit = true;
+        }
         if (constraints.widthResolution == AxisResolution::MinContent ||
             constraints.widthResolution == AxisResolution::MaxContent) {
             childConstraints.widthResolution = constraints.widthResolution;
@@ -794,17 +806,17 @@ namespace tree {
         
         // resize width/height of underspecified elements
         if (!measured.explicitWidth.has_value()) {
-            if (position != Position::Static || constraints.shrinkToFit) {
+            if (position != Position::Static || constraints.shrinkWidthToFit) {
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
             }
         }
 
         float usedWidth = layout.computedBox.width;
         if (constraints.widthResolution == AxisResolution::Final && node->shared.maxWidth.has_value()) {
-            usedWidth = std::min(usedWidth, node->shared.maxWidth->resolveOr(constraints.availableWidth, usedWidth));
+            usedWidth = std::min(usedWidth, node->shared.maxWidth->resolveOr(Size::px(constraints.availableWidth), usedWidth));
         }
-        if (constraints.widthResolution == AxisResolution::Final && node->shared.minWidth.has_value()) {
-            usedWidth = std::max(usedWidth, node->shared.minWidth->resolveOr(constraints.availableWidth, usedWidth));
+        if (constraints.widthResolution == AxisResolution::Final) {
+            usedWidth = std::max(usedWidth, node->shared.minWidth.resolveOr(Size::px(constraints.availableWidth), usedWidth));
         }
 
         if (!measured.explicitHeight.has_value()) {
@@ -814,10 +826,10 @@ namespace tree {
 
         float usedHeight = layout.computedBox.height;
         if (constraints.heightResolution == AxisResolution::Final && node->shared.maxHeight.has_value()) {
-            usedHeight = std::min(usedHeight, node->shared.maxHeight->resolveOr(constraints.availableHeight, usedHeight));
+            usedHeight = std::min(usedHeight, node->shared.maxHeight->resolveOr(Size::px(constraints.availableHeight), usedHeight));
         }
-        if (constraints.heightResolution == AxisResolution::Final && node->shared.minHeight.has_value()) {
-            usedHeight = std::max(usedHeight, node->shared.minHeight->resolveOr(constraints.availableHeight, usedHeight));
+        if (constraints.heightResolution == AxisResolution::Final) {
+            usedHeight = std::max(usedHeight, node->shared.minHeight.resolveOr(Size::px(constraints.availableHeight), usedHeight));
         }
 
         bool widthChanged = usedWidth != layout.computedBox.width;
@@ -838,6 +850,12 @@ namespace tree {
 
             layout = node->element->layout(constraints, node->shared, retryMeasured, atomized);
             childConstraints = layout.childConstraints;
+            if (constraints.shrinkWidthToFit && node->shared.width.isAuto()) {
+                childConstraints.shrinkWidthToFit = true;
+            }
+            if (constraints.shrinkHeightToFit && node->shared.height.isAuto()) {
+                childConstraints.shrinkHeightToFit = true;
+            }
             if (constraints.widthResolution == AxisResolution::MinContent ||
                 constraints.widthResolution == AxisResolution::MaxContent) {
                 childConstraints.widthResolution = constraints.widthResolution;
@@ -880,21 +898,25 @@ namespace tree {
 
             if (widthChanged) {
                 layout.computedBox.width = usedWidth;
-            } else if (!measured.explicitWidth.has_value() || constraints.shrinkToFit) {
+            } else if (!measured.explicitWidth.has_value() || constraints.shrinkWidthToFit) {
                 layout.computedBox.width = maxX - minX + layout.resolvedPadding.left + layout.resolvedPadding.right;
             }
 
             if (heightChanged) {
                 layout.computedBox.height = usedHeight;
-            } else if (!measured.explicitHeight.has_value() || constraints.shrinkToFit) {
+            } else if (!measured.explicitHeight.has_value() || constraints.shrinkHeightToFit) {
                 // std::cout << "maxY: " << maxY << " minY: " << minY << '\n';
                 layout.computedBox.height = maxY - minY + layout.resolvedPadding.top + layout.resolvedPadding.bottom;
                 if (node->shared.maxHeight.has_value()) {
-                    layout.computedBox.height = std::min(layout.computedBox.height, node->shared.maxHeight->resolveOr(constraints.availableHeight, layout.computedBox.height));
+                    layout.computedBox.height = std::min(layout.computedBox.height, node->shared.maxHeight->resolveOr(Size::px(constraints.availableHeight), layout.computedBox.height));
                 }
-                if (node->shared.minHeight.has_value()) {
-                    layout.computedBox.height = std::max(layout.computedBox.height, node->shared.minHeight->resolveOr(constraints.availableHeight, layout.computedBox.height));
-                }
+                layout.computedBox.height = std::max(
+                    layout.computedBox.height,
+                    node->shared.minHeight.resolveOr(
+                        Size::px(constraints.availableHeight),
+                        layout.computedBox.height
+                    )
+                );
             }
 
             if (!layout.outOfFlow) {
@@ -1021,7 +1043,7 @@ namespace tree {
         }
         if (node->shared.overflow != Overflow::Visible) {
             float cornerRadius = node->shared.cornerRadius.resolveOr(
-                std::min(layout.computedBox.width, layout.computedBox.height)
+                Size::px(std::min(layout.computedBox.width, layout.computedBox.height))
             );
 
             simd_float2 halfExtent {

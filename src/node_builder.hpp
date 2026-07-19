@@ -120,7 +120,7 @@ namespace elements {
             return self();
         }
 
-        std::optional<Size> width() const {
+        Size width() const {
             return node->shared.width;
         }
 
@@ -130,7 +130,7 @@ namespace elements {
             return self();
         }
 
-        std::optional<Size> minWidth() const {
+        Size minWidth() const {
             return node->shared.minWidth;
         }
 
@@ -150,7 +150,7 @@ namespace elements {
             return self();
         }
 
-        std::optional<Size> height() const {
+        Size height() const {
             return node->shared.height;
         }
 
@@ -160,7 +160,7 @@ namespace elements {
             return self();
         }
 
-        std::optional<Size> minHeight() const {
+        Size minHeight() const {
             return node->shared.minHeight;
         }
 

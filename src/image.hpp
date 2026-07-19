@@ -264,7 +264,7 @@ namespace elements {
             auto resolvedHeight = resolvedSize.height;
 
             // Fall back to intrinsic size if not specified
-            if (!shared.width || !shared.height) {
+            if (shared.width.isAuto() || shared.height.isAuto()) {
                 const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
                     resolvedWidth = intrinsic.x;
@@ -375,12 +375,12 @@ namespace elements {
             float borderWidth = 0.0;
 
             if (shared.borderWidth.unit == Unit::Px) {
-                borderWidth = shared.borderWidth.resolveOr(constraints.availableWidth);
+                borderWidth = shared.borderWidth.resolveOr(Size::px(constraints.availableWidth));
             }
 
             simd_float2 cornerRadius {
-                shared.cornerRadius.resolveOr(layout.computedBox.width),
-                shared.cornerRadius.resolveOr(layout.computedBox.height)
+                shared.cornerRadius.resolveOr(Size::px(layout.computedBox.width)),
+                shared.cornerRadius.resolveOr(Size::px(layout.computedBox.height))
             };
 
             ImageStyleUniforms styleUniforms {
