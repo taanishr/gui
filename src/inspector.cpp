@@ -168,7 +168,7 @@ namespace Inspector {
         },
         panelState{
             div()
-                .color(simd_float4{0.035,0.045,0.07,0.96})
+                .color(simd_float4{0.035,0.045,0.07,0.8})
                 .height(style::Size::px(720))
                 .width(style::Size::px(420))
                 .position(style::Position::Fixed)
