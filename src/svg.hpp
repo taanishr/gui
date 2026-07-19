@@ -11,12 +11,15 @@
 #include "element.hpp"
 #include "renderer_constants.hpp"
 #include <format>
+#include <mutex>
 #include <optional>
 #include <map>
 #include <print>
+#include <shared_mutex>
 #include <simd/vector_types.h>
 #include "new_arch.hpp"
 #include <any>
+#include <unordered_map>
 #include <utility>
 #include <resvg.h>
 
@@ -71,6 +74,25 @@ namespace elements {
         uint32_t numClips;
     };
 
+    using SVGRenditionKey = std::pair<uint32_t, uint32_t>;
+
+    struct SVGAsset {
+        ~SVGAsset();
+
+        std::string path;
+        resvg_render_tree* tree {nullptr};
+        simd_float2 intrinsicSize {0.0f, 0.0f};
+        std::mutex renditionMutex;
+        std::map<SVGRenditionKey, NS::SharedPtr<MTL::Texture>> renditions;
+    };
+
+    struct SVGCache {
+        std::shared_ptr<SVGAsset> retrieve(const std::string& path);
+
+        std::shared_mutex mutex;
+        std::unordered_map<std::string, std::shared_ptr<SVGAsset>> assets;
+    };
+
     struct SVGStorage {
         SVGStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(SVGPoint), MaxOutstandingFrameCount},
@@ -79,19 +101,15 @@ namespace elements {
             clipsBuffer{ctx.allocator, sizeof(ClipUniform) * 4, MaxOutstandingFrameCount}
         {}
 
-        ~SVGStorage() {
-            if (tree) resvg_tree_destroy(tree);
-        }
         SVGStorage(SVGStorage&& other):
             atomsBuffer{std::move(other.atomsBuffer)},
             placementsBuffer{std::move(other.placementsBuffer)},
             uniformsBuffer{std::move(other.uniformsBuffer)},
             clipsBuffer{std::move(other.clipsBuffer)},
-            tree{std::exchange(other.tree, nullptr)},
-            textureCache{std::move(other.textureCache)},
-            activeBucket{other.activeBucket},
-            lastRenderedSize{other.lastRenderedSize},
-            intrinsicSize{other.intrinsicSize}
+            asset{std::move(other.asset)},
+            activeTexture{std::move(other.activeTexture)},
+            activeRendition{other.activeRendition},
+            lastRenderedSize{other.lastRenderedSize}
         {}
 
         FrameBufferedBuffer<SVGPoint> atomsBuffer;
@@ -99,17 +117,10 @@ namespace elements {
         FrameBufferedBuffer<SVGUniforms> uniformsBuffer;
         FrameBufferedBuffer<ClipUniform> clipsBuffer;
 
-        resvg_render_tree* tree {nullptr};
-        std::map<uint32_t, NS::SharedPtr<MTL::Texture>> textureCache;
-        uint32_t activeBucket {0};
+        std::shared_ptr<SVGAsset> asset;
+        NS::SharedPtr<MTL::Texture> activeTexture;
+        std::optional<SVGRenditionKey> activeRendition;
         simd_float2 lastRenderedSize {0.0f, 0.0f};
-        simd_float2 intrinsicSize {0.0f, 0.0f};
-
-        MTL::Texture* getActiveTexture() {
-            auto it = textureCache.find(activeBucket);
-            if (it != textureCache.end()) return it->second.get();
-            return nullptr;
-        }
     };
 
     template <typename S = SVGStorage>
@@ -263,54 +274,53 @@ namespace elements {
 
         void loadDocument(Fragment<S>& fragment, const std::string& path) {
             auto& storage = fragment.fragmentStorage;
-            if (storage.tree) return;
+            if (storage.asset && storage.asset->path == path) return;
 
-            auto* opt = resvg_options_create();
-            int32_t err = resvg_parse_tree_from_file(path.c_str(), opt, &storage.tree);
-            resvg_options_destroy(opt);
-
-            if (err != RESVG_OK || !storage.tree) {
-                std::println("resvg: failed to parse {}, error={}", path, err);
-                storage.tree = nullptr;
-                return;
-            }
-
-            auto size = resvg_get_image_size(storage.tree);
-            storage.intrinsicSize = { size.width, size.height };
+            storage.asset = svgCache.retrieve(path);
+            storage.activeTexture.reset();
+            storage.activeRendition.reset();
         }
 
         void loadTexture(Fragment<S>& fragment, float width, float height) {
             auto& storage = fragment.fragmentStorage;
-            if (!storage.tree) return;
+            auto asset = storage.asset;
+            if (!asset || !asset->tree) return;
 
             uint32_t bucket = quantize(width);
-            if (bucket == storage.activeBucket && storage.getActiveTexture()) return;
+            float aspect = asset->intrinsicSize.y / asset->intrinsicSize.x;
 
-            if (auto it = storage.textureCache.find(bucket); it != storage.textureCache.end()) {
-                storage.activeBucket = bucket;
+            uint32_t renderW = bucket * this->ctx.frameInfo.scale;
+            uint32_t renderH = static_cast<uint32_t>(bucket * aspect) * this->ctx.frameInfo.scale;
+            SVGRenditionKey renditionKey {renderW, renderH};
+
+            if (storage.activeRendition == renditionKey && storage.activeTexture) return;
+
+            std::lock_guard lock(asset->renditionMutex);
+            if (auto found = asset->renditions.find(renditionKey); found != asset->renditions.end()) {
+                storage.activeTexture = found->second;
+                storage.activeRendition = renditionKey;
                 storage.lastRenderedSize = {width, height};
                 return;
             }
 
-            float aspect = storage.intrinsicSize.y / storage.intrinsicSize.x;
-
-            uint32_t renderW = bucket * this->ctx.frameInfo.scale;
-            uint32_t renderH = static_cast<uint32_t>(bucket * aspect) * this->ctx.frameInfo.scale;
-
-            float scaleX = static_cast<float>(renderW) / storage.intrinsicSize.x;
-            float scaleY = static_cast<float>(renderH) / storage.intrinsicSize.y;
+            float scaleX = static_cast<float>(renderW) / asset->intrinsicSize.x;
+            float scaleY = static_cast<float>(renderH) / asset->intrinsicSize.y;
 
             resvg_transform transform = resvg_transform_identity();
             transform.a = scaleX;
             transform.d = scaleY;
 
             std::vector<char> pixmap(renderW * renderH * 4, 0);
-            resvg_render(storage.tree, transform, renderW, renderH, pixmap.data());
+            resvg_render(asset->tree, transform, renderW, renderH, pixmap.data());
 
             auto texture = createTextureFromPixmap(pixmap.data(), renderW, renderH);
             if (texture) {
-                storage.textureCache[bucket] = std::move(texture);
-                storage.activeBucket = bucket;
+                auto [rendition, inserted] = asset->renditions.emplace(
+                    renditionKey,
+                    std::move(texture)
+                );
+                storage.activeTexture = rendition->second;
+                storage.activeRendition = renditionKey;
                 storage.lastRenderedSize = {width, height};
             }
         }
@@ -342,7 +352,9 @@ namespace elements {
             auto resolvedHeight = resolvedSize.height;
 
             if (shared.width.isAuto() || shared.height.isAuto()) {
-                const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
+                const auto intrinsic = fragment.fragmentStorage.asset
+                    ? fragment.fragmentStorage.asset->intrinsicSize
+                    : simd_float2{0.0f, 0.0f};
                 if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
                     resolvedWidth = intrinsic.x;
                     resolvedHeight = intrinsic.y;
@@ -521,8 +533,8 @@ namespace elements {
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
             encoder->setFragmentBuffer(clipsBuf, 0, 1);
 
-            if (auto* tex = fragment.fragmentStorage.getActiveTexture()) {
-                encoder->setFragmentTexture(tex, 0);
+            if (fragment.fragmentStorage.activeTexture) {
+                encoder->setFragmentTexture(fragment.fragmentStorage.activeTexture.get(), 0);
             }
 
             encoder->setFragmentSamplerState(sampler, 0);
@@ -537,6 +549,7 @@ namespace elements {
             return hitTestFunction;
         }
 
+        SVGCache svgCache;
         UIContext& ctx;
     };
 }
