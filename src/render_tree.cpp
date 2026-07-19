@@ -47,6 +47,12 @@ namespace tree {
             || lastFrameInfo->scale != frameInfo.scale;
     }
 
+    bool RenderTree::requiresFrame(const FrameInfo& frameInfo) const {
+        return needsUpdate
+            || isFrameInfoChanged(frameInfo)
+            || pendingFrameBufferWrites > 0;
+    }
+
     void RenderTree::markDirty() {
         needsUpdate = true;
         pendingFrameBufferWrites = MaxOutstandingFrameCount;

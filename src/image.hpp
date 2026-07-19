@@ -11,11 +11,16 @@
 #include "element.hpp"
 #include "renderer_constants.hpp"
 #include "MTKTexture_loader.hpp"
+#include <cmath>
 #include <format>
+#include <map>
+#include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <simd/vector_types.h>
 #include "new_arch.hpp"
 #include <any>
+#include <unordered_map>
 
 namespace elements {
     using layout::Atomized;
@@ -68,6 +73,29 @@ namespace elements {
         uint32_t numClips;
     };
 
+    using ImageRenditionKey = std::pair<uint32_t, uint32_t>;
+
+    struct ImageAsset {
+        std::string path;
+        std::mutex renditionMutex;
+        std::map<ImageRenditionKey, NS::SharedPtr<MTL::Texture>> renditions;
+    };
+
+    struct ImageCache {
+        std::shared_ptr<ImageAsset> retrieve(const std::string& path);
+        NS::SharedPtr<MTL::Texture> retrieveTexture(
+            const std::shared_ptr<ImageAsset>& asset,
+            ImageRenditionKey renditionKey,
+            const MTKTextures::MTKTextureLoader& textureLoader
+        );
+
+        static constexpr uint32_t BucketSize = 64;
+        static uint32_t quantize(float value);
+
+        std::shared_mutex mutex;
+        std::unordered_map<std::string, std::shared_ptr<ImageAsset>> assets;
+    };
+
     struct ImageStorage {
         ImageStorage(UIContext& ctx):
             atomsBuffer{ctx.allocator, 6*sizeof(ImagePoint), MaxOutstandingFrameCount},
@@ -80,10 +108,9 @@ namespace elements {
         FrameBufferedBuffer<simd_float2> placementsBuffer;
         FrameBufferedBuffer<ImageUniforms> uniformsBuffer;
         FrameBufferedBuffer<ClipUniform> clipsBuffer;
-
-
-        NS::SharedPtr<MTL::Texture> texture;
-        simd_float2 intrinsicSize {0.0f, 0.0f};
+        std::shared_ptr<ImageAsset> asset;
+        NS::SharedPtr<MTL::Texture> activeTexture;
+        std::optional<ImageRenditionKey> activeRendition;
     };
 
     template <typename S = ImageStorage>
@@ -218,23 +245,26 @@ namespace elements {
         }
 
 
-        void initializeTexture(Fragment<S>& fragment, const std::string& path) {
+        void initializeAsset(Fragment<S>& fragment, const std::string& path) {
             auto& storage = fragment.fragmentStorage;
 
+            if (storage.asset && storage.asset->path == path) return;
+            storage.asset = imageCache.retrieve(path);
+            storage.activeTexture.reset();
+            storage.activeRendition.reset();
+        }
 
-            if (storage.texture && storage.intrinsicSize.x > 0.0f) return;
+        void activateTexture(Fragment<S>& fragment, ImageRenditionKey renditionKey) {
+            auto& storage = fragment.fragmentStorage;
+            if (!storage.asset) return;
+            if (storage.activeRendition == renditionKey && storage.activeTexture) return;
 
-            // optimization: downsample images
-            storage.texture = NS::TransferPtr(
-                MTKTextures::createTexture(getTextureLoader(), path)
+            storage.activeTexture = imageCache.retrieveTexture(
+                storage.asset,
+                renditionKey,
+                getTextureLoader()
             );
-            
-            if (storage.texture) {
-                storage.intrinsicSize = { (float)storage.texture->width(), (float)storage.texture->height() };
-            } else {
-                storage.intrinsicSize = { 0.0f, 0.0f };
-            }
-
+            storage.activeRendition = renditionKey;
         }
 
         Measured measure(Fragment<S>& fragment, Constraints& constraints, SharedDescriptor& shared, ImageDescriptor& desc) {
@@ -242,7 +272,7 @@ namespace elements {
             measured.id = fragment.id;
 
             if (!desc.path.empty()) {
-                initializeTexture(fragment, desc.path);
+                initializeAsset(fragment, desc.path);
             }
 
             SizeResolutionContext sizeCtx {
@@ -262,15 +292,6 @@ namespace elements {
 
             auto resolvedWidth = resolvedSize.width;
             auto resolvedHeight = resolvedSize.height;
-
-            // Fall back to intrinsic size if not specified
-            if (shared.width.isAuto() || shared.height.isAuto()) {
-                const auto& intrinsic = fragment.fragmentStorage.intrinsicSize;
-                if (intrinsic.x > 0.0f && intrinsic.y > 0.0f) {
-                    resolvedWidth = intrinsic.x;
-                    resolvedHeight = intrinsic.y;
-                }
-            }
 
             measured.explicitWidth = resolvedWidth;
             measured.explicitHeight = resolvedHeight;
@@ -322,6 +343,16 @@ namespace elements {
             float width = layout.computedBox.width;
             float height = layout.computedBox.height;
 
+            if (width > 0.0f && height > 0.0f) {
+                uint32_t logicalWidth = ImageCache::quantize(width);
+                uint32_t logicalHeight = ImageCache::quantize(height);
+                ImageRenditionKey renditionKey {
+                    static_cast<uint32_t>(std::ceil(logicalWidth * ctx.frameInfo.scale)),
+                    static_cast<uint32_t>(std::ceil(logicalHeight * ctx.frameInfo.scale))
+                };
+                activateTexture(fragment, renditionKey);
+            }
+
             size_t bufferLen = 6*sizeof(ImagePoint);
             
             std::array<ImagePoint, 6> atomPoints {{
@@ -336,7 +367,7 @@ namespace elements {
             fragment.fragmentStorage.atomsBuffer.write(ctx.frameIndex, atomPoints.data(), bufferLen);
             
             Atom atom;
-            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(0);
+            atom.atomBufferHandle = fragment.fragmentStorage.atomsBuffer.getBufferHandle(ctx.frameIndex);
             atom.offset = 0;
             atom.length = bufferLen;
             atom.width = width;
@@ -439,8 +470,8 @@ namespace elements {
             encoder->setFragmentBuffer(uniformsBuf, 0, 0);
             encoder->setFragmentBuffer(clipsBuf, 0, 1);
 
-            if (fragment.fragmentStorage.texture) {
-                encoder->setFragmentTexture(fragment.fragmentStorage.texture.get(), 0);
+            if (fragment.fragmentStorage.activeTexture) {
+                encoder->setFragmentTexture(fragment.fragmentStorage.activeTexture.get(), 0);
             }
             
             encoder->setFragmentSamplerState(sampler, 0);
@@ -455,6 +486,7 @@ namespace elements {
             return hitTestFunction;
         }
 
+        ImageCache imageCache;
         UIContext& ctx;
     };
 }

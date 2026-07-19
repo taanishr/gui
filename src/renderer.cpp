@@ -77,6 +77,9 @@ void Renderer::registerInspector(Inspector::Inspector& inspector)
 }
 
 void Renderer::draw() {
+    auto frameInfo = getFrameInfo();
+    if (!rootTree.requiresFrame(frameInfo)) return;
+
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
     
     this->frameSemaphore.acquire();
@@ -88,7 +91,7 @@ void Renderer::draw() {
     uint64_t frameIndex = ctx.frameIndex;
 
     auto ts1 = clock.now();
-    rootTree.update(getFrameInfo(), frameIndex);
+    rootTree.update(frameInfo, frameIndex);
     rootTree.render(renderCommandEncoder);
     
     auto ts2 = clock.now();
@@ -153,4 +156,3 @@ Renderer::~Renderer() {
     commandQueue->release();
     FT_Done_FreeType(ft);
 }
-

@@ -85,7 +85,7 @@ float2 cubicSecondDerivative(float2 p0, float2 p1, float2 p2, float2 p3, float t
 }
 
 int countQuadraticIntersections(float2 p0, float2 p1, float2 p2, float fragX, float fragY) {
-    float eps = 1e-3;
+    float eps = 1e-5;
     
     float minY = min(min(p0.y, p1.y), p2.y);
     float maxY = max(max(p0.y, p1.y), p2.y);
