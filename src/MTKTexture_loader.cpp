@@ -23,16 +23,19 @@ namespace MTKTextures {
         return m_textureLoader.get();
     }
 
-    MTL::Texture* createTexture(const MTKTextureLoader& textureLoader,
-                                const std::string& filepath)
-    {
-        
-        MTL::Texture* texture = static_cast<MTL::Texture*>
-            (MTK_Extensions::createTexture(
-                                        textureLoader.getTextureLoader()->get(),
-                                        filepath.c_str()
+    MTL::Texture* createDownsampledTexture(
+        const MTKTextureLoader& textureLoader,
+        const std::string& filepath,
+        uint32_t targetPixelWidth,
+        uint32_t targetPixelHeight
+    ) {
+        return static_cast<MTL::Texture*>(
+            MTK_Extensions::createDownsampledTexture(
+                textureLoader.getTextureLoader()->get(),
+                filepath.c_str(),
+                targetPixelWidth,
+                targetPixelHeight
             )
         );
-        return texture;
     }
 }
