@@ -1,0 +1,124 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 30,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+        "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+        "BUILD_TESTING": true
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release with debug information",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "profile",
+      "displayName": "Profiling",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/profile",
+      "cacheVariables": {
+        "GUI_PROFILE": true
+      }
+    },
+    {
+      "name": "inspector",
+      "displayName": "Debug with inspector",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/inspector",
+      "cacheVariables": {
+        "GUI_ENABLE_INSPECTOR": true
+      }
+    },
+    {
+      "name": "profile-inspector",
+      "displayName": "Profiling with inspector",
+      "inherits": "profile",
+      "binaryDir": "${sourceDir}/build/profile-inspector",
+      "cacheVariables": {
+        "GUI_ENABLE_INSPECTOR": true
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "profile",
+      "configurePreset": "profile"
+    },
+    {
+      "name": "inspector",
+      "configurePreset": "inspector"
+    },
+    {
+      "name": "profile-inspector",
+      "configurePreset": "profile-inspector"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "profile",
+      "configurePreset": "profile",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "inspector",
+      "configurePreset": "inspector",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "profile-inspector",
+      "configurePreset": "profile-inspector",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
